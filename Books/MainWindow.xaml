@@ -1,0 +1,69 @@
+﻿<Window x:Class="Books.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        MinHeight="450"
+        MinWidth="400">
+
+    <Window.Resources>
+        <Style x:Key="ToolbarButton" TargetType="{x:Type Button}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel>
+        <StackPanel Orientation="Horizontal" Height="48">
+            <Button ToolTip="Import Book" Command="{Binding ImportBook}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="BookMedicalSolid" Height="24" Width="24"/>
+            </Button>
+            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="EditRegular" Height="24" Width="24"/>
+            </Button>
+            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="TrashAltRegular" Height="24" Width="24"/>
+            </Button>
+            <Button ToolTip="Edit Metadata" Command="{Binding ErrorDialog}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="BombSolid" Height="24" Width="24"/>
+            </Button>
+            <!--
+            <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>
+            </Button>-->
+        </StackPanel>
+        <!--<StackPanel Orientation="Horizontal" Height="24">
+            <Button ToolTip="Select Columns" Command="{Binding SelectColumns}" Style="{StaticResource ToolbarButton}" Height="24" Width="24">
+                <icons:PackIconFontAwesome Kind="TableSolid" Height="16" Width="16"/>
+            </Button>
+        </StackPanel>-->
+
+        <DataGrid Name="Library"
+                  ItemsSource="{Binding Library}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  AlternatingRowBackground="#E3F2FD"
+                  SelectedItem="{Binding SelectedTableRow}">
+            <!--<DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="MouseDoubleClick" Handler="{Binding EditMetadata}"/>
+                </Style>
+            </DataGrid.RowStyle>-->
+            <DataGrid.Columns>
+                <DataGridTextColumn MinWidth="50" Width="50" Header="Type" Binding="{Binding Path=Type}" />
+                <DataGridTextColumn MinWidth="150" Width="*" Header="Title" Binding="{Binding Path=Title}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
+                <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series Number" Binding="{Binding Path=SeriesNum}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </StackPanel>
+
+
+</Window>
