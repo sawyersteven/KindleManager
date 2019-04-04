@@ -100,7 +100,7 @@ namespace Formats
             get => _PubDate;
             set
             {
-                value = value.Truncate(10);
+                value = Utils.Metadata.GetDate(value);
                 _PubDate = value;
             }
         }

@@ -110,7 +110,7 @@ namespace Formats
 
                     if (EXTHHeader.ContainsKey(106))
                     {
-                        PubDate = EXTHHeader.Get<uint, byte[]>(106).Decode().Substring(0, 10); // 1950-01-01
+                        PubDate = EXTHHeader.Get<uint, byte[]>(106).Decode();
                     }
 
                     if (EXTHHeader.ContainsKey(104))
@@ -164,7 +164,7 @@ namespace Formats
             get => _PubDate;
             set
             {
-                value = value.Substring(0, 10);
+                value = Utils.Metadata.GetDate(value);
                 EXTHHeader[106] = value.Encode();
                 _PubDate = value;
             }

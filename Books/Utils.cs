@@ -1,10 +1,15 @@
 ﻿using System;
 using ExtensionMethods;
+using System.Globalization;
 
 namespace Utils
 {
     class Metadata
     {
+        private static CultureInfo culture = new CultureInfo("en-US");
+
+        private static string[] dateFormats = new string[]{ "yyyy", "yyyy-MM", "yyyy-MM-dd" };
+
         /// <summary>
         /// Reorders author name for standard lastname-first sorting ie "Charles Dickens" becomes "Dickens, Charles"
         /// </summary>
@@ -14,6 +19,14 @@ namespace Utils
             if (splt.Length == 1) return author;
 
             return splt[splt.Length - 1] + ", " + string.Join(" ", splt.SubArray(0, splt.Length - 1));
+        }
+
+        /// <summary>
+        /// Converts date strings into epub standard yyyy-MM-dd (1950-01-01)
+        /// </summary>
+        public static string GetDate(string date)
+        {
+            return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("yyyy-MM-dd");
         }
     }
 
