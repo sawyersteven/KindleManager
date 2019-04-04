@@ -58,6 +58,7 @@ namespace Books.ViewModels
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.StackTrace);
                 var err = new Dialogs.Error("Unable to save metadata", e.Message);
                 err.ShowDialog();
             }

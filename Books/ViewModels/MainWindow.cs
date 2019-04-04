@@ -4,7 +4,7 @@ using System.Reactive;
 using System.Windows.Forms;
 using System.Linq;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
+using System.IO;
 
 namespace Books.ViewModels
 {
@@ -46,14 +46,24 @@ namespace Books.ViewModels
         {
             var dlg = new OpenFileDialog();
             dlg.Multiselect = false;
-            dlg.Filter = "Kindle eBooks (*.mobi)|*.mobi";
+            dlg.Filter = "eBooks (*.epub;*.mobi)|*.epub;*.mobi";
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            Formats.Mobi importBook = null;
+            Formats.IBook importBook = null;
             try
             {
-                importBook = new Formats.Mobi(dlg.FileName);
+                switch (Path.GetExtension(dlg.FileName))
+                {
+                    case ".mobi":
+                        importBook = new Formats.Mobi(dlg.FileName);
+                        break;
+                    case ".epub":
+                        importBook = new Formats.Epub(dlg.FileName);
+                        break;
+                    default:
+                        throw new Exception("Unsupported file type");
+                }
             }
             catch (Exception e)
             {
@@ -111,6 +121,9 @@ namespace Books.ViewModels
                 {
                     case "MOBI":
                         book = new Formats.Mobi(SelectedTableRow.FilePath);
+                        break;
+                    case "EPUB":
+                        book = new Formats.Epub(SelectedTableRow.FilePath);
                         break;
                 }
             }
