@@ -3,38 +3,47 @@ using System.IO;
 using System.Linq;
 using System.IO.Compression;
 using System.Xml;
+using ExtensionMethods;
 
 namespace Formats
 {
     public class Epub : IBook
-
     {
         public Epub(string filepath)
         {
             FilePath = filepath;
 
-            using (var file = File.OpenRead(FilePath))
-            using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
+            using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
             {
-                ZipArchiveEntry origContainerOpf = zip.Entries.FirstOrDefault(x => x.Name == "content.opf");
-                if (origContainerOpf == null) throw new Exception("Metadata file content.opf not found, epub may be corrupt");
+                ZipArchiveEntry origMetadataOpf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
+                if (origMetadataOpf == null) throw new Exception("OPF metadata file not found, epub may be corrupt");
 
-                XmlDocument containerXML = new XmlDocument();
-                using (Stream s = origContainerOpf.Open()) { containerXML.Load(s); }
+                XmlDocument metadataXml = new XmlDocument();
+                using (Stream s = origMetadataOpf.Open()) { metadataXml.Load(s); }
 
-                XmlNamespaceManager nsmgr = new XmlNamespaceManager(containerXML.NameTable);
-                nsmgr.AddNamespace("p", containerXML.DocumentElement.NamespaceURI);
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(metadataXml.NameTable);
+                nsmgr.AddNamespace("p", metadataXml.DocumentElement.NamespaceURI);
 
-                XmlNode metadataNode = containerXML.SelectSingleNode("//p:package/p:metadata", nsmgr);
+                XmlNode metadataNode = metadataXml.SelectSingleNode("//p:package/p:metadata", nsmgr);
                 nsmgr.AddNamespace("dc", metadataNode.GetNamespaceOfPrefix("dc"));
                 nsmgr.AddNamespace("opf", metadataNode.GetNamespaceOfPrefix("opf"));
 
-                Title = metadataNode.SelectSingleNode("dc:title", nsmgr).InnerText;
-                Author = metadataNode.SelectSingleNode("dc:creator", nsmgr).InnerText;
-                Publisher = metadataNode.SelectSingleNode("dc:publisher", nsmgr).InnerText;
-                PubDate = metadataNode.SelectSingleNode("dc:date", nsmgr).InnerText.Substring(0, 10);
-                ISBN = ulong.Parse(metadataNode.SelectSingleNode("dc:identifier[@opf:scheme='ISBN']", nsmgr).InnerText);
+                Title = ReadNode(metadataNode, "dc:title", nsmgr);
+                Author = ReadNode(metadataNode, "dc:creator", nsmgr);
+                Publisher = ReadNode(metadataNode, "dc:publisher", nsmgr);
+                PubDate = ReadNode(metadataNode, "dc:date", nsmgr);
+                ulong.TryParse(ReadNode(metadataNode, "dc:identifier[@opf:scheme='ISBN']", nsmgr), out ulong id);
+                ISBN = id;
             }
+        }
+
+        /// <summary>
+        /// Reads text from node. Returns empty string if node doesn't exist.
+        /// </summary>
+        private string ReadNode(XmlNode node, string xpath, XmlNamespaceManager nsmgr)
+        {
+            XmlNode target = node.SelectSingleNode(xpath, nsmgr);
+            return (target == null) ? "" : target.InnerText;
         }
 
         public void Print()
@@ -91,7 +100,7 @@ namespace Formats
             get => _PubDate;
             set
             {
-                value = value.Substring(0, 10);
+                value = value.Truncate(10);
                 _PubDate = value;
             }
         }
@@ -128,7 +137,74 @@ namespace Formats
 
         public void Write()
         {
-            throw new NotImplementedException();
+            using (ZipArchive zip = ZipFile.Open(FilePath, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry origOpf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
+                if (origOpf == null) throw new Exception("Metadata file content.opf not found, epub may be corrupt");
+
+                XmlDocument OpfDocument = new XmlDocument();
+                using (Stream s = origOpf.Open()) { OpfDocument.Load(s); }
+
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(OpfDocument.NameTable);
+                nsmgr.AddNamespace("p", OpfDocument.DocumentElement.NamespaceURI);
+
+                XmlNode metadataNode = OpfDocument.SelectSingleNode("//p:package/p:metadata", nsmgr);
+
+                nsmgr.AddNamespace("dc", metadataNode.GetNamespaceOfPrefix("dc"));
+                nsmgr.AddNamespace("opf", metadataNode.GetNamespaceOfPrefix("opf"));
+
+                metadataNode.SelectSingleNode("dc:title", nsmgr).InnerText = Title;
+
+                XmlNode authorNode = metadataNode.SelectSingleNode("dc:creator", nsmgr);
+                authorNode.InnerText = Author;
+                XmlElement an = (XmlElement)authorNode;
+                an.SetAttribute("opf:file-as", Utils.Metadata.SortAuthor(Author));
+
+                metadataNode.SelectSingleNode("dc:publisher", nsmgr).InnerText = Publisher;
+                metadataNode.SelectSingleNode("dc:date", nsmgr).InnerText = PubDate;
+
+                XmlNode isbnNode = metadataNode.SelectSingleNode("dc:identifier[@opf:scheme='ISBN']", nsmgr);
+                if (isbnNode == null) {
+                    XmlElement node = OpfDocument.CreateElement("dc:identifier");
+                    node.SetAttribute("opf:scheme", "ISBN");
+                    metadataNode.AppendChild(node);
+                    isbnNode = node;
+                }
+                isbnNode.InnerText = ISBN.ToString();
+
+                origOpf.Delete();
+                ZipArchiveEntry newOpf = zip.CreateEntry(origOpf.FullName);
+                using (StreamWriter writer = new StreamWriter(newOpf.Open()))
+                {
+                    writer.Write(OpfDocument.OuterXml);
+                }
+
+                // toc.ncx is not required in Epub 3 so it can be safely ignored if it doesn't exist
+                ZipArchiveEntry origTocNcx = zip.Entries.FirstOrDefault(x => x.Name == "toc.ncx");
+                if (origTocNcx == null) return;
+
+                XmlDocument tocXml = new XmlDocument();
+                using (Stream s = origTocNcx.Open()) { tocXml.Load(s); }
+
+                nsmgr.AddNamespace("n", tocXml.NamespaceURI);
+
+                try
+                {
+                    tocXml.SelectSingleNode("//n:ncx/n:docTitle/n:text", nsmgr).InnerText = Author;
+                }
+                catch
+                {
+                    // Just bail if we can't write to the node.                   
+                    return;
+                }
+                origTocNcx.Delete();
+                ZipArchiveEntry newTocNcx = zip.CreateEntry(origTocNcx.FullName);
+                using (StreamWriter writer = new StreamWriter(newTocNcx.Open()))
+                {
+                    writer.Write(tocXml.OuterXml);
+                }
+
+            }
         }
         #endregion
     }
