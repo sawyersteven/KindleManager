@@ -43,9 +43,18 @@ namespace ExtensionMethods
         {
             return Encoding.UTF8.GetBytes(data);
         }
+
+        /// <summary>
+        /// Truncate a string to the provided maximum length in characters.
+        /// </summary>
+        public static string Truncate(this string data, int maxLength)
+        {
+            if (data.Length <= maxLength) return data;
+            return data.Substring(0, maxLength);
+        }
     }
 
-    public static class DictExtensions
+    public static class DictExtensions 
     {
         public static v Get<k, v>(this IDictionary<k, v> dict, k key)
         {

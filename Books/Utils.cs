@@ -1,12 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ExtensionMethods;
 
 namespace Utils
 {
+    class Metadata
+    {
+        /// <summary>
+        /// Reorders author name for standard lastname-first sorting ie "Charles Dickens" becomes "Dickens, Charles"
+        /// </summary>
+        public static string SortAuthor(string author)
+        {
+            string[] splt = author.Split(' ');
+            if (splt.Length == 1) return author;
+
+            return splt[splt.Length - 1] + ", " + string.Join(" ", splt.SubArray(0, splt.Length - 1));
+        }
+    }
+
     class BitConverter
     {
         private static bool SwapEndian = false;
