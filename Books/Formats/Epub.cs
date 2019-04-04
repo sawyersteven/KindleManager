@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.IO.Compression;
 using System.Xml;
-using ExtensionMethods;
 
 namespace Formats
 {
@@ -158,7 +157,7 @@ namespace Formats
                 XmlNode authorNode = metadataNode.SelectSingleNode("dc:creator", nsmgr);
                 authorNode.InnerText = Author;
                 XmlElement an = (XmlElement)authorNode;
-                an.SetAttribute("opf:file-as", Utils.Metadata.SortAuthor(Author));
+                an.SetAttribute("file-as", nsmgr.LookupNamespace("opf"), Utils.Metadata.SortAuthor(Author));
 
                 metadataNode.SelectSingleNode("dc:publisher", nsmgr).InnerText = Publisher;
                 metadataNode.SelectSingleNode("dc:date", nsmgr).InnerText = PubDate;
