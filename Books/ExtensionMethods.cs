@@ -32,6 +32,16 @@ namespace ExtensionMethods
         {
             return Encoding.UTF8.GetString(data);
         }
+
+        /// <summary>
+        /// Converts byte array into UTF-8 string
+        /// </summary>
+        public static string Decode(this byte[] data, string encoding)
+        {
+            Encoding enc = Encoding.GetEncoding(encoding);
+            if (enc == null) throw new Exception($"Encoding {encoding} not found");
+            return enc.GetString(data);
+        }
     }
 
     public static class StringExtensions
@@ -54,7 +64,7 @@ namespace ExtensionMethods
         }
     }
 
-    public static class DictExtensions 
+    public static class DictExtensions
     {
         public static v Get<k, v>(this IDictionary<k, v> dict, k key)
         {
@@ -70,6 +80,14 @@ namespace ExtensionMethods
             T[] arr = new T[hs.Count];
             hs.CopyTo(arr);
             return arr;
+        }
+    }
+
+    public static class ByteExtensions
+    {
+        public static string Decode(this byte b)
+        {
+            return ((char)b).ToString();
         }
     }
 }
