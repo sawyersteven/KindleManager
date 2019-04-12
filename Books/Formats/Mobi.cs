@@ -341,6 +341,14 @@ namespace Formats
             }
         }
         #endregion
+
+        public void PrintHeaders()
+        {
+            PDBHeader.Print();
+            PalmDOCHeader.Print();
+            MobiHeader.Print();
+            EXTHHeader.Print();
+        }
     }
 }
 
@@ -643,10 +651,11 @@ PALMDOC:
             reader.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
             fullTitle = reader.ReadBytes((int)fullTitleLength).Decode();
 
-            if (headerLength == 0xe4 || headerLength == 0xe8)
+            if (headerLength >= 0xe4)
             {
-                reader.BaseStream.Seek(offset + 0xf2, SeekOrigin.Begin);
-                uint flags = reader.ReadUInt16();
+                reader.BaseStream.Seek(offset + 0xe2, SeekOrigin.Begin);
+
+                uint flags = Utils.BitConverter.ToUInt16(reader.ReadBytes(0x2), 0x0);
                 
                 flagMultiByte = (flags & 0x01) == 1;
                 flags >>= 0x01;
