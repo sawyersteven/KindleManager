@@ -13,7 +13,7 @@ namespace Utils
         /// </summary>
         /// 
 
-        public static string decompress(byte[] buffer, int compressedLen)
+        public static byte[] decompress(byte[] buffer, int compressedLen)
         {
             byte[] output = new byte[decompressedLength(buffer, compressedLen)];
             int i = 0;
@@ -58,7 +58,7 @@ namespace Utils
                     output[j++] = (byte)c;
                 }
             }
-            return output.Decode();
+            return output;
         }
 
         private static int decompressedLength(byte[] buffer, int compressedLen)

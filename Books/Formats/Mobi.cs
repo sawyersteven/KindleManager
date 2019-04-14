@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using ExtensionMethods;
 using System.Linq;
+using System.Text.RegularExpressions;
+using HtmlAgilityPack;
 
 namespace Formats
 {
@@ -103,7 +105,7 @@ namespace Formats
         public MobiHeaders.MobiHeader MobiHeader;
         public MobiHeaders.EXTHHeader EXTHHeader;
 
-        private delegate string Decompressor(byte[] buffer, int compressedLen);
+        private delegate byte[] Decompressor(byte[] buffer, int compressedLen);
         private Decompressor decompress;
 
         public uint contentOffset;
@@ -130,7 +132,7 @@ namespace Formats
                 switch (PalmDOCHeader.compression)
                 {
                     case 1: // None
-                        decompress = (buffer, compressedLen) => buffer.SubArray(0, compressedLen).Decode();
+                        decompress = (byte[] buffer, int compressedLen) => buffer.SubArray(0, compressedLen);
                         break;
                     case 2: // PalmDoc
                         decompress = Utils.PalmDoc.decompress;
@@ -175,9 +177,20 @@ namespace Formats
             }
         }
 
-        public string TextContent()
+        public string DecodeRawText(byte[] text) {
+            switch (MobiHeader.textEncoding){
+                case 1252:
+                    return text.Decode("CP1252");
+                case 65001:
+                    return text.Decode();
+                default:
+                    throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
+            }                        
+        }
+
+        public byte[] RawTextContent()
         {
-            string output = "";
+            List<byte> bytes = new List<byte>();
             using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
             {
                 for (int i = 1; i <= PalmDOCHeader.textRecordCount; i++)
@@ -185,12 +198,96 @@ namespace Formats
                     reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
                     byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
                     int compressedLen = calcExtraBytes(compressedText);
-                    string chunk = decompress(compressedText, compressedLen);
-                    output += chunk;
+                    bytes.AddRange(decompress(compressedText, compressedLen));
                 }
             }
-            return output;
+            return bytes.ToArray();
         }
+
+
+
+        /// <summary>
+        /// Returns mobi-html from book as string with changes made to 
+        ///     work as a standard epub html doc.
+        /// To get raw html deocded to string use RawTextContent()
+        /// </summary>
+        /// <returns></returns>
+        public string TextContent()
+        {
+            string text = DecodeRawText(RawTextContent());
+            System.IO.File.WriteAllText(@"C:\Users\Steven\Desktop\Raw.html", text);
+            text = fixAnchors(text);
+
+            return text;
+        }
+
+        /// <summary>
+        /// Fixes anchor tags using "filepos" in html
+        /// 
+        /// Because everything in a mobi has to be much more complex than neccesary I'll explain this...
+        /// Anchor tags have a filepos attribute like this <a filepos=000012345>Chapter one</a>
+        /// The filepos indicates a position in the un-decoded bytes that is somewhere near the actual target for the link
+        /// Because of this, the html has to be decoded (ie to utf-8) and parsed for anchors' filepos values.
+        /// Then we go back to the un-decoded bytes and insert a new node with the target id to make things easier.
+        /// 
+        /// </summary>
+        /// <param name="html"></param>
+        /// <returns></returns>
+        private string fixAnchors(string html)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            byte[] htmlBytes = html.Encode();
+
+            // tuple(location of insertion point in html, fileposition id)
+            // List<ValueTuple<int, string>> targetNodes = new List<ValueTuple<int, string>>();
+            string targetNode = "<a id=\"filepos{0}\"/>";
+            int bytesAdded = 0;
+            foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
+            {
+                string filePos = a.GetAttributeValue("filepos", string.Empty);
+                if (filePos == string.Empty) continue;
+
+                int p = nearestElementPos(htmlBytes, int.Parse(filePos));
+                byte[] targetBytes = string.Format(targetNode, filePos).Encode();
+                htmlBytes = htmlBytes.InsertRange(p + bytesAdded, targetBytes);
+                bytesAdded += targetBytes.Length;
+            }
+
+            html = htmlBytes.Decode();
+            doc.LoadHtml(html);
+
+            foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
+            {
+                string filePos = a.GetAttributeValue("filepos", string.Empty);
+                if (filePos == string.Empty) continue;
+                a.SetAttributeValue("href", $"#filepos{filePos}");
+            }
+
+            return doc.DocumentNode.OuterHtml;
+        }
+
+        /// <summary>
+        /// Finds closest point in text where an html element begins or ends.
+        /// Uses byte[] rather than string because Palm hates programmers.
+        /// Example:
+        /// <blockquote font-size="4"></blockquote>
+        ///                           ^ This position
+        /// </summary>
+        private int nearestElementPos(byte[] html, int search)
+        {
+            if (search > html.Length) return -1;
+            if (html[search] == '<') return search - 1;
+
+            while (html[search] != '<')
+            {
+                search--;
+            }
+
+            return search;
+        }
+
 
         /// <summary>
         /// Parse backward-encoded Mobipocket variable-width int
@@ -221,7 +318,6 @@ namespace Formats
         private int calcExtraBytes(byte[] record)
         {
             int pos = record.Length;
-
             for (int _ = 0; _ < MobiHeader.flagTrailingEntries; _++)
             {
                 pos -= varLengthInt(record.SubArray(pos - 4, 0x4));
@@ -798,6 +894,18 @@ MOBI:
         }
 
         public string Get(RecordName rec)
+        {
+            if (this.TryGetValue((uint)rec, out byte[] val))
+            {
+                return val.Decode();
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+        public string Get(uint rec)
         {
             if (this.TryGetValue((uint)rec, out byte[] val))
             {

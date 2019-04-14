@@ -7,6 +7,42 @@ namespace ExtensionMethods
     public static class ArrayExtensions
     {
         /// <summary>
+        /// Inserts data into array after specified index
+        /// Returns an array of length (this.Length + insertable.Length)
+        /// Example:
+        ///     int[] arr = new int[] { 0, 1, 2, 3, 4, 5 };
+        ///     arr = arr.InsertRange(3, new int[] { 100, 101, 102 });
+        ///     arr == [0, 1, 2, 3, 100, 101, 102, 4, 5};
+        /// </summary>
+        /// <returns></returns>
+        public static T[] InsertRange<T>(this T[] array, int index, T[] insertable)
+        {
+            T[] output = new T[array.Length + insertable.Length];
+            int pos = 0;
+
+            for (var i = 0; i <= index; i++)
+            {
+                output[pos] = array[i];
+                pos++;
+            }
+
+            foreach(T x in insertable)
+            {
+                output[pos] = x;
+                pos++;
+            }
+
+            for (var i = index + 1; i < array.Length; i++)
+            {
+                output[pos] = array[i];
+                pos++;
+            }
+
+            return output;
+        }
+
+
+        /// <summary>
         /// Returns a sub-array of length starting at index
         /// </summary>
         /// <returns> Array<T></returns>
