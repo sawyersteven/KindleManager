@@ -41,6 +41,17 @@ namespace ExtensionMethods
             return output;
         }
 
+        public static T[] Append<T>(this T[] array, T[] appendable)
+        {
+            T[] output = new T[array.Length + appendable.Length];
+            Array.Copy(array, output, array.Length);
+            for (int i = 0; i < appendable.Length; i++)
+            {
+                output[i + array.Length] = appendable[i];
+            }
+            return output;
+        }
+
 
         /// <summary>
         /// Returns a sub-array of length starting at index
