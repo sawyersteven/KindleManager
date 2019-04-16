@@ -117,7 +117,7 @@ namespace Books.ViewModels
 
             try
             {
-                switch (SelectedTableRow.Type)
+                switch (SelectedTableRow.Format)
                 {
                     case "MOBI":
                         book = new Formats.Mobi(SelectedTableRow.FilePath);
@@ -136,7 +136,7 @@ namespace Books.ViewModels
 
             if(book == null)
             {
-                throw new NotImplementedException($"Book Type {SelectedTableRow.Type} has not been added to the Metadata Editor");
+                throw new NotImplementedException($"Book Type {SelectedTableRow.Format} has not been added to the Metadata Editor");
             }
 
             book.DateAdded = SelectedTableRow.DateAdded;

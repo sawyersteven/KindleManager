@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using ExtensionMethods;
-using System.Linq;
-using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 
 namespace Formats
@@ -110,6 +108,56 @@ namespace Formats
 
         public uint contentOffset;
 
+
+        /// <summary>
+        /// Constructor for MOBI with as much generic data as possible filled in
+        /// </summary>
+        public Mobi()
+        {
+            this.PDBHeader = new MobiHeaders.PDBHeader();
+            this.PalmDOCHeader = new MobiHeaders.PalmDOCHeader();
+            this.MobiHeader = new MobiHeaders.MobiHeader();
+            this.EXTHHeader = new MobiHeaders.EXTHHeader();
+
+            PDBHeader.uniqueIDseed = (uint)Utils.Metadata.RandomNumber();
+            PDBHeader.createdDate = (uint)Utils.Metadata.TimeStamp();
+            PDBHeader.modifiedDate = PDBHeader.createdDate;
+            PDBHeader.type = "BOOK";
+            PDBHeader.creator = "MOBI";
+            PDBHeader.records = new uint[2];
+
+            PalmDOCHeader.compression = 0;
+            PalmDOCHeader.recordSize = 4096;
+            PalmDOCHeader.encryptionType = 0;
+
+            MobiHeader.identifier = "MOBI".Encode();
+            MobiHeader.headerLength = 232;
+            MobiHeader.mobiType = 5;
+            MobiHeader.textEncoding = 65001;
+            MobiHeader.uid = PDBHeader.uniqueIDseed * PDBHeader.uniqueIDseed; // Is there a proper way to do this?
+            MobiHeader.indexes = new byte[0x28];
+            for (var i = 0; i < MobiHeader.indexes.Length; i++)
+            {
+                MobiHeader.indexes[i] = 0xFF;
+            }
+            MobiHeader.language = 9;
+            MobiHeader.exthFlags = 0x40;
+            MobiHeader.unknown1 = new byte[0x24];
+            for (var i = 0; i < MobiHeader.unknown1.Length; i++)
+            {
+                MobiHeader.unknown1[i] = 0xFF;
+            }
+            MobiHeader.drmOffset = 0xFFFFFFFF;
+            MobiHeader.drmCount = 0xFFFFFFFF;
+            MobiHeader.extraDataFlags = 0x0;
+
+
+            EXTHHeader.identifier = "EXTH".Encode();
+
+
+        }
+
+
         public Mobi(string filepath)
         {
             FilePath = filepath;
@@ -145,7 +193,6 @@ namespace Formats
                 this.MobiHeader = new MobiHeaders.MobiHeader();
                 this.MobiHeader.offset = (uint)reader.BaseStream.Position; // PalmDOCHeader + 0x10
                 this.MobiHeader.Parse(reader);
-                Title = MobiHeader.fullTitle;
 
                 // EXTHHeader
                 this.EXTHHeader = new MobiHeaders.EXTHHeader();
@@ -154,56 +201,27 @@ namespace Formats
                     EXTHHeader.offset = this.MobiHeader.offset + this.MobiHeader.headerLength;
                     EXTHHeader.Parse(reader);
 
-                    if (EXTHHeader.ContainsKey(101))
+                    Author = EXTHHeader.Get(100);
+
+                    byte[] isbn = EXTHHeader.Get<uint, byte[]>(104);
+                    if (isbn != null && isbn.Length == 4)
                     {
-                        Author = EXTHHeader.Get<uint, byte[]>(100).Decode();
+                        ISBN = Utils.BitConverter.ToUInt32(isbn, 0x0);
                     }
 
-                    if (EXTHHeader.ContainsKey(101))
-                    {
-                        Publisher = EXTHHeader[101].Decode();
-                    }
+                    Language = EXTHHeader.Get(524);
+                    Contributor = EXTHHeader.Get(108);
+                    Publisher = EXTHHeader.Get(101);
+                    Subject = new string[] { EXTHHeader.Get(105) };
+                    Description = EXTHHeader.Get(103);
+                    PubDate = EXTHHeader.Get(106);
+                    Rights = EXTHHeader.Get(109);
 
-                    if (EXTHHeader.ContainsKey(106))
-                    {
-                        PubDate = EXTHHeader.Get<uint, byte[]>(106).Decode();
-                    }
-
-                    if (EXTHHeader.ContainsKey(104))
-                    {
-                        ISBN = Utils.BitConverter.ToUInt32(EXTHHeader.Get<uint, byte[]>(104), 0x0);
-                    }
                 }
+
+                Title = MobiHeader.fullTitle;
             }
         }
-
-        public string DecodeRawText(byte[] text) {
-            switch (MobiHeader.textEncoding){
-                case 1252:
-                    return text.Decode("CP1252");
-                case 65001:
-                    return text.Decode();
-                default:
-                    throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
-            }                        
-        }
-
-        public byte[] RawTextContent()
-        {
-            List<byte> bytes = new List<byte>();
-            using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
-            {
-                for (int i = 1; i <= PalmDOCHeader.textRecordCount; i++)
-                {
-                    reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
-                    byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
-                    int compressedLen = calcExtraBytes(compressedText);
-                    bytes.AddRange(decompress(compressedText, compressedLen));
-                }
-            }
-            return bytes.ToArray();
-        }
-
 
 
         /// <summary>
@@ -214,15 +232,60 @@ namespace Formats
         /// <returns></returns>
         public string TextContent()
         {
-            string text = DecodeRawText(RawTextContent());
-            System.IO.File.WriteAllText(@"C:\Users\Steven\Desktop\Raw.html", text);
-            text = fixAnchors(text);
+            List<byte> bytes = new List<byte>();
+            using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
+            {
+                for (int i = 1; i <= PalmDOCHeader.textRecordCount; i++)
+                {
+                    reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
+                    byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
+                    int compressedLen = calcExtraBytes(compressedText);
+                    byte[] x = decompress(compressedText, compressedLen);
+                    bytes.AddRange(x);
+                }
+            }
 
-            return text;
+            string text = "";
+            switch (MobiHeader.textEncoding)
+            {
+                case 1252:
+                    text = bytes.ToArray().Decode("CP1252");
+                    break;
+                case 65001:
+                    text = bytes.ToArray().Decode();
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
+            };
+
+            return fixLinks(text);
         }
 
         /// <summary>
-        /// Fixes anchor tags using "filepos" in html
+        /// Gets all images in order of record #s
+        /// </summary>
+        /// <returns></returns>
+        public byte[][] GetImages()
+        {
+            uint imageCount = MobiHeader.lastContentRecord - MobiHeader.firstImageRecord;
+
+            byte[][] images = new byte[imageCount][];
+            using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
+            {
+                for (int i = 0; i < imageCount; i++) {
+                    uint recOffset = PDBHeader.records[MobiHeader.firstImageRecord + i];
+                    uint recLen = PDBHeader.records[MobiHeader.firstImageRecord + i + 1] - recOffset;
+                    reader.BaseStream.Seek(recOffset, SeekOrigin.Begin);
+                    images[i] = reader.ReadBytes((int)recLen);
+                }
+            }
+
+            return images;
+        }
+
+
+        /// <summary>
+        /// Fixes image sources and anchor tags using "filepos" in html
         /// 
         /// Because everything in a mobi has to be much more complex than neccesary I'll explain this...
         /// Anchor tags have a filepos attribute like this <a filepos=000012345>Chapter one</a>
@@ -230,10 +293,13 @@ namespace Formats
         /// Because of this, the html has to be decoded (ie to utf-8) and parsed for anchors' filepos values.
         /// Then we go back to the un-decoded bytes and insert a new node with the target id to make things easier.
         /// 
+        /// Images are easier. An image will have a recindex=123456 attribute instead of src. This points to the image
+        /// record in PDBHeader starting with firstImageRecord as 1. These are written to disk as 123456.jpg.
+        /// 
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        private string fixAnchors(string html)
+        private string fixLinks(string html)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
@@ -258,11 +324,26 @@ namespace Formats
             html = htmlBytes.Decode();
             doc.LoadHtml(html);
 
-            foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
+            HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
+            if (anchors != null)
             {
-                string filePos = a.GetAttributeValue("filepos", string.Empty);
-                if (filePos == string.Empty) continue;
-                a.SetAttributeValue("href", $"#filepos{filePos}");
+                foreach (HtmlNode a in anchors)
+                {
+                    string filePos = a.GetAttributeValue("filepos", string.Empty);
+                    if (filePos == string.Empty) continue;
+                    a.SetAttributeValue("href", $"#filepos{filePos}");
+                }
+            }
+
+            HtmlNodeCollection imgs = doc.DocumentNode.SelectNodes("//img");
+            if (imgs != null)
+            {
+                foreach (HtmlNode img in imgs)
+                {
+                    string recIndex = img.GetAttributeValue("recindex", string.Empty);
+                    if (recIndex == string.Empty) continue;
+                    img.SetAttributeValue("src", $"{recIndex}.jpg");
+                }
             }
 
             return doc.DocumentNode.OuterHtml;
@@ -287,7 +368,6 @@ namespace Formats
 
             return search;
         }
-
 
         /// <summary>
         /// Parse backward-encoded Mobipocket variable-width int
@@ -330,9 +410,8 @@ namespace Formats
         }
 
         #region IBook impl
-        public int Id { get; set; }
         public string FilePath { get; set; }
-        public string Type { get => "MOBI"; }
+        public string Format { get => "MOBI"; }
 
         private string _Title;
         public string Title {
@@ -343,7 +422,28 @@ namespace Formats
                 MobiHeader.fullTitleLength = (uint)value.Length;
                 PDBHeader.title = value.Length > 0x20 ? value.Substring(0x0, 0x20) : value + new byte[0x20 - value.Length].Decode();
                 PDBHeader.title = PDBHeader.title.Replace(' ', '_');
+                EXTHHeader.Set(503, value);
                 _Title = value;
+            }
+        }
+
+        private string _Language { get; set; }
+        public string Language
+        {
+            get => _Language;
+            set
+            {
+                _Language = value;
+            }
+        }
+
+        private ulong _ISBN;
+        public ulong ISBN
+        {
+            get => _ISBN;
+            set
+            {
+                _ISBN = value;
             }
         }
 
@@ -357,6 +457,16 @@ namespace Formats
             }
         }
 
+        private string _Contributor;
+        public string Contributor
+        {
+            get => _Contributor;
+            set
+            {
+                _Contributor = value;
+            }
+        }
+
         private string _Publisher;
         public string Publisher {
             get => _Publisher;
@@ -364,6 +474,26 @@ namespace Formats
             {
                 EXTHHeader[101] = value.Encode();
                 _Publisher = value;
+            }
+        }
+
+        private string[] _Subject;
+        public string[] Subject
+        {
+            get => _Subject;
+            set
+            {
+                _Subject = value;
+            }
+        }
+
+        private string _Description;
+        public string Description
+        {
+            get => _Description;
+            set
+            {
+                _Description = value;
             }
         }
 
@@ -378,16 +508,19 @@ namespace Formats
             }
         }
 
-        private ulong _ISBN;
-        public ulong ISBN {
-            get => _ISBN;
+        private string _Rights;
+        public string Rights
+        {
+            get => _Rights;
             set
             {
-                _ISBN = value;
+                _Rights = value;
             }
         }
 
-        // local db only, not parsed when instantiated
+        // local db only, not parsed
+        public int Id { get; set; }
+
         private string _Series;
         public string Series {
             get => _Series;
@@ -408,8 +541,11 @@ namespace Formats
 
         public string DateAdded { get; set; }
 
-        public void Write()
+
+        public void WriteMetadata()
         {
+            EXTHHeader.Set(108, "Lignum [https://github.com/sawyersteven/Lignum]");
+
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(this.FilePath, FileMode.Open)))
             {
@@ -436,6 +572,45 @@ namespace Formats
                 writer.Write(new byte[fillerLen]);
             }
         }
+
+        public void WriteContent(string text, byte[][] images)
+        {
+            throw new NotImplementedException();
+
+            MobiHeader.extraDataFlags = 0x0;
+
+            byte[] textData = text.Encode();
+
+            uint l = (uint)textData.Length;
+            List<uint> contentRecords = new List<uint>();
+            while (l > 0)
+            {
+                uint recLen = Math.Min(4096, l);
+                contentRecords.Add(recLen);
+                l -= recLen;
+            }
+
+            // TODO image records
+
+
+            WriteMetadata();
+
+            using (FileStream file = new FileStream(this.FilePath, FileMode.Open))
+            using (BinaryWriter writer = new BinaryWriter(file))
+            {
+                writer.BaseStream.Seek(PDBHeader.records[1], SeekOrigin.Begin);
+
+                writer.Write(textData);
+                // Finish with EOF record
+                writer.Write(new byte[] { 0xe9, 0x8e, 0x0d, 0x0a });
+
+                file.SetLength(writer.BaseStream.Position);
+            }
+
+
+
+        }
+        
         #endregion
 
         public void PrintHeaders()
@@ -668,7 +843,7 @@ PALMDOC:
         public uint inputLanguage;
         public uint outputLanguage;
         public uint formatVersion;
-        public uint imageIndexOffset;
+        public uint firstImageRecord;
         public uint huffRecordOffset;
         public uint huffRecordCount;
         public uint datpRecordOffset;
@@ -680,6 +855,7 @@ PALMDOC:
         public uint drmSize;
         public uint drmFlags;
         public byte[] unknown2;
+        public ushort firstContentRecord;
         public ushort lastContentRecord;
         public byte[] unknown3;
         public uint fcisRecord;
@@ -687,9 +863,10 @@ PALMDOC:
         public uint flisRecord;
         public byte[] unknown5;
         // This only exists if the headerlength is 0xe4 or 0xe8
+        public uint extraDataFlags;
+
         public bool flagMultiByte;
         public uint flagTrailingEntries;
-
         public bool hasDRM;
         public bool hasEXTH;
         public string fullTitle;
@@ -722,7 +899,7 @@ PALMDOC:
             inputLanguage = Utils.BitConverter.ToUInt32(buffer, 0x50);
             outputLanguage = Utils.BitConverter.ToUInt32(buffer, 0x54);
             formatVersion = Utils.BitConverter.ToUInt32(buffer, 0x58);
-            imageIndexOffset = Utils.BitConverter.ToUInt32(buffer, 0x5C);
+            firstImageRecord = Utils.BitConverter.ToUInt32(buffer, 0x5C);
             huffRecordOffset = Utils.BitConverter.ToUInt32(buffer, 0x60);
             huffRecordCount = Utils.BitConverter.ToUInt32(buffer, 0x64);
             datpRecordOffset = Utils.BitConverter.ToUInt32(buffer, 0x68);
@@ -733,7 +910,8 @@ PALMDOC:
             drmCount = Utils.BitConverter.ToUInt32(buffer, 0x9C);
             drmSize = Utils.BitConverter.ToUInt32(buffer, 0xA0);
             drmFlags = Utils.BitConverter.ToUInt32(buffer, 0xA4);
-            unknown2 = buffer.SubArray(0xA8, 0xA);
+            unknown2 = buffer.SubArray(0xA8, 0x8);
+            firstContentRecord = Utils.BitConverter.ToUInt16(buffer, 0xB0);
             lastContentRecord = Utils.BitConverter.ToUInt16(buffer, 0xB2);
             unknown3 = buffer.SubArray(0xB4, 0x4);
             fcisRecord = Utils.BitConverter.ToUInt32(buffer, 0xB8);
@@ -751,14 +929,14 @@ PALMDOC:
             {
                 reader.BaseStream.Seek(offset + 0xe2, SeekOrigin.Begin);
 
-                uint flags = Utils.BitConverter.ToUInt16(reader.ReadBytes(0x2), 0x0);
+                uint extraDataFlags = Utils.BitConverter.ToUInt16(reader.ReadBytes(0x2), 0x0);
                 
-                flagMultiByte = (flags & 0x01) == 1;
-                flags >>= 0x01;
-                while (flags > 0)
+                flagMultiByte = (extraDataFlags & 0x01) == 1;
+                extraDataFlags >>= 0x01;
+                while (extraDataFlags > 0)
                 {
-                    flagTrailingEntries += flags & 0x01;
-                    flags >>= 0x01;
+                    flagTrailingEntries += extraDataFlags & 0x01;
+                    extraDataFlags >>= 0x01;
                 }
             }
         }
@@ -782,7 +960,7 @@ PALMDOC:
             output.AddRange(Utils.BitConverter.GetBytes(inputLanguage));
             output.AddRange(Utils.BitConverter.GetBytes(outputLanguage));
             output.AddRange(Utils.BitConverter.GetBytes(formatVersion));
-            output.AddRange(Utils.BitConverter.GetBytes(imageIndexOffset));
+            output.AddRange(Utils.BitConverter.GetBytes(firstImageRecord));
             output.AddRange(Utils.BitConverter.GetBytes(huffRecordOffset));
             output.AddRange(Utils.BitConverter.GetBytes(huffRecordCount));
             output.AddRange(Utils.BitConverter.GetBytes(datpRecordOffset));
@@ -794,6 +972,7 @@ PALMDOC:
             output.AddRange(Utils.BitConverter.GetBytes(drmSize));
             output.AddRange(Utils.BitConverter.GetBytes(drmFlags));
             output.AddRange(unknown2);
+            output.AddRange(Utils.BitConverter.GetBytes(firstContentRecord));
             output.AddRange(Utils.BitConverter.GetBytes(lastContentRecord));
             output.AddRange(unknown3);
             output.AddRange(Utils.BitConverter.GetBytes(fcisRecord));
@@ -834,7 +1013,7 @@ MOBI:
     inputLanguage: {inputLanguage}
     outputLanguage: {outputLanguage}
     formatVersion: {formatVersion}
-    imageIndexOffset: {imageIndexOffset}
+    imageIndexOffset: {firstImageRecord}
     huffRecordOffset: {huffRecordOffset}
     huffRecordCount: {huffRecordCount}
     datpRecordOffset: {datpRecordOffset}
@@ -844,6 +1023,7 @@ MOBI:
     drmCount: {drmCount}
     drmSize: {drmSize}
     drmFlags: {drmFlags}
+    firstContentRecord: {firstContentRecord}
     lastImageRecord: {lastContentRecord}
     fcisRecord: {fcisRecord}
     flisRecord: {flisRecord}
@@ -856,58 +1036,65 @@ MOBI:
         public long offset;
         public int length;
 
-        public uint identifier;
+        public byte[] identifier;
         public uint recordCount;
 
         public EXTHHeader() { }
 
-        public enum RecordName
+        public static Dictionary<string, uint> RecordNames = new Dictionary<string, uint>()
         {
-            Author = 100,
-            Publisher = 101,
-            Imprint = 102,
-            Description = 103,
-            ISBN = 104,
-            Subject = 105,
-            PublishDate = 106,
-            Review = 107,
-            Contributor = 108,
-            Rights = 109,
-            SubjectCode = 110,
-            Type = 111,
-            Source = 112,
-            ASIN = 113,
-            VersionNumber = 114,
-            IsSample = 115,
-            StartReading = 116,
-            RetailPrice = 118,
-            RetailPriceCurrency = 119,
-            DictShortName = 200,
-            CDEType = 501,
-            UpdatedTitle = 503,
-            ASIN2 = 504
+            {"Author", 100},
+            {"Publisher", 101},
+            {"Imprint", 102},
+            {"Description", 103},
+            {"ISBN", 104},
+            {"Subject", 105},
+            {"PublishDate", 106},
+            {"Review", 107},
+            {"Contributor", 108},
+            {"Rights", 109},
+            {"SubjectCode", 110},
+            {"Type", 111},
+            {"Source", 112},
+            {"ASIN", 113},
+            {"VersionNumber", 114},
+            {"IsSample", 115},
+            {"StartReading", 116},
+            {"RetailPrice", 118},
+            {"RetailPriceCurrency", 119},
+            {"DictShortName", 200},
+            {"CDEType", 501},
+            {"UpdatedTitle", 503},
+            {"ASIN2", 504},
+            {"Language", 524}
+        };
+
+        public void Set(string rec, string val)
+        {
+            if (RecordNames.TryGetValue(rec, out uint key))
+            {
+                this[key] = val.Encode();
+            }
         }
 
-        public void Set(RecordName rec, string val)
+        public void Set(uint rec, string val)
         {
-            this[(uint)rec] = val.Encode();
+            this[rec] = val.Encode();
         }
 
-        public string Get(RecordName rec)
+        public string Get(string rec)
         {
-            if (this.TryGetValue((uint)rec, out byte[] val))
+            byte[] val = new byte[0];
+            if (RecordNames.TryGetValue(rec, out uint key))
             {
-                return val.Decode();
+                this.TryGetValue(key, out val);
             }
-            else
-            {
-                return string.Empty;
-            }
+            return val.Decode();
         }
 
         public string Get(uint rec)
         {
-            if (this.TryGetValue((uint)rec, out byte[] val))
+            if (this.TryGetValue(rec, out byte[] val))
             {
                 return val.Decode();
             }
@@ -924,7 +1111,7 @@ MOBI:
 
             Utils.BitConverter.LittleEndian = false;
 
-            identifier = Utils.BitConverter.ToUInt32(buffer, 0x0);
+            identifier = buffer.SubArray(0x0, 0x4);
             length = (int)Utils.BitConverter.ToUInt32(buffer, 0x4);
             recordCount = Utils.BitConverter.ToUInt32(buffer, 0x8);
 
@@ -946,9 +1133,9 @@ MOBI:
             Utils.BitConverter.LittleEndian = false;
 
             List<byte> output = new List<Byte>();
-            output.AddRange(Utils.BitConverter.GetBytes(identifier));
+            output.AddRange(identifier);
             output.AddRange(Utils.BitConverter.GetBytes((uint)length));
-            output.AddRange(Utils.BitConverter.GetBytes((uint)this.Keys.Count));
+            output.AddRange(Utils.BitConverter.GetBytes((uint)Keys.Count));
             foreach (var kv in this)
             {
                 output.AddRange(Utils.BitConverter.GetBytes(kv.Key)); // recType
@@ -973,7 +1160,7 @@ EXTH HEADER:
     identifier: {identifier}
     recordCount: {recordCount}
             ");
-            foreach (RecordName k in Enum.GetValues(typeof(RecordName))){
+            foreach (uint k in this.Keys){
                 Console.WriteLine($"\t{k}: {Get(k)}");
 
             }

@@ -98,6 +98,21 @@ namespace Utils
 
     class Metadata
     {
+        private static Random RandomNum = new Random();
+        public static int RandomNumber() => RandomNum.Next(1, 999);
+
+        public static int TimeStamp()
+        {
+            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+            return (int)t.TotalSeconds;
+        }
+
+        public static int TimeStamp(int year, int month, int day)
+        {
+            TimeSpan t = new DateTime(year, month, day) - new DateTime(1970, 1, 1);
+            return (int)t.TotalSeconds;
+        }
+
         private static CultureInfo culture = new CultureInfo("en-US");
 
         private static string[] dateFormats = new string[]{ "yyyy", "yyyy-MM", "yyyy-MM-dd" };

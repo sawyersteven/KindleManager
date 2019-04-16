@@ -34,10 +34,10 @@ namespace Books
 
             var c = db.GetCollection<BookEntry>("BOOKS");
 
-            BookEntry entry = new BookEntry();
+            BookEntry entry = new BookEntry() { Format = book.Format };
             entry.Title = book.Title;
             entry.FilePath = book.FilePath;
-            entry.Type = book.Type;
+            entry.Format = book.Format;
             entry.Author = book.Author;
             entry.Series = book.Series;
             entry.SeriesNum = book.SeriesNum;
@@ -127,20 +127,31 @@ namespace Books
 
         public class BookEntry : IBook
         {
-            public int Id { get; set; }
+            public string FilePath { get; set; }
+            public string Format { get; set; }
 
             public string Title { get; set; }
-            public string FilePath { get; set; }
-            public string Type { get; set; }
+            public string Language { get; set; }
+            public ulong ISBN { get; set; }
+
             public string Author { get; set; }
+            public string Contributor { get; set; }
+            public string Publisher { get; set; }
+            public string[] Subject { get; set; }
+            public string Description { get; set; }
+            public string PubDate { get; set; }
+            public string Rights { get; set; }
+
+            public int Id { get; set; }
             public string Series { get; set; }
             public float SeriesNum { get; set; }
-            public string Publisher { get; set; }
-            public string PubDate { get; set; }
-            public ulong ISBN { get; set; }
             public string DateAdded { get; set; }
 
-            public virtual void Write() => throw new NotImplementedException();
+            #region methods
+            public string TextContent() => "";
+            public void WriteMetadata() { }
+            public void WriteContent(string text, byte[][] images) { }
+            #endregion
         }
     }
 }

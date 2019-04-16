@@ -52,7 +52,7 @@ namespace Books.ViewModels
         {
             try
             {
-                this.Book.Write();
+                this.Book.WriteMetadata();
                 App.Database.UpdateBook(Book);
                 CloseDialog();
             }

@@ -12,28 +12,40 @@ namespace Formats
         {
             FilePath = filepath;
 
+            XmlDocument metadataXml = new XmlDocument();
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(metadataXml.NameTable);
+
             using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
             {
-                ZipArchiveEntry origMetadataOpf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
-                if (origMetadataOpf == null) throw new Exception("OPF metadata file not found, epub may be corrupt");
-
-                XmlDocument metadataXml = new XmlDocument();
-                using (Stream s = origMetadataOpf.Open()) { metadataXml.Load(s); }
-
-                XmlNamespaceManager nsmgr = new XmlNamespaceManager(metadataXml.NameTable);
-                nsmgr.AddNamespace("p", metadataXml.DocumentElement.NamespaceURI);
-
-                XmlNode metadataNode = metadataXml.SelectSingleNode("//p:package/p:metadata", nsmgr);
-                nsmgr.AddNamespace("dc", metadataNode.GetNamespaceOfPrefix("dc"));
-                nsmgr.AddNamespace("opf", metadataNode.GetNamespaceOfPrefix("opf"));
-
-                Title = ReadNode(metadataNode, "dc:title", nsmgr);
-                Author = ReadNode(metadataNode, "dc:creator", nsmgr);
-                Publisher = ReadNode(metadataNode, "dc:publisher", nsmgr);
-                PubDate = ReadNode(metadataNode, "dc:date", nsmgr);
-                ulong.TryParse(ReadNode(metadataNode, "dc:identifier[@opf:scheme='ISBN']", nsmgr), out ulong id);
-                ISBN = id;
+                ZipArchiveEntry metadataOpf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
+                if (metadataOpf == null) throw new Exception("OPF metadata file not found, epub may be corrupt");
+                using (Stream s = metadataOpf.Open()) { metadataXml.Load(s); }
             }
+
+            nsmgr.AddNamespace("p", metadataXml.DocumentElement.NamespaceURI);
+
+            XmlNode metadataNode = metadataXml.SelectSingleNode("//p:package/p:metadata", nsmgr);
+            nsmgr.AddNamespace("dc", metadataNode.GetNamespaceOfPrefix("dc"));
+            nsmgr.AddNamespace("opf", metadataNode.GetNamespaceOfPrefix("opf"));
+
+            Title = ReadNode(metadataNode, "dc:title", nsmgr);
+            Language = ReadNode(metadataNode, "dc:language", nsmgr);
+            ulong.TryParse(ReadNode(metadataNode, "dc:identifier[@opf:scheme='ISBN']", nsmgr), out ulong id);
+            ISBN = id;
+
+            Author = ReadNode(metadataNode, "dc:creator", nsmgr);
+            Contributor = ReadNode(metadataNode, "dc:contributor", nsmgr);
+            Publisher = ReadNode(metadataNode, "dc:publisher", nsmgr);
+
+            XmlNodeList subjects = metadataNode.SelectNodes("dc:subject", nsmgr);
+            Subject = new string[subjects.Count];
+            for (int i = 0; i < subjects.Count; i++)
+            {
+                Subject[i] = subjects[i].InnerText;
+            }
+            PubDate = ReadNode(metadataNode, "dc:date", nsmgr);
+            Rights = ReadNode(metadataNode, "dc:rights", nsmgr);
+
         }
 
         /// <summary>
@@ -50,7 +62,7 @@ namespace Formats
             Console.WriteLine($@"
                 Id: {Id}
                 FilePath: {FilePath}
-                Type: {Type}
+                Type: {Format}
                 Title: {Title}
                 Author: {Author}
                 Publisher: {Publisher}
@@ -63,9 +75,8 @@ namespace Formats
         }
 
         #region IBook impl
-        public int Id { get; set; }
         public string FilePath { get; set; }
-        public string Type { get => "EPUB"; }
+        public string Format { get => "EPUB"; }
 
         private string _Title;
         public string Title {
@@ -73,6 +84,25 @@ namespace Formats
             set
             {
                 _Title = value;
+            }
+        }
+
+        private string _Language;
+        public string Language {
+            get => _Language;
+            set
+            {
+                _Language = value;
+            }
+        }
+
+        private ulong _ISBN;
+        public ulong ISBN
+        {
+            get => _ISBN;
+            set
+            {
+                _ISBN = value;
             }
         }
 
@@ -85,12 +115,42 @@ namespace Formats
             }
         }
 
+        private string _Contributor;
+        public string Contributor
+        {
+            get => _Contributor;
+            set
+            {
+                _Contributor = value;
+            }
+        }
+
         private string _Publisher;
         public string Publisher {
             get => _Publisher;
             set
             {
                 _Publisher = value;
+            }
+        }
+
+        private string[] _Subject;
+        public string[] Subject
+        {
+            get => _Subject;
+            set
+            {
+                _Subject = value;
+            }
+        }
+
+        private string _Description;
+        public string Description
+        {
+            get => _Description;
+            set
+            {
+                _Description = value;
             }
         }
 
@@ -104,16 +164,20 @@ namespace Formats
             }
         }
 
-        private ulong _ISBN;
-        public ulong ISBN {
-            get => _ISBN;
+        private string _Rights;
+        public string Rights
+        {
+            get => _Rights;
             set
             {
-                _ISBN = value;
+                _Rights = value;
             }
         }
 
-        // local db only, not parsed when instantiated
+
+        // local db only, not parsed
+        public int Id { get; set; }
+
         private string _Series;
         public string Series {
             get => _Series;
@@ -134,7 +198,23 @@ namespace Formats
 
         public string DateAdded { get; set; }
 
-        public void Write()
+        public string TextContent()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteMetadata()
+        {
+            WriteOPF();
+            WriteTOC();
+        }
+
+        public void WriteContent(string text, byte[][] images)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteOPF()
         {
             using (ZipArchive zip = ZipFile.Open(FilePath, ZipArchiveMode.Update))
             {
@@ -177,32 +257,36 @@ namespace Formats
                 {
                     writer.Write(OpfDocument.OuterXml);
                 }
-
-                // toc.ncx is not required in Epub 3 so it can be safely ignored if it doesn't exist
+            }
+        }
+        public void WriteTOC() {
+            using (ZipArchive zip = ZipFile.Open(FilePath, ZipArchiveMode.Update))
+            {
                 ZipArchiveEntry origTocNcx = zip.Entries.FirstOrDefault(x => x.Name == "toc.ncx");
-                if (origTocNcx == null) return;
-
                 XmlDocument tocXml = new XmlDocument();
-                using (Stream s = origTocNcx.Open()) { tocXml.Load(s); }
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(tocXml.NameTable);
 
-                nsmgr.AddNamespace("n", tocXml.NamespaceURI);
+                if (origTocNcx == null)
+                {
+
+                } else {
+                    using (Stream s = origTocNcx.Open()) { tocXml.Load(s); }
+                    nsmgr.AddNamespace("n", tocXml.NamespaceURI);
+                }
 
                 try
                 {
                     tocXml.SelectSingleNode("//n:ncx/n:docTitle/n:text", nsmgr).InnerText = Author;
+                    origTocNcx.Delete();
+                    ZipArchiveEntry newTocNcx = zip.CreateEntry(origTocNcx.FullName);
+                    using (StreamWriter writer = new StreamWriter(newTocNcx.Open()))
+                    {
+                        writer.Write(tocXml.OuterXml);
+                    }
                 }
-                catch
-                {
-                    // Just bail if we can't write to the node.                   
+                catch{
                     return;
                 }
-                origTocNcx.Delete();
-                ZipArchiveEntry newTocNcx = zip.CreateEntry(origTocNcx.FullName);
-                using (StreamWriter writer = new StreamWriter(newTocNcx.Open()))
-                {
-                    writer.Write(tocXml.OuterXml);
-                }
-
             }
         }
         #endregion
