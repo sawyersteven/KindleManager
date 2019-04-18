@@ -99,8 +99,10 @@ namespace Utils
     class Metadata
     {
         private static Random RandomNum = new Random();
-        public static int RandomNumber() => RandomNum.Next(1, 999);
-
+        public static int RandomNumber(int digits = 3) {
+            int upper = digits >= 10 ? int.MaxValue : (int)(Math.Pow(10, digits) - 1);
+            return RandomNum.Next(1, upper);
+        }
         public static int TimeStamp()
         {
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);

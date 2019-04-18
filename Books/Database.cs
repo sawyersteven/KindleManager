@@ -124,7 +124,6 @@ namespace Books
         }
 
 
-
         public class BookEntry : IBook
         {
             public string FilePath { get; set; }
@@ -149,6 +148,7 @@ namespace Books
 
             #region methods
             public string TextContent() => "";
+            public byte[][] Images() => new byte[0][];
             public void WriteMetadata() { }
             public void WriteContent(string text, byte[][] images) { }
             #endregion

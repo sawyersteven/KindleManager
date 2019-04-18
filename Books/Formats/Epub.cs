@@ -203,18 +203,18 @@ namespace Formats
             throw new NotImplementedException();
         }
 
+        public byte[][] Images()
+        {
+            throw new NotImplementedException();
+        }
+
         public void WriteMetadata()
         {
             WriteOPF();
             WriteTOC();
         }
 
-        public void WriteContent(string text, byte[][] images)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteOPF()
+        private void WriteOPF()
         {
             using (ZipArchive zip = ZipFile.Open(FilePath, ZipArchiveMode.Update))
             {
@@ -259,7 +259,7 @@ namespace Formats
                 }
             }
         }
-        public void WriteTOC() {
+        private void WriteTOC() {
             using (ZipArchive zip = ZipFile.Open(FilePath, ZipArchiveMode.Update))
             {
                 ZipArchiveEntry origTocNcx = zip.Entries.FirstOrDefault(x => x.Name == "toc.ncx");

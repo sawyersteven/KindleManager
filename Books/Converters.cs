@@ -29,6 +29,7 @@ namespace Converters
             recipient.Publisher = donor.Publisher;
             recipient.Subject = donor.Subject;
             recipient.Description = donor.Description;
+
             recipient.PubDate = donor.PubDate;
             recipient.Rights = donor.Rights;
 
@@ -38,7 +39,7 @@ namespace Converters
         }
 
 
-        public Mobi ToMobi(IBook input, string filePath = "")
+        public static void ToMobi(IBook input, string filePath = "")
         {
             if (filePath == "")
             {
@@ -52,12 +53,10 @@ namespace Converters
             filePath = System.IO.Path.ChangeExtension(filePath, ".mobi");
 
 
-            Mobi mobi = new Mobi();
-            Merge(input, mobi);
-            mobi.FilePath = filePath;
-
-
-            return mobi;
+            MobiBuilder builder = new MobiBuilder(input);
+            builder.FilePath = filePath;
+            builder.Build(false);
+            return;
         }
     }
 }

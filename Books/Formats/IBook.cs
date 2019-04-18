@@ -24,10 +24,9 @@
         string DateAdded { get; set; }
 
         #region methods
-        string TextContent();
-
+        string TextContent(); // Complete text content in *one* html string
+        byte[][] Images();
         void WriteMetadata(); // Everything except text, images, css, etc.
-        void WriteContent(string title, byte[][] images);
         #endregion
     }
 }
