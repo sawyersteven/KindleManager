@@ -149,6 +149,7 @@
     </Compile>
     <Compile Include="Formats\IBook.cs" />
     <Compile Include="Formats\Epub.cs" />
+    <Compile Include="Formats\MobiBuilder.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />

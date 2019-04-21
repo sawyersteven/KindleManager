@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using ExtensionMethods;
 using HtmlAgilityPack;
-using System.Linq;
 
 namespace Formats
 {
@@ -304,7 +303,8 @@ namespace Formats
         public string Format { get => "MOBI"; }
 
         private string _Title;
-        public string Title {
+        public string Title
+        {
             get => _Title;
             set
             {
@@ -339,7 +339,8 @@ namespace Formats
         }
 
         private string _Author;
-        public string Author {
+        public string Author
+        {
             get => _Author;
             set
             {
@@ -359,7 +360,8 @@ namespace Formats
         }
 
         private string _Publisher;
-        public string Publisher {
+        public string Publisher
+        {
             get => _Publisher;
             set
             {
@@ -389,7 +391,8 @@ namespace Formats
         }
 
         private string _PubDate;
-        public string PubDate {
+        public string PubDate
+        {
             get => _PubDate;
             set
             {
@@ -413,7 +416,8 @@ namespace Formats
         public int Id { get; set; }
 
         private string _Series;
-        public string Series {
+        public string Series
+        {
             get => _Series;
             set
             {
@@ -422,7 +426,8 @@ namespace Formats
         }
 
         private float _SeriesNum;
-        public float SeriesNum {
+        public float SeriesNum
+        {
             get => _SeriesNum;
             set
             {
@@ -438,6 +443,7 @@ namespace Formats
         /// </summary>
         /// <returns></returns>
         public string TextContent()
+            // TODO links are still messed up.
         {
             List<byte> bytes = new List<byte>();
             using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
@@ -526,202 +532,6 @@ namespace Formats
             PalmDOCHeader.Print();
             MobiHeader.Print();
             EXTHHeader.Print();
-        }
-    }
-
-    class MobiBuilder
-    {
-
-        public MobiHeaders.PDBHeader PDBHeader;
-        public MobiHeaders.PalmDOCHeader PalmDOCHeader;
-        public MobiHeaders.MobiHeader MobiHeader;
-        public MobiHeaders.EXTHHeader EXTHHeader;
-
-        public string FilePath;
-
-        private readonly byte[] FLIS = new byte[] { 0x46, 0x4C, 0x49, 0x53, 0x00, 0x00, 0x00, 0x08, 0x00, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF };
-        private readonly byte[] FCIS = new byte[] { 0x46, 0x43, 0x49, 0x53, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x59, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x08, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
-        private readonly byte[] EOF = new byte[] { 0xe9, 0x8e, 0x0d, 0x0a };
-
-        public readonly IBook Donor;
-
-        /// <summary>
-        /// Constructor for MOBI with as much generic data as possible filled in
-        /// </summary>
-        public MobiBuilder(IBook donor)
-        {
-            Donor = donor;
-            this.PDBHeader = new MobiHeaders.PDBHeader();
-            this.PalmDOCHeader = new MobiHeaders.PalmDOCHeader();
-            this.MobiHeader = new MobiHeaders.MobiHeader();
-            this.EXTHHeader = new MobiHeaders.EXTHHeader();
-
-            PDBHeader.uniqueIDseed = (uint)Utils.Metadata.RandomNumber();
-            PDBHeader.createdDate = (uint)Utils.Metadata.TimeStamp();
-            PDBHeader.modifiedDate = PDBHeader.createdDate;
-            PDBHeader.type = "BOOK";
-            PDBHeader.creator = "MOBI";
-            PDBHeader.records = new uint[2];
-
-            PalmDOCHeader.compression = 1;
-            PalmDOCHeader.recordSize = 4096;
-            PalmDOCHeader.encryptionType = 0;
-
-            MobiHeader.unknown1 = new byte[0x24];
-            MobiHeader.unknown2 = new byte[0x8];
-            MobiHeader.unknown3 = new byte[0x4];
-            MobiHeader.unknown4 = new byte[0x4];
-            MobiHeader.unknown5 = new byte[0x4];
-
-            MobiHeader.identifier = "MOBI".Encode();
-            MobiHeader.headerLength = 232;
-            MobiHeader.mobiType = 5;
-            MobiHeader.textEncoding = 65001;
-            MobiHeader.uid = (uint)Utils.Metadata.RandomNumber(10); // Is there a proper way to do this?
-            MobiHeader.indexes = new byte[0x28];
-            for (var i = 0; i < MobiHeader.indexes.Length; i++)
-            {
-                MobiHeader.indexes[i] = 0xFF;
-            }
-            MobiHeader.language = 9;
-            MobiHeader.exthFlags = 0x40;
-            
-            MobiHeader.drmOffset = 0xFFFFFFFF;
-
-            MobiHeader.extraDataFlags = 0x0;
-            MobiHeader.firstContentRecord = 1;
-            MobiHeader.indxRecordOffset = 0xFFFFFFFF;
-
-            EXTHHeader.identifier = "EXTH".Encode();
-
-            // Merge donor properties
-
-            MobiHeader.fullTitle = Donor.Title;
-            MobiHeader.fullTitleLength = (uint)Donor.Title.Length;
-            PDBHeader.title = Donor.Title.Length > 0x20 ? Donor.Title.Substring(0x0, 0x20) : Donor.Title + new byte[0x20 - Donor.Title.Length].Decode();
-            PDBHeader.title = PDBHeader.title.Replace(' ', '_');
-            EXTHHeader.Set(503, Donor.Title);
-
-            EXTHHeader.Set("Language", Donor.Language);
-
-            EXTHHeader.Set("ISBN", Donor.ISBN.ToString());
-
-            EXTHHeader.Set("Author", Donor.Author);
-
-            EXTHHeader.Set("Contributor", "Lignum []");
-
-            EXTHHeader.Set("Publisher", Donor.Publisher);
-
-            EXTHHeader.Set("Subject", string.Join(", ", Donor.Subject));
-
-            EXTHHeader.Set("Description", Donor.Description);
-
-            EXTHHeader.Set("PublishDate", Donor.PubDate);
-
-            EXTHHeader.Set("Rights", Donor.Rights);
-
-            EXTHHeader.Set("Source", "Lignum []");
-
-            EXTHHeader.Set("CDEType", "EBOK");
-
-            EXTHHeader.Set("Creator", "LGNM");
-
-            EXTHHeader.Set("StartReading", new byte[] { 0, 0, 0, 0 }.Decode());
-        }
-
-        /// <summary>
-        /// 
-        /// Because of the way Palm made different headers contain information
-        /// about each other they can't be constructed in order and we have to
-        /// jump around a bit.
-        /// </summary>
-        public void Build(bool writeToDisk)
-        {
-            byte[] textData = Donor.TextContent().Encode();
-            PalmDOCHeader.textLength = (uint)textData.Length;
-
-            // Store as length, offsets will be computed later
-            List<uint> records = new List<uint>();
-            records.Add(0); // Come back later and set to len of PDBHeader
-            records.Add(10000);
-
-            // Add text records
-            uint l = (uint)textData.Length;
-            while (l > 0)
-            {
-                uint recLen = Math.Min(4096, l);
-                records.Add(recLen);
-                l -= recLen;
-                PalmDOCHeader.textRecordCount++;
-            }
-            MobiHeader.firstImageRecord = MobiHeader.firstNonBookIndex = (uint)records.Count;
-
-            // Add image records
-            byte[][] Images = Donor.Images();
-            foreach (byte[] img in Images)
-            {
-                records.Add((uint)img.Length);
-            }
-            MobiHeader.lastContentRecord = (ushort)records.Count;
-
-            records.Add(0x24); // flis
-            MobiHeader.fcisRecord = (uint)records.Count;
-            records.Add(0x84); // fcis
-            MobiHeader.flisRecord = (uint)records.Count;
-
-            // Set length-based records
-            PDBHeader.records = new uint[records.Count];
-
-            List<byte> headerDump = new List<byte>();
-            headerDump.AddRange(PDBHeader.Dump());
-            PDBHeader.records[0] = (uint)headerDump.Count;
-            headerDump.AddRange(PalmDOCHeader.Dump());
-            headerDump.AddRange(MobiHeader.Dump());
-            headerDump.AddRange(EXTHHeader.Dump());
-
-            PDBHeader.records[1] = records[1];
-
-            uint runningTotal = PDBHeader.records[1];
-            for (int i = 2; i < records.Count; i++)
-            {
-                PDBHeader.records[i] = records[i] + runningTotal;
-                runningTotal += records[i];
-            }
-
-            MobiHeader.offset = PDBHeader.records[0];
-            MobiHeader.fullTitleOffset = (uint)headerDump.Count - 0x10 + 1;
-
-            EXTHHeader.recordCount = (uint)EXTHHeader.Count;
-
-            // TODO wtf is PalmDOCHeader.textLength?
-
-            using (FileStream file = new FileStream(this.FilePath, FileMode.CreateNew))
-            using (BinaryWriter writer = new BinaryWriter(file))
-            {
-                headerDump = new List<byte>();
-                headerDump.AddRange(PDBHeader.Dump());
-                headerDump.AddRange(PalmDOCHeader.Dump());
-                headerDump.AddRange(MobiHeader.Dump());
-                headerDump.AddRange(EXTHHeader.Dump());
-
-                writer.Write(headerDump.ToArray());
-                writer.Write(Donor.Title);
-
-                writer.BaseStream.Seek(PDBHeader.records[1], SeekOrigin.Begin);
-
-                writer.Write(textData);
-
-                foreach (byte[] img in Images)
-                {
-                    writer.Write(img);
-                }
-
-                writer.Write(FLIS);
-                writer.Write(FCIS);
-                writer.Write(EOF);
-
-                file.SetLength(writer.BaseStream.Position);
-            }
         }
     }
 }
@@ -1115,7 +925,7 @@ PALMDOC:
         {
             Console.WriteLine($@"
 MOBI:
-    identifier: {identifier}
+    identifier: {identifier.Decode()}
     headerLength: {headerLength}
     mobiType: {mobiType}
     textEncoding: {textEncoding}
@@ -1281,4 +1091,5 @@ EXTH HEADER:
         }
 
     }
+
 }

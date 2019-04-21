@@ -105,7 +105,7 @@ namespace Utils
         }
         public static int TimeStamp()
         {
-            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+            TimeSpan t = DateTime.UtcNow - new DateTime(1904, 1, 1);
             return (int)t.TotalSeconds;
         }
 

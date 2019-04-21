@@ -41,6 +41,15 @@ namespace ExtensionMethods
             return output;
         }
 
+        /// <summary>
+        /// Appends array onto end of this
+        /// Returns an array of length (this.Length + appendable.Length)
+        /// Example:
+        ///     int[] arr = new int[] { 0, 1, 2, 3, 4, 5 };
+        ///     arr = arr.Append(3, new int[] { 100, 101, 102 });
+        ///     arr == [0, 1, 2, 3, 4, 5, 100, 101, 102};
+        /// </summary>
+        /// <returns></returns>
         public static T[] Append<T>(this T[] array, T[] appendable)
         {
             T[] output = new T[array.Length + appendable.Length];
