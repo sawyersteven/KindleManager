@@ -186,28 +186,41 @@ namespace Formats
         /// record in PDBHeader starting with firstImageRecord as 1. These are written to disk as 123456.jpg.
         /// 
         /// </summary>
-        /// <param name="html"></param>
-        /// <returns></returns>
         private string fixLinks(string html)
         {
+            string targetNode = "<a id=\"filepos{0}\"/>";
+            byte[] htmlBytes = html.Encode();
+
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            byte[] htmlBytes = html.Encode();
+            Console.WriteLine(htmlBytes.SubArray(1745, 200).Decode());
+            //
 
-            // tuple(location of insertion point in html, fileposition id)
-            // List<ValueTuple<int, string>> targetNodes = new List<ValueTuple<int, string>>();
-            string targetNode = "<a id=\"filepos{0}\"/>";
-            int bytesAdded = 0;
+            List<string> filePositions = new List<string>();
+
             foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
             {
-                string filePos = a.GetAttributeValue("filepos", string.Empty);
-                if (filePos == string.Empty) continue;
+                string filePos = a.GetAttributeValue("filepos", "");
+                if (filePos == "") continue;
+                filePositions.Add(filePos);
+            }
 
-                int p = nearestElementPos(htmlBytes, int.Parse(filePos));
-                byte[] targetBytes = string.Format(targetNode, filePos).Encode();
-                htmlBytes = htmlBytes.InsertRange(p + bytesAdded, targetBytes);
-                bytesAdded += targetBytes.Length;
+            filePositions.Sort();
+
+            int bytesAdded = 0;
+            foreach (string offset in filePositions)
+            {
+                int offs;
+                if (!int.TryParse(offset, out offs)) continue;
+
+                byte[] tn = string.Format(targetNode, offset).Encode();
+
+                int insertPos = nearestElementPos(htmlBytes, offs + bytesAdded);
+
+                htmlBytes = htmlBytes.InsertRange(insertPos, tn);
+
+                bytesAdded += tn.Length;
             }
 
             html = htmlBytes.Decode();
@@ -238,13 +251,6 @@ namespace Formats
             return doc.DocumentNode.OuterHtml;
         }
 
-        /// <summary>
-        /// Finds closest point in text where an html element begins or ends.
-        /// Uses byte[] rather than string because Palm hates programmers.
-        /// Example:
-        /// <blockquote font-size="4"></blockquote>
-        ///                           ^ This position
-        /// </summary>
         private int nearestElementPos(byte[] html, int search)
         {
             if (search > html.Length) return -1;
@@ -255,7 +261,7 @@ namespace Formats
                 search--;
             }
 
-            return search;
+            return search - 1;
         }
 
         /// <summary>
@@ -470,7 +476,6 @@ namespace Formats
                 default:
                     throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
             };
-
             return fixLinks(text);
         }
 
