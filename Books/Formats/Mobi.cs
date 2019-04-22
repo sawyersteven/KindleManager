@@ -183,7 +183,7 @@ namespace Formats
         /// Then we go back to the un-decoded bytes and insert a new node with the target id to make things easier.
         /// 
         /// Images are easier. An image will have a recindex=123456 attribute instead of src. This points to the image
-        /// record in PDBHeader starting with firstImageRecord as 1. These are written to disk as 123456.jpg.
+        /// record in PDBHeader starting with firstImageRecord as 1.
         /// 
         /// </summary>
         private string fixLinks(string html)
@@ -193,9 +193,6 @@ namespace Formats
 
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
-
-            Console.WriteLine(htmlBytes.SubArray(1745, 200).Decode());
-            //
 
             List<string> filePositions = new List<string>();
 
