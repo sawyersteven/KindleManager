@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using ExtensionMethods;
 using System.IO;
+using HtmlAgilityPack;
 
 namespace Formats
 {
@@ -62,7 +63,9 @@ namespace Formats
                 throw new ArgumentException("Input book cannot be null");
             }
 
-            string decodedText = donor.TextContent();
+            string decodedText = FixImageRecIndexes(donor.TextContent());
+
+
             byte[] textBytes = decodedText.Encode();
 
             List<byte[]> textRecords = new List<byte[]>();
@@ -103,10 +106,7 @@ namespace Formats
                 {
                     writer.Write(record);
                 }
-
-
             }
-
         }
 
         private static byte[] PDBHeader(IBook donor, byte[] headersRecord, byte[][] dataRecords)
@@ -248,6 +248,21 @@ namespace Formats
             header.AddRange(new byte[header.Count % 4]);                                // Pad to next 4-bytes
 
             return header.ToArray();
+        }
+
+        private static string FixImageRecIndexes(string html)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            foreach (HtmlNode img in doc.DocumentNode.SelectNodes("//img"))
+            {
+                string src = img.Attributes["src"].Value;
+                if (src != null)
+                {
+                    img.SetAttributeValue("recindex", src);
+                }
+            }
+            return doc.DocumentNode.OuterHtml;
         }
 
     }
