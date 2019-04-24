@@ -1,9 +1,36 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ExtensionMethods
 {
+    public static class BinaryReaderExtensions
+    {
+        /// <summary>
+        /// Reads all bytes into byte array from BinaryReader
+        /// Use to consume all bytes from reader because ReadBytes(int.MaxSize) will
+        ///     throw an OutOfMemory exception.
+        /// </summary>
+        public static byte[] ReadAllBytes(this BinaryReader reader)
+        {
+            const int chunkSize = 4096;
+
+            List<byte> output = new List<byte>();
+
+            byte[] chunk = new byte[chunkSize];
+
+            while (reader.Read(chunk, 0, chunkSize) != 0)
+            {
+                output.AddRange(chunk);
+            }
+
+            return output.ToArray();
+        }
+
+
+    }
+
     public static class ArrayExtensions
     {
         /// <summary>
