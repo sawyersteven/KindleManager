@@ -15,18 +15,18 @@ namespace Utils
         public static int VarLengthInt(byte[] buffer, out int c)
         {
             int varint = 0;
-            int shift = 0;
-            for (int i = buffer.Length - 1; i >= buffer.Length - 4; i--)
+            c = 0;
+            byte b;
+            for (int i = 0; i < 4; i++)
             {
-                byte b = buffer[i];
-                varint |= (b & 0x7f) << shift;
+                b = buffer[i];
+                c++;
+                varint = (varint << 7) | (b & 0x7f);
                 if ((b & 0x80) > 0)
                 {
                     break;
                 }
-                shift += 7;
             }
-            c = (shift / 7) + 1;
             return varint;
         }
 
