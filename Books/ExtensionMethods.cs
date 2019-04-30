@@ -2,9 +2,23 @@
 using System.Text;
 using System.Collections.Generic;
 using System.IO;
+using HtmlAgilityPack;
 
 namespace ExtensionMethods
 {
+    public static class HtmlNodeExtentions
+    {
+        /// <summary>
+        /// Gets position of node as of offset into the encoded bytes of the html document
+        /// </summary>
+        public static int BytePosition(this HtmlNode node)
+        {
+            return node.OwnerDocument.DocumentNode.OuterHtml.Substring(0, node.StreamPosition).Encode().Length;
+        }
+
+    }
+
+
     public static class BinaryReaderExtensions
     {
         /// <summary>
@@ -27,8 +41,6 @@ namespace ExtensionMethods
 
             return output.ToArray();
         }
-
-
     }
 
     public static class ArrayExtensions
