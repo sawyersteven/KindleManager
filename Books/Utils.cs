@@ -1,11 +1,55 @@
 ﻿using System;
 using ExtensionMethods;
 using System.Globalization;
-using System.Collections.Generic;
-using System.IO;
 
 namespace Utils
 {
+    class Mobi
+    {
+        /// <summary>
+        /// Parse backward-encoded Mobipocket variable-width int
+        /// Retuns int with optional out param for number of bytes used to create int
+        /// </summary>
+        /// <param name="buffer"> At least four bytes read from end of text record</param>
+        /// <returns></returns>
+        public static int VarLengthInt(byte[] buffer, out int c)
+        {
+            int varint = 0;
+            int shift = 0;
+            for (int i = buffer.Length - 1; i >= buffer.Length - 4; i--)
+            {
+                byte b = buffer[i];
+                varint |= (b & 0x7f) << shift;
+                if ((b & 0x80) > 0)
+                {
+                    break;
+                }
+                shift += 7;
+            }
+            c = (shift / 7) + 1;
+            return varint;
+        }
+
+        public static int VarLengthInt(byte[] buffer)
+        {
+            return VarLengthInt(buffer, out int _);
+        }
+
+        public static int CountBits(byte b)
+        {
+            int count = 0;
+            while (b > 0)
+            {
+                if ((b & 0x01) == 0x01)
+                {
+                    count++;
+                }
+                b >>= 1;
+            }
+            return count;
+        }
+    }
+
     class PalmDoc
     {
         /// <summary>
@@ -135,6 +179,10 @@ namespace Utils
         /// </summary>
         public static string GetDate(string date)
         {
+            if (date == "")
+            {
+                return DateTime.UtcNow.ToString("yyyy-MM-dd");
+            }
             return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("yyyy-MM-dd");
         }
     }

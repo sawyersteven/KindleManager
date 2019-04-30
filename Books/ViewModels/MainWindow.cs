@@ -56,7 +56,7 @@ namespace Books.ViewModels
                 switch (Path.GetExtension(dlg.FileName))
                 {
                     case ".mobi":
-                        importBook = new Formats.Mobi(dlg.FileName);
+                        importBook = new Formats.Mobi.Book(dlg.FileName);
                         break;
                     case ".epub":
                         importBook = new Formats.Epub(dlg.FileName);
@@ -120,7 +120,7 @@ namespace Books.ViewModels
                 switch (SelectedTableRow.Format)
                 {
                     case "MOBI":
-                        book = new Formats.Mobi(SelectedTableRow.FilePath);
+                        book = new Formats.Mobi.Book(SelectedTableRow.FilePath);
                         break;
                     case "EPUB":
                         book = new Formats.Epub(SelectedTableRow.FilePath);

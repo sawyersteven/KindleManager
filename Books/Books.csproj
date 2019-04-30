@@ -138,6 +138,7 @@
     </ApplicationDefinition>
     <Compile Include="Converters.cs" />
     <Compile Include="Database.cs" />
+    <Compile Include="debugging.cs" />
     <Compile Include="Dialogs\ConfirmRemoveBook.xaml.cs">
       <DependentUpon>ConfirmRemoveBook.xaml</DependentUpon>
     </Compile>
@@ -149,7 +150,12 @@
     </Compile>
     <Compile Include="Formats\IBook.cs" />
     <Compile Include="Formats\Epub.cs" />
-    <Compile Include="Formats\MobiBuilder.cs" />
+    <Compile Include="Formats\Mobi\Headers\EXTHHeader.cs" />
+    <Compile Include="Formats\Mobi\Records\INDX.cs" />
+    <Compile Include="Formats\Mobi\MobiBuilder.cs" />
+    <Compile Include="Formats\Mobi\Headers\MobiHeader.cs" />
+    <Compile Include="Formats\Mobi\Headers\PalmDOCHeader.cs" />
+    <Compile Include="Formats\Mobi\Headers\PDBHeader.cs" />
     <Compile Include="Formats\Resources.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ViewModels\ErrorDialog.cs" />
@@ -179,7 +185,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Formats\Mobi.cs" />
+    <Compile Include="Formats\Mobi\Mobi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using ExtensionMethods;
 using System.IO;
 using HtmlAgilityPack;
+using System.Linq;
 
+
+// TODO: this works well enough but is a mess
 namespace Formats
 {
 
@@ -63,8 +66,14 @@ namespace Formats
                 throw new ArgumentException("Input book cannot be null");
             }
 
-            string decodedText = FixImageRecIndexes(donor.TextContent());
+            HtmlDocument html = new HtmlDocument();
+            html.LoadHtml(donor.TextContent());
 
+            FixImageRecIndexes(html);
+            //StripStyle(html);
+            (string, int)[] tocData = FixLinks(html, true);
+
+            string decodedText = html.DocumentNode.OuterHtml;
 
             byte[] textBytes = decodedText.Encode();
 
@@ -78,16 +87,19 @@ namespace Formats
 
             byte[][] imageRecords = donor.Images();
 
+            byte[][] indxRecords = buildIndxRecords(tocData);
+
             // Build headers backward to know lengths
             byte[] exthheader = EXTHHeader(donor);
-            byte[] mobiheader = MobiHeader(donor, (uint)textRecords.Count, (uint)imageRecords.Length, (uint)exthheader.Length);
-            byte[] palmdocheader = PalmDOCHeader((uint)decodedText.Length, (ushort)textRecords.Count);
+            byte[] mobiheader = MobiHeader(donor, (uint)textRecords.Count, (uint)imageRecords.Length, (uint)indxRecords.Length, (uint)exthheader.Length);
+            byte[] palmdocheader = PalmDOCHeader((uint)textBytes.Length, (ushort)textRecords.Count);
             byte[] headersRecord = palmdocheader.Append(mobiheader.Append(exthheader));
 
 
             List<byte[]> dataRecords = new List<byte[]>();
 
             dataRecords.AddRange(textRecords);
+            dataRecords.AddRange(indxRecords);
             dataRecords.AddRange(imageRecords);
 
             dataRecords.Add(FLISRecord);
@@ -101,12 +113,56 @@ namespace Formats
             {
                 writer.Write(pdbheader);
                 writer.Write(headersRecord);
-                writer.BaseStream.Seek(postHeaderPadding, SeekOrigin.Current);
+                writer.Write(donor.Title.Encode());
+                writer.BaseStream.Seek(postHeaderPadding - donor.Title.Length, SeekOrigin.Current);
                 foreach (byte[] record in dataRecords)
                 {
                     writer.Write(record);
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Makes INDX records
+        /// https://wiki.mobileread.com/wiki/MOBI#Index_meta_record
+        /// 
+        /// Makes three records:
+        ///     1: INDX record with TAGX
+        ///     2: INDX record with logical toc numbers
+        ///     3: Encoded text records with logical toc names
+        /// </summary>
+        /// <param name="toc">(string, int) of toc's (name, filepos)</param>
+        /// <returns></returns>
+        private static byte[][] buildIndxRecords((string, int)[] toc)
+        {
+            Utils.BitConverter.LittleEndian = false;
+
+            List<byte[]> records = new List<byte[]>();
+
+            List<byte> rec = new List<byte>();
+
+            rec.AddRange("INDX".Encode());
+            rec.AddRange(Utils.BitConverter.GetBytes((uint)192));
+            rec.AddRange(Utils.BitConverter.GetBytes((uint)1));
+            rec.AddRange(nullFour);
+
+            rec.AddRange(nullFour);
+            rec.AddRange(Utils.BitConverter.GetBytes((uint)232)); // change, idxt offset
+            rec.AddRange(Utils.BitConverter.GetBytes((uint)1));
+            rec.AddRange(Utils.BitConverter.GetBytes((uint)65001));
+
+            rec.AddRange(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
+            rec.AddRange(Utils.BitConverter.GetBytes(toc.Length));
+            rec.AddRange(nullFour);
+            rec.AddRange(nullFour);
+
+            rec.AddRange(new byte[192 - rec.Count]);
+
+            rec.AddRange("TAGX".Encode());
+
+
+            return records.ToArray();
         }
 
         private static byte[] PDBHeader(IBook donor, byte[] headersRecord, byte[][] dataRecords)
@@ -133,7 +189,7 @@ namespace Formats
             header.AddRange("MOBI".Encode());                               // Creator
             header.AddRange(Utils.BitConverter.GetBytes(Utils.Metadata.RandomNumber())); // Unique id seed
             header.AddRange(nullFour);                                      // Next record list id
-            header.AddRange(Utils.BitConverter.GetBytes((ushort)(dataRecords.Length + 1)));   // Record count
+            header.AddRange(Utils.BitConverter.GetBytes((ushort)(dataRecords.Length)));   // Record count
 
             // Mobi header start                                            // Record offsets
             header.AddRange(Utils.BitConverter.GetBytes(pdbLen));
@@ -168,7 +224,7 @@ namespace Formats
             return header.ToArray();
         }
 
-        private static byte[] MobiHeader(IBook donor, uint textRecordCount, uint imageRecordCount, uint exthLength)
+        private static byte[] MobiHeader(IBook donor, uint textRecordCount, uint indxRecordCount, uint imageRecordCount, uint exthLength)
         {
             Utils.BitConverter.LittleEndian = false;
             List<byte> header = new List<byte>();
@@ -194,7 +250,7 @@ namespace Formats
             header.AddRange(Utils.BitConverter.GetBytes((uint)0x6));                // Input language
             header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // Output language
             header.AddRange(Utils.BitConverter.GetBytes((uint)0x6));                // Minimum version
-            header.AddRange(Utils.BitConverter.GetBytes(textRecordCount + 1));      // First image index
+            header.AddRange(Utils.BitConverter.GetBytes(textRecordCount + indxRecordCount + 1));      // First image index
 
             header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // Huffman record count
             header.AddRange(nullFour);                                              // Huffman table offset
@@ -220,7 +276,7 @@ namespace Formats
 
             uint addRecord(List<byte> records, uint type, string val)
             {
-                if (val == "") return 0;
+                if (val == "" || val == null) return 0;
                 records.AddRange(Utils.BitConverter.GetBytes(type));
                 records.AddRange(Utils.BitConverter.GetBytes((uint)val.Length + 8));
                 records.AddRange(val.Encode());
@@ -250,11 +306,14 @@ namespace Formats
             return header.ToArray();
         }
 
-        private static string FixImageRecIndexes(string html)
+        /// <summary>
+        /// Changes img src to recindex
+        /// </summary>
+        private static void FixImageRecIndexes(HtmlDocument html)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            foreach (HtmlNode img in doc.DocumentNode.SelectNodes("//img"))
+            HtmlNodeCollection imgs = html.DocumentNode.SelectNodes("//img");
+            if (imgs == null) return;
+            foreach (HtmlNode img in imgs)
             {
                 string src = img.Attributes["src"].Value;
                 if (src != null)
@@ -262,8 +321,99 @@ namespace Formats
                     img.SetAttributeValue("recindex", src);
                 }
             }
-            return doc.DocumentNode.OuterHtml;
         }
 
+        /// <summary>
+        /// Changes a href to filepos and adds TOC to end of document
+        /// </summary>
+        private static (string, int)[] FixLinks(HtmlDocument html, bool addTOC)
+        {
+            HtmlNode tocReference;
+
+            if (addTOC && html.DocumentNode.SelectSingleNode("//html/head/guide/reference[@type='toc']") == null)
+            {
+                HtmlNode guide = HtmlNode.CreateNode("<guide></guide>");
+                tocReference = HtmlNode.CreateNode("<reference title='Table of Contents' type='toc' filepos='0000000000'/>");
+                HtmlNode head = html.DocumentNode.SelectSingleNode("//html/head");
+                if (head == null)
+                {
+                    throw new Exception("Unable to find <head> element in html");
+                }
+
+                guide.ChildNodes.Append(tocReference);
+                head.ChildNodes.Prepend(guide);
+            };
+
+            // Give all anchors filepos property then reload html to get correct streampositions
+            HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
+            if (anchors == null) return new (string, int)[0];
+            foreach (HtmlNode a in anchors)
+            {
+                if (a.Attributes["href"] != null)
+                {
+                    a.SetAttributeValue("filepos", 0.ToString("D10"));
+                }
+            }
+            html.LoadHtml(html.DocumentNode.OuterHtml);
+
+            // Get all anchors again and match them to a targetnode
+            anchors = html.DocumentNode.SelectNodes("//a");
+            if (anchors == null) return new (string, int)[0];
+            List<(string, HtmlNode)> targetNodes = new List<(string, HtmlNode)>();
+            foreach (HtmlNode a in anchors)
+            {
+                HtmlAttribute href = a.Attributes["href"];
+                if (href == null) continue;
+                HtmlNode target = html.DocumentNode.SelectSingleNode($"//*[@id='{href.Value.Substring(1)}']");
+                if (target == null) continue;
+                if (!targetNodes.Any(x => x.Item2 == target))
+                {
+                    targetNodes.Add((a.InnerText, target));
+                }
+                a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
+            }
+
+            
+            if (addTOC)
+            {
+                html.DocumentNode.SelectSingleNode("//html/body").InnerHtml += BuildTOC(targetNodes);
+                html.LoadHtml(html.DocumentNode.OuterHtml);
+                tocReference = html.DocumentNode.SelectSingleNode("//html/head/guide/reference[@type='toc']");
+                tocReference.SetAttributeValue("filepos", html.DocumentNode.SelectSingleNode("//p[@id='toc']").BytePosition().ToString("D10"));
+            }
+
+
+            List<(string, int)> idxtTags = new List<(string, int)>();
+            foreach ((string, HtmlNode) target in targetNodes)
+            {
+                idxtTags.Add((target.Item1, target.Item2.BytePosition()));
+            }
+            return idxtTags.ToArray();
+
+        }
+
+        private static string BuildTOC(List<(string, HtmlNode)> targets)
+        {
+            string[] parts = new string[targets.Count + 2];
+            parts[0] = "<mbp:pagebreak/><p id='toc'>Table of Contents</p>";
+            parts[parts.Length - 1] = "<mbp:pagebreak/>";
+
+            string linkTemplate = "<blockquote><a filepos='{0}'>{1}</a></blockquote>";
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                parts[i + 1] = string.Format(linkTemplate, targets[i].Item2.BytePosition().ToString("D10"), targets[i].Item1);
+            }
+
+            return string.Join("", parts);
+        }
+
+        private static void StripStyle(HtmlDocument html)
+        {
+            HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
+            if (style == null) return;
+            style.Remove();
+
+        }
     }
 }
