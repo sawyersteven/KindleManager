@@ -212,8 +212,40 @@ namespace Formats
 
         public string DateAdded { get; set; }
 
+        /// <summary>
+        /// Gets all navpoints from toc sorted by PlayOrder
+        /// </summary>
+        private string[] NavPoints(XmlDocument tocXml, XmlNamespaceManager nsmgr)
+        {
+            // Tuple of playOrder, src document
+            List<(int, string)> navPoints = new List<(int, string)>();
+
+            foreach (XmlNode nav in tocXml.SelectNodes("//rt:navPoint", nsmgr))
+            {
+                int po;
+                if (!int.TryParse(nav.Attributes["playOrder"].Value, out po)) continue;
+
+                XmlNode ctnt = nav.SelectSingleNode("rt:content", nsmgr);
+                if (ctnt == null) continue;
+                string src = ctnt.Attributes["src"].Value;
+                if (src == "") continue;
+
+                navPoints.Add((po, src));
+            }
+
+            navPoints.Sort((x, y) => x.Item1.CompareTo(y.Item1));
+            string[] n = new string[navPoints.Count];
+            for (int i = 0; i < navPoints.Count; i++)
+            {
+                n[i] = navPoints[i].Item2;
+            }
+            return n;
+        }
+
         public string TextContent()
         {
+            // TODO strip <link> and <svg>
+
             HtmlDocument combinedText = new HtmlDocument();
             combinedText.LoadHtml(Resources.HtmlTemplate);
 
@@ -227,24 +259,7 @@ namespace Formats
                 if (toc == null) throw new Exception("TOC file not found, epub may be corrupt");
                 using (Stream s = toc.Open()) { tocXml.Load(s); }
 
-                // Tuple of playOrder, src document
-                List<(int, string)> navPoints = new List<(int, string)>();
-
-                foreach (XmlNode nav in tocXml.SelectNodes("//rt:navPoint", nsmgr))
-                {
-                    int po;
-                    if (!int.TryParse(nav.Attributes["playOrder"].Value, out po)) continue;
-
-                    XmlNode ctnt = nav.SelectSingleNode("rt:content", nsmgr);
-                    if (ctnt == null) continue;
-                    string src = ctnt.Attributes["src"].Value;
-                    if (src == "") continue;
-
-                    navPoints.Add((po, src));
-                }
-
-                string[] sortedNavPoints = new string[navPoints.Count];
-                for (int i = 0; i < navPoints.Count; i++) sortedNavPoints[i] = navPoints[i].Item2;
+                string[] sortedNavPoints = NavPoints(tocXml, nsmgr);
 
                 Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
                 for (int i = 0; i < sortedNavPoints.Length; i++)
@@ -257,28 +272,28 @@ namespace Formats
 
                     HtmlDocument doc = new HtmlDocument();
                     using (Stream s = html.Open()) { doc.Load(s, System.Text.Encoding.UTF8); }
-                    documents.Add(docname, doc);
+                    documents.Add(html.Name, doc);
                 }
 
                 FixLinks(sortedNavPoints, documents);
 
-                List<string> documentOrder = new List<string>();
+                List<string> orderedDocumentNames = new List<string>();
                 foreach (string np in sortedNavPoints)
                 {
-                    string docname = np.Split('#')[0];
-                    if (!documentOrder.Contains(docname))
+                    string docname = Path.GetFileName(np.Split('#')[0]);
+                    if (!orderedDocumentNames.Contains(docname))
                     {
-                        documentOrder.Add(docname);
+                        orderedDocumentNames.Add(docname);
                     }
                 }
 
-                string[] docTexts = new string[documentOrder.Count];
-                for (int i = 0; i < documentOrder.Count; i++)
+                string[] docTexts = new string[orderedDocumentNames.Count];
+                for (int i = 0; i < orderedDocumentNames.Count; i++)
                 {
-                    docTexts[i] = documents[documentOrder[i]].DocumentNode.InnerHtml;
+                    docTexts[i] = documents[orderedDocumentNames[i]].DocumentNode.InnerHtml;
                 }
 
-                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml += string.Join("<mbp:pagebreak/>", docTexts);
+                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml = MergeDocuments(sortedNavPoints, documents);
 
                 // Add css
                 ZipArchiveEntry css = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".css"));
@@ -293,8 +308,30 @@ namespace Formats
                     combinedText.DocumentNode.SelectSingleNode("//head/style").InnerHtml += stylesheet;
                 }
             }
-
             return SerializeImgLinks(combinedText);
+        }
+
+
+        private static string MergeDocuments(IEnumerable<string> sortedNavPoints, Dictionary<string, HtmlDocument> documents)
+        {
+            List<string> orderedDocumentNames = new List<string>();
+            foreach (string np in sortedNavPoints)
+            {
+                string docname = Path.GetFileName(np.Split('#')[0]);
+                if (!orderedDocumentNames.Contains(docname))
+                {
+                    orderedDocumentNames.Add(docname);
+                }
+            }
+
+            string[] docTexts = new string[orderedDocumentNames.Count];
+            for (int i = 0; i < orderedDocumentNames.Count; i++)
+            {
+                HtmlNode body = documents[orderedDocumentNames[i]].DocumentNode.SelectSingleNode("//html/body");
+                if (body == null) continue;
+                docTexts[i] = body.InnerHtml;
+            }
+            return string.Join("<mbp:pagebreak/>", docTexts);
         }
 
 
@@ -334,7 +371,7 @@ namespace Formats
                 if (parts.Length == 1) continue;
 
                 HtmlDocument doc = documents[parts[0]];
-                string newID = counter.ToString("D5");
+                string newID = counter.ToString("D10");
                 HtmlNode target = doc.DocumentNode.SelectSingleNode($"//*[@id='{parts[1]}']");
                 if (target == null) continue;
                 target.SetAttributeValue("id", newID);
@@ -373,7 +410,7 @@ namespace Formats
             {
                 for(int i = 0; i < ImageNames.Length; i++)
                 {
-                    ZipArchiveEntry img = zip.Entries.FirstOrDefault(x => x.Name == ImageNames[i]);
+                    ZipArchiveEntry img = zip.Entries.FirstOrDefault(x => x.FullName.EndsWith(ImageNames[i]));
                     if (img == null) continue;
                     using (Stream s = img.Open())
                     using (BinaryReader reader = new BinaryReader(s))
