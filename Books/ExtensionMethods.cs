@@ -142,6 +142,19 @@ namespace ExtensionMethods
         }
     }
 
+    public static class ListExtensions
+    {
+        public static int TotalLength(this List<byte[]> data)
+        {
+            int l = 0;
+            foreach (byte[] b in data)
+            {
+                l += b.Length;
+            }
+            return l;
+        }
+    }
+
     public static class StringExtensions
     {
         /// <summary>
