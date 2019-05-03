@@ -5,78 +5,79 @@ using ExtensionMethods;
 
 namespace Formats.Mobi.Headers
 {
+    public enum EXTHRecordID
+    {
+        Author = 100,
+        Publisher = 101,
+        Imprint = 102,
+        Description = 103,
+        ISBN = 104,
+        Subject = 105,
+        PublishDate = 106,
+        Review = 107,
+        Contributor = 108,
+        Rights = 109,
+        SubjectCode = 110,
+        Type = 111,
+        Source = 112,
+        ASIN = 113,
+        VersionNumber = 114,
+        IsSample = 115,
+        StartReading = 116,
+        RetailPrice = 118,
+        RetailPriceCurrency = 119,
+        DictShortName = 200,
+        Creator = 204,
+        CDEType = 501,
+        UpdatedTitle = 503,
+        ASIN2 = 504,
+        Language = 524,
+    }
+
     public class EXTHHeader : Dictionary<uint, byte[]>
     {
         public long offset;
-        public int length;
+        public int length
+        {
+            get
+            {
+                int l = 12 + (8 * this.Keys.Count);
+                foreach(byte[] v in this.Values)
+                {
+                    l += v.Length;
+                }
+                return l + (l % 4) ;
+            }
+        }
 
         public byte[] identifier;
-        public uint recordCount;
+        public uint recordCount
+        {
+            get => (uint)this.Keys.Count;
+        }
 
         public EXTHHeader() { }
 
-        public static Dictionary<string, uint> RecordNames = new Dictionary<string, uint>()
+        public void Set(EXTHRecordID rec, byte[] val)
         {
-            {"Author", 100},
-            {"Publisher", 101},
-            {"Imprint", 102},
-            {"Description", 103},
-            {"ISBN", 104},
-            {"Subject", 105},
-            {"PublishDate", 106},
-            {"Review", 107},
-            {"Contributor", 108},
-            {"Rights", 109},
-            {"SubjectCode", 110},
-            {"Type", 111},
-            {"Source", 112},
-            {"ASIN", 113},
-            {"VersionNumber", 114},
-            {"IsSample", 115},
-            {"StartReading", 116},
-            {"RetailPrice", 118},
-            {"RetailPriceCurrency", 119},
-            {"DictShortName", 200},
-            {"Creator", 204},
-            {"CDEType", 501},
-            {"UpdatedTitle", 503},
-            {"ASIN2", 504},
-            {"Language", 524}
-        };
-
-        public void Set(string rec, string val)
-        {
-            if (RecordNames.TryGetValue(rec, out uint key))
-            {
-                this[key] = val.Encode();
-            }
+            this[(uint)rec] = val;
         }
 
-        public void Set(uint rec, string val)
+        public void Set(uint rec, byte[] val)
         {
-            this[rec] = val.Encode();
+            this[rec] = val;
         }
 
-        public string Get(string rec)
+        public byte[] Get(EXTHRecordID rec)
         {
-            byte[] val = new byte[0];
-            if (RecordNames.TryGetValue(rec, out uint key))
-            {
-                this.TryGetValue(key, out val);
-            }
-            return val.Decode();
+            TryGetValue((uint)rec, out byte[] val);
+            return val;
         }
 
-        public string Get(uint rec)
+        public byte[] Get(uint rec)
         {
-            if (this.TryGetValue(rec, out byte[] val))
-            {
-                return val.Decode();
-            }
-            else
-            {
-                return string.Empty;
-            }
+            TryGetValue(rec, out byte[] val);
+            return val;
         }
 
         public void Parse(BinaryReader reader)

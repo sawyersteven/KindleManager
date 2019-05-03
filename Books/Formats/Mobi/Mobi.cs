@@ -151,7 +151,7 @@ namespace Formats.Mobi
                     EXTHHeader.offset = MobiHeader.offset + MobiHeader.headerLength;
                     EXTHHeader.Parse(reader);
 
-                    Author = EXTHHeader.Get(100);
+                    Author = EXTHHeader.Get(Headers.EXTHRecordID.Author).Decode();
 
                     byte[] isbn = EXTHHeader.Get<uint, byte[]>(104);
                     if (isbn != null && isbn.Length == 4)
@@ -159,13 +159,13 @@ namespace Formats.Mobi
                         ISBN = Utils.BitConverter.ToUInt32(isbn, 0x0);
                     }
 
-                    Language = EXTHHeader.Get(524);
-                    Contributor = EXTHHeader.Get(108);
-                    Publisher = EXTHHeader.Get(101);
-                    Subject = new string[] { EXTHHeader.Get(105) };
-                    Description = EXTHHeader.Get(103);
-                    PubDate = EXTHHeader.Get(106);
-                    Rights = EXTHHeader.Get(109);
+                    Language = EXTHHeader.Get(Headers.EXTHRecordID.Language).Decode();
+                    Contributor = EXTHHeader.Get(Headers.EXTHRecordID.Contributor).Decode();
+                    Publisher = EXTHHeader.Get(Headers.EXTHRecordID.Publisher).Decode();
+                    Subject = new string[] { EXTHHeader.Get(Headers.EXTHRecordID.Subject).Decode() };
+                    Description = EXTHHeader.Get(Headers.EXTHRecordID.Description).Decode();
+                    PubDate = EXTHHeader.Get(Headers.EXTHRecordID.PublishDate).Decode();
+                    Rights = EXTHHeader.Get(Headers.EXTHRecordID.Rights).Decode();
 
                 }
                 if (MobiHeader.indxRecordNum != 0xFFFFFFFF)
