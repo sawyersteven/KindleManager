@@ -7,12 +7,24 @@ namespace Formats.Mobi.Headers
 {
     public class PDBHeader
     {
-        public readonly int offset = 0x0;
-        public readonly int length = 0x4E;
+        private static readonly byte[] nullTwo = new byte[2];
+        private static readonly byte[] nullFour = new byte[4];
 
-        public string title;
-        public short attributes;
-        public short version;
+        public int offset = 0x0;
+        public readonly int baseLength = 0x4E;
+
+        private string _title;
+        public string title
+        {
+            get => _title;
+            set
+            {
+                _title = value.Length > 0x20 ? value.Substring(0x0, 0x20) : value + new byte[0x20 - value.Length].Decode();
+
+            }
+        }
+        public ushort attributes;
+        public ushort version;
         public uint createdDate;
         public uint modifiedDate;
         public uint backupDate;
@@ -31,11 +43,30 @@ namespace Formats.Mobi.Headers
         /// </summary>
         public PDBHeader() { }
 
+        public void FillDefault()
+        {
+            uint timestamp = (uint)Utils.Metadata.TimeStamp();
+            title = "";
+            attributes = 0;
+            version = 1;
+            createdDate = timestamp;
+            modifiedDate = timestamp;
+            backupDate = 0;
+            modificationNum = 0;
+            appInfoId = 0;
+            sortInfoID = 0;
+            type = "BOOK";
+            creator = "MOBI";
+            uniqueIDseed = (uint)Utils.Metadata.RandomNumber();
+            nextRecordListID = 0;
+            recordCount = 0;
+            records = new uint[0];
+        }
+
         public void Parse(BinaryReader reader)
         {
-
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            byte[] buffer = reader.ReadBytes(this.length);
+            byte[] buffer = reader.ReadBytes(baseLength);  
 
             title = buffer.SubArray(0x0, 0x20).Decode();
             attributes = Utils.BigEndian.ToUInt16(buffer, 0x20);
@@ -92,7 +123,6 @@ namespace Formats.Mobi.Headers
 
             return output.ToArray();
         }
-
 
         public void Write(BinaryWriter writer)
         {

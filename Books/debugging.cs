@@ -31,49 +31,11 @@ namespace Books
 
         static public void Open()
         {
+            path = @"C:\Users\Steven\Desktop\testheaders.bin";
             Formats.Mobi.Book book = new Formats.Mobi.Book(path);
-
+            book.PrintHeaders();
         }
 
-
-        static public void MobiINDX()
-        {
-            Utils.BitConverter.LittleEndian = false;
-            Formats.Mobi.Book book = new Formats.Mobi.Book(path);
-
-            uint indxOffs = book.PDBHeader.records[book.MobiHeader.indxRecordNum];
-            uint indxlen = book.PDBHeader.records[book.MobiHeader.indxRecordNum + 1] - book.PDBHeader.records[book.MobiHeader.indxRecordNum];
-
-            byte[] indxRec;
-            byte[] data;
-
-            using (BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open)))
-            {
-                reader.BaseStream.Seek(indxOffs, SeekOrigin.Begin);
-                indxRec = reader.ReadBytes((int)indxlen);
-            }
-
-            uint tagxStart = Utils.BitConverter.ToUInt32(indxRec, 0x4);
-            data = indxRec.SubArray((int)tagxStart, indxRec.Length - (int)tagxStart);
-
-            // start calibre translation;
-            List<byte[]> tags = new List<byte[]>();
-            string magic = data.SubArray(0, 0x4).Decode();
-            uint firstEntryOffset = Utils.BitConverter.ToUInt32(data, 0x4);
-            uint controlByteCount = Utils.BitConverter.ToUInt32(data, 0x8);
-
-
-            for (int i = 12; i < firstEntryOffset; i += 4)
-            {
-                tags.Add(data.SubArray(i, 4));
-            }
-
-            foreach (byte[] tag in tags)
-            {
-                Console.WriteLine(string.Join(", ", tag));
-            }
-
-        }
 
         static public void DumpRecords()
         {
@@ -120,7 +82,7 @@ namespace Books
 
         static public void EpubToMobi()
         {
-            Formats.Epub book = new Formats.Epub(path);
+            Formats.Epub book = new Formats.Epub(Epubs.endersGame);
             ConvertToMobi(book);
         }
 
@@ -146,6 +108,7 @@ namespace Books
 
         static public void ConvertToMobi(Formats.IBook book)
         {
+
             string outpath = @"C:\Users\Steven\Desktop\Converted.mobi";
 
             if (File.Exists(outpath))

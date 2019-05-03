@@ -5,311 +5,175 @@ using System.IO;
 using HtmlAgilityPack;
 using System.Linq;
 
-
-// TODO: this works well enough but is a mess
-namespace Formats
+namespace Formats.Mobi
 {
-
-    public class MobiBuilder
+    public class Builder
     {
-        private const int postHeaderPadding = 0x2000;
+        private const int postHeaderPadding = 0x400;
 
-        private static byte[] nullTwo = new byte[2];
-        private static byte[] nullFour = new byte[4];
+        private static readonly byte[] nullTwo = new byte[2];
+        private static readonly byte[] nullFour = new byte[4];
 
-        private static readonly byte[] FLISRecord = new byte[] { 0x46, 0x4C, 0x49, 0x53,
-                                                          0x00, 0x00, 0x00, 0x08,
-                                                          0x00, 0x41,
-                                                          0x00, 0x00,
-                                                          0x00, 0x00, 0x00, 0x00,
-                                                          0xFF, 0xFF, 0xFF, 0xFF,
-                                                          0x00, 0x01,
-                                                          0x00, 0x03,
-                                                          0x00, 0x00, 0x00, 0x03,
-                                                          0x00, 0x00, 0x00, 0x01,
-                                                          0xFF, 0xFF, 0xFF, 0xFF
-                                                         };
-        private static readonly byte[] EOFRecord = new byte[] { 0xe9, 0x8e, 0x0d, 0x0a };
+        readonly IBook Donor;
+        readonly string OutputPath;
+        (string, int)[] Chapters; // (title, byteoffset) in encoded html
 
-        private static byte[] FCISRecord(uint textLength)
+        private Headers.PDBHeader PDB = new Headers.PDBHeader();
+        private Headers.PalmDOCHeader PDH = new Headers.PalmDOCHeader();
+        private Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
+        private Headers.EXTHHeader EXTH = new Headers.EXTHHeader();
+
+        private List<ushort> idxtOffsets = new List<ushort>();
+
+        List<byte[]> cncxBuffer = new List<byte[]>();
+        List<byte> cncxLabelBuffer = new List<byte>();
+
+        private List<byte[]> records = new List<byte[]>();
+
+
+        public Builder(IBook donor, string outputPath)
         {
-            Utils.BitConverter.LittleEndian = false;
-
-            byte[] rec = new byte[]{ 0x46, 0x43, 0x49, 0x53,
-                                     0x00, 0x00, 0x00, 0x14,
-                                     0x00, 0x00, 0x00, 0x10,
-                                     0x00, 0x00, 0x00, 0x01,
-                                     0x00, 0x00, 0x00, 0x00,
-                                     0xFF, 0xFF, 0xFF, 0xFF, // this gets replaced by textLength
-                                     0x00, 0x00, 0x00, 0x00,
-                                     0x00, 0x00, 0x00, 0x20,
-                                     0x00, 0x00, 0x00, 0x08,
-                                     0x00, 0x01,
-                                     0x00, 0x01,
-                                     0x00, 0x00, 0x00, 0x00
-                                    };
-
-            byte[] tl = Utils.BitConverter.GetBytes(textLength);
-
-            for (int i = 0; i < 4; i++)
-            {
-                rec[20 + i] = tl[i];
-            }
- 
-            return rec;
+            Donor = donor ?? throw new ArgumentException("Input book cannot be null");
+            OutputPath = outputPath;
         }
 
-        public static void Convert(IBook donor, string outputPath)
+
+        public void Write()
         {
-            if (donor == null)
-            {
-                throw new ArgumentException("Input book cannot be null");
-            }
+            (byte[] textBytes, (string, int)[] c) = ProcessHtml(Donor.TextContent());
+            Chapters = c;
 
-            HtmlDocument html = new HtmlDocument();
-            html.LoadHtml(donor.TextContent());
+            // Make logical toc
+            GenerateCNCX();
 
-            FixImageRecIndexes(html);
-            //StripStyle(html);
-            (string, int)[] tocData = FixLinks(html, true);
-
-            string decodedText = html.DocumentNode.OuterHtml;
-
-            byte[] textBytes = decodedText.Encode();
-
-            List<byte[]> textRecords = new List<byte[]>();
-            
+            // Split text records
+            ushort textRecordCount = 0;
             for (int i = 0; i < textBytes.Length; i += 4096)
             {
                 int len = Math.Min(4096, textBytes.Length - i);
-                textRecords.Add(textBytes.SubArray(i, len));
+                records.Add(textBytes.SubArray(i, len));
+                textRecordCount++;
             }
+            uint firstNonBookRecord = (uint)records.Count;
 
-            byte[][] imageRecords = donor.Images();
+            uint indxRecord = (uint)records.Count;
+            records.AddRange(IndxRecords());
 
-            byte[][] indxRecords = buildIndxRecords(tocData);
+            byte[][] images = Donor.Images();
+            uint firstImageRecord = (images.Length == 0) ? uint.MaxValue: (uint)records.Count;
+            records.AddRange(Donor.Images());
+            ushort lastContentRecord = (ushort)(records.Count - 1);
+
+            records.Add(FLISRecord);
+            uint flisRecord = (uint)records.Count - 1;
+            records.Add(FCISRecord((uint)textBytes.Length));
+            uint fcisRecord = (uint)records.Count - 1;
+            records.Add(EOFRecord);
 
             // Build headers backward to know lengths
-            byte[] exthheader = EXTHHeader(donor);
-            byte[] mobiheader = MobiHeader(donor, (uint)textRecords.Count, (uint)imageRecords.Length, (uint)indxRecords.Length, (uint)exthheader.Length);
-            byte[] palmdocheader = PalmDOCHeader((uint)textBytes.Length, (ushort)textRecords.Count);
-            byte[] headersRecord = palmdocheader.Append(mobiheader.Append(exthheader));
+            FillEXTHHeader();
 
+            MobiHeader.FillDefault();
+            MobiHeader.fullTitleOffset = MobiHeader.length + (uint)EXTH.length; //mobi + exth
+            MobiHeader.firstNonBookRecord = firstNonBookRecord;
+            MobiHeader.firstImageRecord = firstImageRecord;
+            MobiHeader.lastContentRecord = lastContentRecord;
+            MobiHeader.indxRecord = indxRecord;
+            MobiHeader.fullTitle = Donor.Title;
 
-            List<byte[]> dataRecords = new List<byte[]>();
+            PDH.FillDefault();
+            PDH.textLength = (uint)textBytes.Length;
+            PDH.textRecordCount = textRecordCount;
 
-            dataRecords.AddRange(textRecords);
-            dataRecords.AddRange(indxRecords);
-            dataRecords.AddRange(imageRecords);
+            PDB.FillDefault();
+            PDB.title = Donor.Title;
+            PDB.recordCount = (ushort)records.Count;
+            PDB.records = CalcRecordOffsets();
 
-            dataRecords.Add(FLISRecord);
-            dataRecords.Add(FCISRecord((uint)decodedText.Length));
-            dataRecords.Add(EOFRecord);
-
-            byte[] pdbheader = PDBHeader(donor, headersRecord, dataRecords.ToArray());
-
-            using (FileStream file = new FileStream(outputPath, FileMode.CreateNew))
+            using (FileStream file = new FileStream(OutputPath, FileMode.CreateNew))
             using (BinaryWriter writer = new BinaryWriter(file))
             {
-                writer.Write(pdbheader);
-                writer.Write(headersRecord);
-                writer.Write(donor.Title.Encode());
-                writer.BaseStream.Seek(postHeaderPadding - donor.Title.Length, SeekOrigin.Current);
-                foreach (byte[] record in dataRecords)
+                PDB.Write(writer);
+                PDH.Write(writer, false);
+                MobiHeader.Write(writer, false);
+                EXTH.Write(writer, false);
+                writer.Write(Donor.Title.Encode());
+                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length, SeekOrigin.Current);
+                foreach (byte[] record in records)
                 {
                     writer.Write(record);
                 }
             }
+
+            Book book = new Book(OutputPath);
+            book.PDBHeader.Print();
+            book.PalmDOCHeader.Print();
+            book.MobiHeader.Print();
+            book.EXTHHeader.Print();
+
+            return;
         }
 
-
-        /// <summary>
-        /// Makes INDX records
-        /// https://wiki.mobileread.com/wiki/MOBI#Index_meta_record
-        /// 
-        /// Makes three records:
-        ///     1: INDX record with TAGX
-        ///     2: INDX record with logical toc numbers
-        ///     3: Encoded text records with logical toc names
-        /// </summary>
-        /// <param name="toc">(string, int) of toc's (name, filepos)</param>
-        /// <returns></returns>
-        private static byte[][] buildIndxRecords((string, int)[] toc)
+        #region Headers
+        private uint[] CalcRecordOffsets()
         {
-            Utils.BitConverter.LittleEndian = false;
+            List<uint> offsets = new List<uint>();
+            offsets.Add((uint)(0x4E + (0x8 * (records.Count + 1)))); // start of PalmDoc
 
-            List<byte[]> records = new List<byte[]>();
-
-            List<byte> rec = new List<byte>();
-
-            rec.AddRange("INDX".Encode());
-            rec.AddRange(Utils.BitConverter.GetBytes((uint)192));
-            rec.AddRange(Utils.BitConverter.GetBytes((uint)1));
-            rec.AddRange(nullFour);
-
-            rec.AddRange(nullFour);
-            rec.AddRange(Utils.BitConverter.GetBytes((uint)232)); // change, idxt offset
-            rec.AddRange(Utils.BitConverter.GetBytes((uint)1));
-            rec.AddRange(Utils.BitConverter.GetBytes((uint)65001));
-
-            rec.AddRange(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
-            rec.AddRange(Utils.BitConverter.GetBytes(toc.Length));
-            rec.AddRange(nullFour);
-            rec.AddRange(nullFour);
-
-            rec.AddRange(new byte[192 - rec.Count]);
-
-            rec.AddRange("TAGX".Encode());
-
-
-            return records.ToArray();
-        }
-
-        private static byte[] PDBHeader(IBook donor, byte[] headersRecord, byte[][] dataRecords)
-        {
-            byte[] timestamp = BitConverter.GetBytes((uint)Utils.Metadata.TimeStamp());
-            int pdbLen = 0x50 + (0x8 * dataRecords.Length);
-
-
-            Utils.BitConverter.LittleEndian = false;
-
-
-            List<byte> header = new List<byte>();
-            string shortTitle = donor.Title.Length > 0x20 ? donor.Title.Substring(0x0, 0x20) : donor.Title + new byte[0x20 - donor.Title.Length].Decode();
-            header.AddRange(shortTitle.Encode());                           // Title truncated to 32 bytes
-            header.AddRange(nullTwo);                                       // Attributes
-            header.AddRange(nullTwo);                                       // Version
-            header.AddRange(timestamp);                                     // Created date
-            header.AddRange(timestamp);                                     // Modified date
-            header.AddRange(nullFour);                                      // Last backup
-            header.AddRange(nullFour);                                      // Modification num
-            header.AddRange(nullFour);                                      // App info id
-            header.AddRange(nullFour);                                      // Sort info id
-            header.AddRange("BOOK".Encode());                               // Type
-            header.AddRange("MOBI".Encode());                               // Creator
-            header.AddRange(Utils.BitConverter.GetBytes(Utils.Metadata.RandomNumber())); // Unique id seed
-            header.AddRange(nullFour);                                      // Next record list id
-            header.AddRange(Utils.BitConverter.GetBytes((ushort)(dataRecords.Length)));   // Record count
-
-            // Mobi header start                                            // Record offsets
-            header.AddRange(Utils.BitConverter.GetBytes(pdbLen));
-            header.AddRange(nullFour);
-  
-            int currentPosition = pdbLen + headersRecord.Length + postHeaderPadding;
-            for (int i = 0; i < dataRecords.Length-1; i++)                 
+            uint currentPosition = (uint)(0x10 + MobiHeader.length + EXTH.length + postHeaderPadding);
+            for (int i = 0; i < records.Count; i++)
             {
-                header.AddRange(Utils.BitConverter.GetBytes(currentPosition));
-                header.AddRange(Utils.BitConverter.GetBytes((i * 2) & 0x00FFFFFF));
-                currentPosition += dataRecords[i].Length;
+                offsets.Add(currentPosition);
+                currentPosition += (uint)records[i].Length;
             }
-                                                                           
-            header.AddRange(nullTwo);                                       // 2 bytes of filler
-
-            return header.ToArray();
-        }
-
-        private static byte[] PalmDOCHeader(uint textLength, ushort textRecordCount)
-        {
-            Utils.BitConverter.LittleEndian = false;
-            List<byte> header = new List<byte>();
-
-            header.AddRange(Utils.BitConverter.GetBytes((ushort)0x01)); // Compression (none)
-            header.AddRange(nullTwo);                                   // Unused byte[2]
-            header.AddRange(Utils.BitConverter.GetBytes(textLength));   // Length of text content string
-            header.AddRange(Utils.BitConverter.GetBytes(textRecordCount));  // Number of text records
-            header.AddRange(Utils.BitConverter.GetBytes((ushort)4096)); // Record size in bytes
-            header.AddRange(Utils.BitConverter.GetBytes((ushort)0x0));  // Encryption type (none)
-            header.AddRange(nullTwo);                                   // Unused byte[2]
-
-            return header.ToArray();
-        }
-
-        private static byte[] MobiHeader(IBook donor, uint textRecordCount, uint indxRecordCount, uint imageRecordCount, uint exthLength)
-        {
-            Utils.BitConverter.LittleEndian = false;
-            List<byte> header = new List<byte>();
-
-            header.AddRange("MOBI".Encode());                                       // Mobi ID
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0xe8));               // Header length
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x2));                // Mobi type (book)
-            header.AddRange(Utils.BitConverter.GetBytes((uint)65001));              // Text encoding (utf8)
-            header.AddRange(Utils.BitConverter.GetBytes((uint)Utils.Metadata.RandomNumber())); // UUID
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x6));                // File version
-
-            byte[] reserved = new byte[0x28];
-            for (int i = 0; i < reserved.Length; i++){ reserved[i] = 0xFF; }
-            header.AddRange(new byte[0x28]);                                        // 40 reserved bytes
-
-            uint firstNonBook = imageRecordCount > 0 ? textRecordCount + imageRecordCount + 2 : 0;
-            header.AddRange(Utils.BitConverter.GetBytes(firstNonBook));             // First non-book index
-
-            header.AddRange(Utils.BitConverter.GetBytes(exthLength + 0xe8 +0x10));  // Full name offset (exth length + mobi length + paldoc length)
-
-            header.AddRange(Utils.BitConverter.GetBytes((uint)donor.Title.Length)); // Full name length
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x9));                // Locale
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x6));                // Input language
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // Output language
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x6));                // Minimum version
-            header.AddRange(Utils.BitConverter.GetBytes(textRecordCount + indxRecordCount + 1));      // First image index
-
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // Huffman record count
-            header.AddRange(nullFour);                                              // Huffman table offset
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // Huffman record offset
-            header.AddRange(nullFour);                                              // Huffman table length
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x40));               // EXTH flags
-
-            header.AddRange(new byte[0x20]);                                        // Unused 32 bytes
-            header.AddRange(Utils.BitConverter.GetBytes(0xFFFFFFFF));               // DRM offset (non-extant)
-            header.AddRange(Utils.BitConverter.GetBytes(0xFFFFFFFF));               // DRM count (non-extant)
-            header.AddRange(Utils.BitConverter.GetBytes((uint)0x0));                // DRM flags
-            header.AddRange(new byte[0x48]);                                        // 72 bytes of filler
-
-            return header.ToArray();
+            return offsets.ToArray();
         }
 
         /// <summary>
         /// https://wiki.mobileread.com/wiki/MOBI#EXTH_Header
         /// </summary>
         /// <returns></returns>
-        private static byte[] EXTHHeader(IBook donor) {
-            Utils.BitConverter.LittleEndian = false;
+        private void FillEXTHHeader()
+        {
+            EXTH.identifier = "EXTH".Encode();
+            EXTH.Set(Headers.EXTHRecordID.Author, Donor.Author.Encode());
+            EXTH.Set(Headers.EXTHRecordID.Publisher, Donor.Publisher.Encode());
+            EXTH.Set(Headers.EXTHRecordID.Description, Donor.Description.Encode());
+            EXTH.Set(Headers.EXTHRecordID.ISBN, Donor.ISBN.ToString().Encode());
+            EXTH.Set(Headers.EXTHRecordID.Subject, string.Join(", ", Donor.Subject).Encode());
+            EXTH.Set(Headers.EXTHRecordID.PublishDate, Donor.PubDate.Encode());
+            EXTH.Set(Headers.EXTHRecordID.Contributor, "Lignum".Encode());
+            EXTH.Set(Headers.EXTHRecordID.Rights, Donor.Rights.Encode());
+            EXTH.Set(Headers.EXTHRecordID.Creator, "Lignum".Encode());
+            EXTH.Set(Headers.EXTHRecordID.Language, Donor.Language.Encode());
+        }
 
-            uint addRecord(List<byte> records, uint type, string val)
-            {
-                if (val == "" || val == null) return 0;
-                records.AddRange(Utils.BitConverter.GetBytes(type));
-                records.AddRange(Utils.BitConverter.GetBytes((uint)val.Length + 8));
-                records.AddRange(val.Encode());
-                return 1;
+        #endregion
+
+        #region HtmlProcessing
+        private (byte[], (string, int)[]) ProcessHtml(string html)
+        {
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            FixImageRecIndexes(doc);
+            if (doc == null) { // Disabled for now
+                StripStyle(doc);
             }
 
-            uint recordCount = 0;
-            List<byte> exthrecords = new List<byte>();
-            recordCount += addRecord(exthrecords, 100, donor.Author);
-            recordCount += addRecord(exthrecords, 101, donor.Publisher);
-            recordCount += addRecord(exthrecords, 103, donor.Description);
-            recordCount += addRecord(exthrecords, 104, donor.ISBN.ToString());
-            recordCount += addRecord(exthrecords, 105, string.Join(", ", donor.Subject));
-            recordCount += addRecord(exthrecords, 106, donor.PubDate);
-            recordCount += addRecord(exthrecords, 108, "Lignum");
-            recordCount += addRecord(exthrecords, 109, donor.Rights);
-            recordCount += addRecord(exthrecords, 204, "Lignum");
-            recordCount += addRecord(exthrecords, 524, donor.Language);
+            (string, int)[] tocData = FixLinks(doc, true);
 
-            List<byte> header = new List<byte>();
-            header.AddRange("EXTH".Encode());                                           // ID
-            header.AddRange(Utils.BitConverter.GetBytes((uint)exthrecords.Count + 12)); // Header length
-            header.AddRange(Utils.BitConverter.GetBytes((uint)recordCount));            // Record count
-            header.AddRange(exthrecords.ToArray());                                     // Records
-            header.AddRange(new byte[header.Count % 4]);                                // Pad to next 4-bytes
+            string decodedText = doc.DocumentNode.OuterHtml;
 
-            return header.ToArray();
+            byte[] textBytes = decodedText.Encode();
+
+            return (textBytes, tocData);
         }
 
         /// <summary>
         /// Changes img src to recindex
         /// </summary>
-        private static void FixImageRecIndexes(HtmlDocument html)
+        private void FixImageRecIndexes(HtmlDocument html)
         {
             HtmlNodeCollection imgs = html.DocumentNode.SelectNodes("//img");
             if (imgs == null) return;
@@ -326,7 +190,7 @@ namespace Formats
         /// <summary>
         /// Changes a href to filepos and adds TOC to end of document
         /// </summary>
-        private static (string, int)[] FixLinks(HtmlDocument html, bool addTOC)
+        private (string, int)[] FixLinks(HtmlDocument html, bool addTOC)
         {
             HtmlNode tocReference;
 
@@ -373,26 +237,188 @@ namespace Formats
                 a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
             }
 
-            
             if (addTOC)
             {
-                html.DocumentNode.SelectSingleNode("//html/body").InnerHtml += BuildTOC(targetNodes);
+                html.DocumentNode.SelectSingleNode("//html/body").InnerHtml += BuildHtmlTOC(targetNodes);
                 html.LoadHtml(html.DocumentNode.OuterHtml);
                 tocReference = html.DocumentNode.SelectSingleNode("//html/head/guide/reference[@type='toc']");
                 tocReference.SetAttributeValue("filepos", html.DocumentNode.SelectSingleNode("//p[@id='toc']").BytePosition().ToString("D10"));
             }
 
-
-            List<(string, int)> idxtTags = new List<(string, int)>();
+            List<(string, int)> tocData = new List<(string, int)>();
             foreach ((string, HtmlNode) target in targetNodes)
             {
-                idxtTags.Add((target.Item1, target.Item2.BytePosition()));
+                tocData.Add((target.Item1, target.Item2.BytePosition()));
             }
-            return idxtTags.ToArray();
+            tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
+
+            return tocData.ToArray();
+        }
+
+        private void StripStyle(HtmlDocument html)
+        {
+            HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
+            if (style == null) return;
+            style.Remove();
 
         }
 
-        private static string BuildTOC(List<(string, HtmlNode)> targets)
+        #endregion
+
+        #region INDX table/metadata
+        /// <summary>
+        /// We are putting every chapter is as one layer at zero depth. Want to fight about it?
+        /// </summary>
+        /// <param name="tocData"></param>
+        private void GenerateCNCX()
+        {
+            List<byte> cncxEntry = new List<byte>();
+            for (var i = 0; i < Chapters.Length; i++)
+            {
+                cncxEntry.Clear();
+
+                (string chapterName, int chapterOffset) = Chapters[i];
+                if (chapterName == "EOF") break;
+
+                int chapterLength = Chapters[i + 1].Item2 - chapterOffset;
+
+                idxtOffsets.Add((ushort)(Records.INDX.indxLength + cncxBuffer.TotalLength()));
+
+                byte[] cncxId = i.ToString("D3").Encode();
+                byte[] vliOffset = Utils.Mobi.EncVarLengthInt((uint)chapterOffset);
+                byte[] vliLen = Utils.Mobi.EncVarLengthInt((uint)chapterLength);
+                byte[] vliNameOffset = Utils.Mobi.EncVarLengthInt((uint)cncxLabelBuffer.Count);
+                byte[] vliNameLen = Utils.Mobi.EncVarLengthInt((uint)chapterName.Encode().Length);
+
+                cncxEntry.Add((byte)cncxId.Length);    // id length
+                cncxEntry.AddRange(cncxId);            // id
+                cncxEntry.Add(0x0f);                   // control byte
+                cncxEntry.AddRange(vliOffset);         // encoded html position
+                cncxEntry.AddRange(vliLen);            // length of encoded chapter
+                cncxEntry.AddRange(vliNameOffset);     // offset of chapter name in nametable
+                cncxEntry.AddRange(Utils.Mobi.EncVarLengthInt(0)); // Depth -- always 0.
+
+                cncxBuffer.Add(cncxEntry.ToArray());
+
+                cncxLabelBuffer.AddRange(vliNameLen);
+                cncxLabelBuffer.AddRange(chapterName.Encode());
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// The tag table entries are multiple of 4 bytes. 
+        /// [0] tag number, 
+        /// [1] number of values,
+        /// [2] bit mask
+        /// [3] end of the control byte.
+        /// If the fourth byte is 0x01, all other bytes of the entry are zero.
+        /// 
+        /// This particular pre-built entry is created from known table entries
+        /// for a single chapter with no children. Code contains descriptions.
+        /// 
+        /// ControlByte for this entry type is: 0x0f (15)
+        /// 
+        /// https://wiki.mobileread.com/wiki/MOBI#TAGX_section
+        /// </summary>
+        private static readonly byte[][] tagXEntry = new byte[][]{
+            new byte[]{1,1,1,0}, // Position
+            new byte[]{2,1,2,0}, // Length
+            new byte[]{3,1,4,0}, // Name Offset
+            new byte[]{4,1,8,0}, // Depth Level
+            new byte[]{0,0,0,1}  // End of Entry
+        };
+
+        /// <summary>
+        /// Makes two INDX records
+        /// First a metadata record with TAGX information
+        /// Second a record with TOC information eg chapter names and offsets
+        /// </summary>
+        /// <returns></returns>
+        private byte[][] IndxRecords()
+        {
+            byte[][] records = new byte[3][];
+
+            records[0] = metaINDX();
+            records[1] = dataINDX();
+            records[2] = cncxLabelBuffer.ToArray();
+
+            File.WriteAllBytes(@"C:\Users\Steven\Desktop\01metaindx.bin", records[0]);
+            File.WriteAllBytes(@"C:\Users\Steven\Desktop\02dataindx.bin", records[1]);
+            File.WriteAllBytes(@"C:\Users\Steven\Desktop\03labeltable.bin", records[2]);
+
+            return records;
+        }
+
+        private byte[] metaINDX()
+        {
+            // Build tagx table
+            List<byte> tagx = new List<byte>();
+            tagx.AddRange("TAGX".Encode());                                         // magic
+            tagx.AddRange(Utils.BigEndian.GetBytes((tagXEntry.Length * 4) + 12));   // total length of tagx
+            tagx.AddRange(Utils.BigEndian.GetBytes(1));                             // control byte count -- always 1
+            foreach (byte[] tag in tagXEntry)                                       // tagx table entry
+            {
+                tagx.AddRange(tag);
+            }
+
+            // Pad between tagx and idxt
+            byte[] Rec = cncxBuffer.Last();
+            Rec = Rec.SubArray(0, Rec[0] + 1);
+            int Padding = (Rec.Length + 2) % 4;
+
+            // Make indx
+            Records.INDX indx = new Records.INDX();
+            indx.type = 2;                          // inflection
+            indx.recordCount = 1;                   // num of indx data records
+            indx.recordEntryCount = (uint)Chapters.Length;
+            indx.idxtOffset = (uint)(indx.length + tagx.Count + (Rec.Length + 2 + Padding));
+
+            // Combine
+            List<byte> record = new List<byte>();
+            record.AddRange(indx.Dump());
+            record.AddRange(tagx);
+            record.AddRange(Rec);
+            record.AddRange(Utils.BigEndian.GetBytes((ushort)idxtOffsets.Count));
+            record.AddRange(new byte[Padding]);
+            record.AddRange("IDXT".Encode());
+            record.AddRange(Utils.BigEndian.GetBytes((ushort)(indx.length + tagx.Count)));
+            record.AddRange(new byte[2]);
+
+            return record.ToArray();
+        }
+
+        private byte[] dataINDX()
+        {
+            List<byte> record = new List<byte>();
+
+            Records.INDX indx = new Records.INDX();
+            indx.type = 0;                              // normal
+            indx.unused = new byte[] { 0, 0, 0, 1 };    // this should be one with type=0 because reasons
+            indx.encoding = 0xFFFFFFFF;
+            indx.unused2 = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
+            indx.idxtOffset = (uint)(indx.length + cncxBuffer.Count);
+            indx.recordCount = (uint)idxtOffsets.Count;
+
+            record.AddRange(indx.Dump());
+            foreach (byte[] rec in cncxBuffer)
+            {
+                record.AddRange(rec);
+            }
+
+            record.AddRange("IDXT".Encode());
+            foreach (ushort offset in idxtOffsets) // this isn't right
+            {
+                record.AddRange(Utils.BigEndian.GetBytes(offset));
+            }
+            record.AddRange(new byte[(idxtOffsets.Count + 4) % 4]);
+            
+            return record.ToArray();
+        }
+
+        #endregion
+
+        private string BuildHtmlTOC(List<(string, HtmlNode)> targets)
         {
             string[] parts = new string[targets.Count + 2];
             parts[0] = "<mbp:pagebreak/><p id='toc'>Table of Contents</p>";
@@ -408,12 +434,44 @@ namespace Formats
             return string.Join("", parts);
         }
 
-        private static void StripStyle(HtmlDocument html)
+        private readonly byte[] FLISRecord = new byte[] { 0x46, 0x4C, 0x49, 0x53,
+                                                    0x00, 0x00, 0x00, 0x08,
+                                                    0x00, 0x41,
+                                                    0x00, 0x00,
+                                                    0x00, 0x00, 0x00, 0x00,
+                                                    0xFF, 0xFF, 0xFF, 0xFF,
+                                                    0x00, 0x01,
+                                                    0x00, 0x03,
+                                                    0x00, 0x00, 0x00, 0x03,
+                                                    0x00, 0x00, 0x00, 0x01,
+                                                    0xFF, 0xFF, 0xFF, 0xFF
+                                                    };
+        private byte[] FCISRecord(uint textLength)
         {
-            HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
-            if (style == null) return;
-            style.Remove();
+            byte[] rec = new byte[]{ 0x46, 0x43, 0x49, 0x53,
+                                     0x00, 0x00, 0x00, 0x14,
+                                     0x00, 0x00, 0x00, 0x10,
+                                     0x00, 0x00, 0x00, 0x01,
+                                     0x00, 0x00, 0x00, 0x00,
+                                     0xFF, 0xFF, 0xFF, 0xFF, // this gets replaced by textLength
+                                     0x00, 0x00, 0x00, 0x00,
+                                     0x00, 0x00, 0x00, 0x20,
+                                     0x00, 0x00, 0x00, 0x08,
+                                     0x00, 0x01,
+                                     0x00, 0x01,
+                                     0x00, 0x00, 0x00, 0x00
+                                    };
 
+            byte[] tl = Utils.BigEndian.GetBytes(textLength);
+
+            for (int i = 0; i < 4; i++)
+            {
+                rec[20 + i] = tl[i];
+            }
+
+            return rec;
         }
+        private readonly byte[] EOFRecord = new byte[] { 0xe9, 0x8e, 0x0d, 0x0a };
+
     }
 }

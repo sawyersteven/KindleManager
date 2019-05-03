@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.IO;
 using System;
-using ExtensionMethods;
+
 
 namespace Books
 {
@@ -12,7 +12,12 @@ namespace Books
 
         public void StartApp(object sender, StartupEventArgs e)
         {
-            Test();
+            //Test.DumpTextHtml();
+            //return;
+            //Debug.Open();
+            Debug.EpubToMobi();
+
+            Console.WriteLine("END");
             return;
             Directory.CreateDirectory(DataDir);
 
@@ -22,14 +27,6 @@ namespace Books
             MainWindow.Show();
         }
 
-        public void Test()
-        {
-            string path = @"C:\Users\Steven\Downloads\The Last Colony-John Scalzi - Onbekend.epub";
 
-            Formats.Epub book = new Formats.Epub(path);
-            book.Print();
-
-            // book.Write();
-        }
     }
 }

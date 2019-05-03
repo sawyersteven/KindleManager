@@ -7,7 +7,7 @@ namespace Formats.Mobi.Headers
 
     public class PalmDOCHeader
     {
-        public long offset;
+        public uint offset;
         public readonly int length = 0x10;
 
         public ushort compression;
@@ -22,6 +22,19 @@ namespace Formats.Mobi.Headers
         /// </summary>
         public PalmDOCHeader() { }
 
+        /// <summary>
+        /// Fills fields with a set of default values
+        /// </summary>
+        public void FillDefault()
+        {
+            compression = 1; // None
+            textLength = 0;
+            textRecordCount = 0;
+            recordSize = 4096;
+            encryptionType = 0; // None
+            unknown = 0;
+        }
+        
         public void Parse(BinaryReader reader)
         {
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -49,9 +62,12 @@ namespace Formats.Mobi.Headers
             return output.ToArray();
         }
 
-        public void Write(BinaryWriter writer)
+        public void Write(BinaryWriter writer, bool seekToOffset = true)
         {
-            writer.BaseStream.Seek(this.offset, SeekOrigin.Begin);
+            if (seekToOffset)
+            {
+                writer.BaseStream.Seek(this.offset, SeekOrigin.Begin);
+            }
             writer.Write(Dump());
         }
 
@@ -64,7 +80,7 @@ PALMDOC:
     textRecordCount: {textRecordCount}
     recordSize: {recordSize}
     encryptionType: {encryptionType}
-    mysteryData: {mysteryData}
+    unknown: {unknown}
             ");
         }
     }

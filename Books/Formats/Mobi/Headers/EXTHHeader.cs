@@ -118,12 +118,16 @@ namespace Formats.Mobi.Headers
             output.AddRange(records);
 
             output.AddRange(new byte[output.Count % 4]); // pad to 4-byte multiple
+
             return output.ToArray();
         }
 
-        public void Write(BinaryWriter writer)
+        public void Write(BinaryWriter writer, bool seekToOffset = true)
         {
-            writer.BaseStream.Seek(offset, SeekOrigin.Begin);
+            if (seekToOffset)
+            {
+                writer.BaseStream.Seek(offset, SeekOrigin.Begin);
+            }
             writer.Write(Dump());
         }
 
@@ -131,13 +135,12 @@ namespace Formats.Mobi.Headers
         {
             Console.WriteLine($@"
 EXTH HEADER:
-    identifier: {identifier}
+    identifier: {identifier.Decode()}
     recordCount: {recordCount}
             ");
             foreach (uint k in this.Keys)
             {
-                Console.WriteLine($"\t{k}: {Get(k)}");
-
+                Console.WriteLine($"\t{k}: {Get(k).Decode()}");
             }
         }
 

@@ -112,8 +112,6 @@ namespace Formats.Mobi
         {
             FilePath = filepath;
 
-            Utils.BitConverter.LittleEndian = false;
-
             using (BinaryReader reader = new BinaryReader(new FileStream(filepath, FileMode.Open)))
             {
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
@@ -141,14 +139,14 @@ namespace Formats.Mobi
 
                 // MobiHeader
                 this.MobiHeader = new Headers.MobiHeader();
-                this.MobiHeader.offset = (uint)reader.BaseStream.Position; // PalmDOCHeader + 0x10
+                this.MobiHeader.offset = (uint)reader.BaseStream.Position;
                 this.MobiHeader.Parse(reader);
 
                 // EXTHHeader
                 this.EXTHHeader = new Headers.EXTHHeader();
                 if (this.MobiHeader.hasEXTH)
                 {
-                    EXTHHeader.offset = MobiHeader.offset + MobiHeader.headerLength;
+                    EXTHHeader.offset = MobiHeader.offset + MobiHeader.length;
                     EXTHHeader.Parse(reader);
 
                     Author = EXTHHeader.Get(Headers.EXTHRecordID.Author).Decode();
@@ -156,7 +154,7 @@ namespace Formats.Mobi
                     byte[] isbn = EXTHHeader.Get<uint, byte[]>(104);
                     if (isbn != null && isbn.Length == 4)
                     {
-                        ISBN = Utils.BitConverter.ToUInt32(isbn, 0x0);
+                        ISBN = Utils.BigEndian.ToUInt32(isbn, 0x0);
                     }
 
                     Language = EXTHHeader.Get(Headers.EXTHRecordID.Language).Decode();
@@ -168,46 +166,37 @@ namespace Formats.Mobi
                     Rights = EXTHHeader.Get(Headers.EXTHRecordID.Rights).Decode();
 
                 }
-                if (MobiHeader.indxRecordNum != 0xFFFFFFFF)
-                {
-                    ParseIndexes(reader);
-                }
                 Title = MobiHeader.fullTitle;
             }
         }
 
-
-        private void ParseIndexes(BinaryReader reader)
+        /// <summary>
+        /// Parses record containing TOC names
+        /// Returns list of (int, string) containing (name offset in record, toc location name)
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <returns></returns>
+        private (int, string)[] ReadTOCNames(byte[] buffer)
         {
-            Utils.BitConverter.LittleEndian = false;
+            List<(int, string)> names = new List<(int, string)>();
 
-            // Get all useful information from first INDX record
-            Console.WriteLine($"Reading indexes from record {MobiHeader.indxRecordNum * 2}");
-            reader.BaseStream.Seek((int)PDBHeader.records[MobiHeader.indxRecordNum], SeekOrigin.Begin);
-            int recLen = (int)(PDBHeader.records[MobiHeader.indxRecordNum + 1] - PDBHeader.records[MobiHeader.indxRecordNum]);
-            byte[] buffer = reader.ReadBytes(recLen);
-
-            Records.MetaINDX metaIndx = new Records.MetaINDX(buffer);
-
-            // Get info from subsequent INDX records
-
-            List<(string, int)> indexes = new List<(string, int)>();
-
-            List<uint> idxPositions = new List<uint>();
-            for (int i = 0; i < metaIndx.recordCount; i++)
+            int offset = 0;
+            while (offset < buffer.Length)
             {
-                idxPositions.Clear();
-                int recNum = (int)MobiHeader.indxRecordNum + i + 1;
+                (int, string) name = (0, "");
+                if (buffer[offset] == 0x00) break;
 
-                int offset = (int)PDBHeader.records[recNum];
-                int len = (int)(PDBHeader.records[recNum + 1] - PDBHeader.records[recNum]);
-                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                buffer = reader.ReadBytes(len);
+                name.Item1 = offset;
 
-                Records.DataINDX dataIndx = new Records.DataINDX(buffer, metaIndx.recordEncoding, metaIndx.tagxControlByteCount, metaIndx.tagxTable);
-                dataIndx.ReadIDXT();
+                int nameLen = Utils.Mobi.VarLengthInt(buffer.SubArray(offset, buffer.Length - offset), out int c);
+                offset += c;
 
+                name.Item2 = buffer.SubArray(offset, nameLen).Decode();
+                offset += nameLen;
+                names.Add(name);
             }
+
+            return names.ToArray();
         }
 
         /// <summary>
@@ -330,7 +319,7 @@ namespace Formats.Mobi
                 MobiHeader.fullTitleLength = (uint)value.Length;
                 PDBHeader.title = value.Length > 0x20 ? value.Substring(0x0, 0x20) : value + new byte[0x20 - value.Length].Decode();
                 PDBHeader.title = PDBHeader.title.Replace(' ', '_');
-                EXTHHeader.Set(503, value);
+                EXTHHeader.Set(Headers.EXTHRecordID.UpdatedTitle, value.Encode());
                 _Title = value;
             }
         }
@@ -351,7 +340,7 @@ namespace Formats.Mobi
             get => _ISBN;
             set
             {
-                EXTHHeader.Set("ISBN", value.ToString());
+                EXTHHeader.Set(Headers.EXTHRecordID.ISBN, value.ToString().Encode());
                 _ISBN = value;
             }
         }
@@ -541,7 +530,7 @@ namespace Formats.Mobi
 
         public void WriteMetadata()
         {
-            EXTHHeader.Set(108, "Lignum [https://github.com/sawyersteven/Lignum]");
+            EXTHHeader.Set(Headers.EXTHRecordID.Contributor, "Lignum [https://github.com/sawyersteven/Lignum]".Encode());
 
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(this.FilePath, FileMode.Open)))
