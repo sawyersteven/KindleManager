@@ -15,9 +15,7 @@ namespace ExtensionMethods
         {
             return node.OwnerDocument.DocumentNode.OuterHtml.Substring(0, node.StreamPosition).Encode().Length;
         }
-
     }
-
 
     public static class BinaryReaderExtensions
     {
@@ -103,10 +101,15 @@ namespace ExtensionMethods
 
         /// <summary>
         /// Returns a sub-array of length starting at index
+        /// Pass length of -1 to extend subarray to length of parent
         /// </summary>
         /// <returns> Array<T></returns>
         public static T[] SubArray<T>(this T[] data, int index, int length)
         {
+            if (length == -1)
+            {
+                length = data.Length - index;
+            }
             T[] result = new T[length];
             Array.Copy(data, index, result, 0, length);
             return result;
