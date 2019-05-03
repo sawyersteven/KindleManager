@@ -1,6 +1,7 @@
 ﻿using System;
 using ExtensionMethods;
 using System.Globalization;
+using System.Collections.Generic;
 
 namespace Utils
 {
@@ -9,6 +10,8 @@ namespace Utils
         /// <summary>
         /// Parse backward-encoded Mobipocket variable-width int
         /// Retuns int with optional out param for number of bytes used to create int
+        /// 
+        /// https://wiki.mobileread.com/wiki/MOBI#Variable-width_integers
         /// </summary>
         /// <param name="buffer"> At least four bytes read from end of text record</param>
         /// <returns></returns>
@@ -33,6 +36,26 @@ namespace Utils
         public static int VarLengthInt(byte[] buffer)
         {
             return VarLengthInt(buffer, out int _);
+        }
+
+        /// <summary>
+        /// Turns uint into big-endian VarLengthInt byte array
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
+        public static byte[] EncVarLengthInt(uint val)
+        {
+            List<byte> output = new List<byte>();
+
+            while (output.Count < 4)
+            {
+                output.Add((byte)(val & 0x7f));
+                val >>= 7;
+                if (val == 0) break;
+            }
+            output[0] |= 0x80;
+            output.Reverse();
+            return output.ToArray();
         }
 
         public static int CountBits(byte b)
