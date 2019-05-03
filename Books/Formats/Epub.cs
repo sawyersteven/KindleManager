@@ -33,12 +33,14 @@ namespace Formats
 
             Title = ReadNode(metadataNode, "dc:title", nsmgr);
             Language = ReadNode(metadataNode, "dc:language", nsmgr);
+            
             ulong.TryParse(ReadNode(metadataNode, "dc:identifier[@opf:scheme='ISBN']", nsmgr), out ulong id);
             ISBN = id;
 
             Author = ReadNode(metadataNode, "dc:creator", nsmgr);
             Contributor = ReadNode(metadataNode, "dc:contributor", nsmgr);
             Publisher = ReadNode(metadataNode, "dc:publisher", nsmgr);
+            Description = ReadNode(metadataNode, "dc:description", nsmgr);
 
             XmlNodeList subjects = metadataNode.SelectNodes("dc:subject", nsmgr);
             Subject = new string[subjects.Count];
@@ -66,6 +68,7 @@ namespace Formats
         private string ReadNode(XmlNode node, string xpath, XmlNamespaceManager nsmgr)
         {
             XmlNode target = node.SelectSingleNode(xpath, nsmgr);
+
             return (target == null) ? "" : target.InnerText;
         }
 
@@ -212,6 +215,57 @@ namespace Formats
 
         public string DateAdded { get; set; }
 
+        public string TextContent()
+        {
+            // TODO strip <link> and <svg>
+
+            HtmlDocument combinedText = new HtmlDocument();
+            combinedText.LoadHtml(Resources.HtmlTemplate);
+
+            XmlDocument tocXml = new XmlDocument();
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(tocXml.NameTable);
+            nsmgr.AddNamespace("rt", "http://www.daisy.org/z3986/2005/ncx/");
+
+            using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry toc = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".ncx"));
+                if (toc == null) throw new Exception("TOC file not found, epub may be corrupt");
+                using (Stream s = toc.Open()) { tocXml.Load(s); }
+
+                string[] sortedNavPoints = NavPoints(tocXml, nsmgr);
+                string[] orderedDocumentNames = OrderedDocumentNames(zip);
+
+                Dictionary<string, HtmlDocument> documents = LoadDocuments(zip, orderedDocumentNames);
+
+                FixLinks(sortedNavPoints, documents);
+
+                string[] docTexts = new string[orderedDocumentNames.Length];
+                for (int i = 0; i < orderedDocumentNames.Length; i++)
+                {
+                    docTexts[i] = documents[orderedDocumentNames[i]].DocumentNode.InnerHtml;
+                }
+
+                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml = MergeDocuments(orderedDocumentNames, documents);
+
+                // Add css
+                ZipArchiveEntry css = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".css"));
+                if (css != null)
+                {
+                    string stylesheet;
+                    using (Stream s = css.Open())
+                    using (StreamReader reader = new StreamReader(s))
+                    {
+                        stylesheet = reader.ReadToEnd();
+                    }
+                    combinedText.DocumentNode.SelectSingleNode("//head/style").InnerHtml += stylesheet;
+                }
+            }
+            return SerializeImgLinks(combinedText);
+        }
+
+        #endregion
+
+        #region html parsing
         /// <summary>
         /// Gets all navpoints from toc sorted by PlayOrder
         /// </summary>
@@ -242,90 +296,68 @@ namespace Formats
             return n;
         }
 
-        public string TextContent()
+        /// <summary>
+        /// Makes list of document names in order of OPF's spine
+        /// </summary>
+        private string[] OrderedDocumentNames(ZipArchive zip)
         {
-            // TODO strip <link> and <svg>
+            XmlDocument opfXml = new XmlDocument();
+            ZipArchiveEntry opf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
+            if (opf == null) throw new Exception("OPF file not found, epub may be corrupt");
+            using (Stream s = opf.Open()) { opfXml.Load(s); }
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(opfXml.NameTable);
+            nsmgr.AddNamespace("rt", opfXml.DocumentElement.NamespaceURI);
 
-            HtmlDocument combinedText = new HtmlDocument();
-            combinedText.LoadHtml(Resources.HtmlTemplate);
-
-            XmlDocument tocXml = new XmlDocument();
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(tocXml.NameTable);
-            nsmgr.AddNamespace("rt", "http://www.daisy.org/z3986/2005/ncx/");
-
-            using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
+            List<string> docNames = new List<string>();
+            foreach (XmlNode itemref in opfXml.SelectNodes("//rt:spine/rt:itemref", nsmgr))
             {
-                ZipArchiveEntry toc = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".ncx"));
-                if (toc == null) throw new Exception("TOC file not found, epub may be corrupt");
-                using (Stream s = toc.Open()) { tocXml.Load(s); }
-
-                string[] sortedNavPoints = NavPoints(tocXml, nsmgr);
-
-                Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
-                for (int i = 0; i < sortedNavPoints.Length; i++)
+                XmlAttribute idref = itemref.Attributes["idref"];
+                if (idref == null)
                 {
-                    string docname = sortedNavPoints[i].Split('#')[0];
-                    if (documents.ContainsKey(docname)) continue;
-
-                    ZipArchiveEntry html = zip.Entries.FirstOrDefault(x => x.FullName.EndsWith(docname));
-                    if (html == null) throw new FileFormatException($"Content file {docname} could not be found.");
-
-                    HtmlDocument doc = new HtmlDocument();
-                    using (Stream s = html.Open()) { doc.Load(s, System.Text.Encoding.UTF8); }
-                    documents.Add(html.Name, doc);
+                    Console.WriteLine("Itemref entry does not have 'idref' attribute, html parsing may be incorrect");
+                    continue;
                 }
-
-                FixLinks(sortedNavPoints, documents);
-
-                List<string> orderedDocumentNames = new List<string>();
-                foreach (string np in sortedNavPoints)
+                XmlNode item = opfXml.SelectSingleNode($"//rt:manifest/rt:item[@id='{idref.Value}']", nsmgr);
+                if (item == null)
                 {
-                    string docname = Path.GetFileName(np.Split('#')[0]);
-                    if (!orderedDocumentNames.Contains(docname))
-                    {
-                        orderedDocumentNames.Add(docname);
-                    }
+                    Console.WriteLine("Itemref points to an item that does not exist, html parsing may be incorrect");
+                    continue;
                 }
-
-                string[] docTexts = new string[orderedDocumentNames.Count];
-                for (int i = 0; i < orderedDocumentNames.Count; i++)
+                XmlAttribute href = item.Attributes["href"];
+                if (href == null)
                 {
-                    docTexts[i] = documents[orderedDocumentNames[i]].DocumentNode.InnerHtml;
+                    string itemid = item.Attributes["id"].Value;
+                    Console.WriteLine($"Item entry {itemid} does not have 'href' attribute, html parsing may be incorrect");
+                    continue;
                 }
-
-                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml = MergeDocuments(sortedNavPoints, documents);
-
-                // Add css
-                ZipArchiveEntry css = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".css"));
-                if (css != null)
-                {
-                    string stylesheet;
-                    using (Stream s = css.Open())
-                    using (StreamReader reader = new StreamReader(s))
-                    {
-                        stylesheet = reader.ReadToEnd();
-                    }
-                    combinedText.DocumentNode.SelectSingleNode("//head/style").InnerHtml += stylesheet;
-                }
+                docNames.Add(href.Value);
             }
-            return SerializeImgLinks(combinedText);
+            return docNames.ToArray();
         }
 
 
-        private static string MergeDocuments(IEnumerable<string> sortedNavPoints, Dictionary<string, HtmlDocument> documents)
+        private Dictionary<string, HtmlDocument> LoadDocuments(ZipArchive zip, string[] docNames)
         {
-            List<string> orderedDocumentNames = new List<string>();
-            foreach (string np in sortedNavPoints)
+            Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
+            foreach(string docname in docNames)
             {
-                string docname = Path.GetFileName(np.Split('#')[0]);
-                if (!orderedDocumentNames.Contains(docname))
-                {
-                    orderedDocumentNames.Add(docname);
-                }
+                if (documents.ContainsKey(docname)) continue;
+
+                ZipArchiveEntry html = zip.Entries.FirstOrDefault(x => x.FullName.EndsWith(docname));
+                if (html == null) throw new FileFormatException($"Content file {docname} could not be found.");
+
+                HtmlDocument doc = new HtmlDocument();
+                using (Stream s = html.Open()) { doc.Load(s, System.Text.Encoding.UTF8); }
+                documents.Add(html.Name, doc);
             }
 
-            string[] docTexts = new string[orderedDocumentNames.Count];
-            for (int i = 0; i < orderedDocumentNames.Count; i++)
+            return documents;
+        }
+
+        private static string MergeDocuments(string[] orderedDocumentNames, Dictionary<string, HtmlDocument> documents)
+        {
+            string[] docTexts = new string[orderedDocumentNames.Length];
+            for (int i = 0; i < orderedDocumentNames.Length; i++)
             {
                 HtmlNode body = documents[orderedDocumentNames[i]].DocumentNode.SelectSingleNode("//html/body");
                 if (body == null) continue;
@@ -333,7 +365,6 @@ namespace Formats
             }
             return string.Join("<mbp:pagebreak/>", docTexts);
         }
-
 
         /// <summary>
         /// Fixes cross-document links
