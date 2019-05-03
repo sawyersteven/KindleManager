@@ -53,8 +53,9 @@ namespace Converters
             filePath = System.IO.Path.ChangeExtension(filePath, ".mobi");
 
 
-            Formats.MobiBuilder.Convert(input, filePath);
-            return;
+            Formats.Mobi.Builder mobibuilder = new Formats.Mobi.Builder(input, filePath);
+
+            mobibuilder.Write();
         }
     }
 }
