@@ -84,17 +84,14 @@ namespace Formats.Mobi.Headers
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
             byte[] buffer = reader.ReadBytes(0xC);
 
-            Utils.BitConverter.LittleEndian = false;
-
             identifier = buffer.SubArray(0x0, 0x4);
-            length = (int)Utils.BitConverter.ToUInt32(buffer, 0x4);
-            recordCount = Utils.BitConverter.ToUInt32(buffer, 0x8);
+            uint _recordCount = Utils.BigEndian.ToUInt32(buffer, 0x8);
 
-            for (int i = 0; i < recordCount; i++)
+            for (int i = 0; i < _recordCount; i++)
             {
                 buffer = reader.ReadBytes(0x8);
-                var recType = Utils.BitConverter.ToUInt32(buffer, 0x0);
-                var recLen = Utils.BitConverter.ToUInt32(buffer, 0x4) - 0x8;
+                var recType = Utils.BigEndian.ToUInt32(buffer, 0x0);
+                var recLen = Utils.BigEndian.ToUInt32(buffer, 0x4) - 0x8;
                 var recData = reader.ReadBytes((int)recLen);
                 if (!this.ContainsKey(recType))
                 {
@@ -105,18 +102,21 @@ namespace Formats.Mobi.Headers
 
         public byte[] Dump()
         {
-            Utils.BitConverter.LittleEndian = false;
-
-            List<byte> output = new List<Byte>();
-            output.AddRange(identifier);
-            output.AddRange(Utils.BitConverter.GetBytes((uint)length));
-            output.AddRange(Utils.BitConverter.GetBytes((uint)Keys.Count));
+            List<byte> records = new List<byte>();
             foreach (var kv in this)
             {
-                output.AddRange(Utils.BitConverter.GetBytes(kv.Key)); // recType
-                output.AddRange(Utils.BitConverter.GetBytes((uint)kv.Value.Length + 0x8));
-                output.AddRange(kv.Value); // recData
+                records.AddRange(Utils.BigEndian.GetBytes(kv.Key)); // recType
+                records.AddRange(Utils.BigEndian.GetBytes((uint)kv.Value.Length + 0x8));
+                records.AddRange(kv.Value); // recData
             }
+
+            List<byte> output = new List<byte>();
+            output.AddRange(identifier);
+            output.AddRange(Utils.BigEndian.GetBytes((uint)length));
+            output.AddRange(Utils.BigEndian.GetBytes((uint)Keys.Count));
+            output.AddRange(records);
+
+            output.AddRange(new byte[output.Count % 4]); // pad to 4-byte multiple
             return output.ToArray();
         }
 
