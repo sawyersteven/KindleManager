@@ -19,7 +19,7 @@ namespace Formats.Mobi.Records
         public uint recordCount = 0;
         public uint encoding = 65001;
 
-        public uint languageCode = 9;
+        public uint languageCode = 0xFFFFFFFF;
         public uint recordEntryCount = 0;
         public uint ordtOffset = 0;
         public uint ligtOffset = 0;
@@ -33,13 +33,9 @@ namespace Formats.Mobi.Records
         public uint ordt1Offset = 0;
 
         public uint ordt2Offset = 0;
-        public uint tagxOffset = indxLength;
-        public byte[] unused4 = nullFour;
+        public uint tagxOffset = 0;
+        public byte[] unused4 = nullFour; 
         public byte[] unused5 = nullFour;
-
-        public INDX()
-        {
-        }
 
         public byte[] Dump()
         {
@@ -69,7 +65,7 @@ namespace Formats.Mobi.Records
             record.AddRange(Utils.BigEndian.GetBytes(ordt1Offset));
 
             record.AddRange(Utils.BigEndian.GetBytes(ordt2Offset));
-            record.AddRange(Utils.BigEndian.GetBytes(length));
+            record.AddRange(Utils.BigEndian.GetBytes(tagxOffset));
             record.AddRange(unused4);
             record.AddRange(unused5);
 

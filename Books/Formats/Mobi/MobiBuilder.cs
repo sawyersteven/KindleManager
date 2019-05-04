@@ -372,6 +372,8 @@ namespace Formats.Mobi
             indx.recordCount = 1;                   // num of indx data records
             indx.recordEntryCount = (uint)Chapters.Length;
             indx.idxtOffset = (uint)(indx.length + tagx.Count + (Rec.Length + 2 + Padding));
+            indx.cncxRecordCount = 1;
+            indx.tagxOffset = indx.length;
 
             // Combine
             List<byte> record = new List<byte>();
@@ -393,10 +395,9 @@ namespace Formats.Mobi
 
             Records.INDX indx = new Records.INDX();
             indx.type = 0;                              // normal
-            indx.unused = new byte[] { 0, 0, 0, 1 };    // this should be one with type=0 because reasons
+            indx.unused2 = new byte[] { 0, 0, 0, 1 };   // this should be one with type=0 because reasons
             indx.encoding = 0xFFFFFFFF;
-            indx.unused2 = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
-            indx.idxtOffset = (uint)(indx.length + cncxBuffer.Count);
+            indx.idxtOffset = (uint)(indx.length + cncxBuffer.TotalLength());
             indx.recordCount = (uint)idxtOffsets.Count;
 
             record.AddRange(indx.Dump());
@@ -406,11 +407,11 @@ namespace Formats.Mobi
             }
 
             record.AddRange("IDXT".Encode());
-            foreach (ushort offset in idxtOffsets) // this isn't right
+            foreach (ushort offset in idxtOffsets)
             {
                 record.AddRange(Utils.BigEndian.GetBytes(offset));
             }
-            record.AddRange(new byte[(idxtOffsets.Count + 4) % 4]);
+            record.AddRange(new byte[(idxtOffsets.Count * 2) % 4]); // pad idxt to multiple of four
             
             return record.ToArray();
         }
