@@ -71,7 +71,7 @@ namespace Formats.Mobi.Headers
         public byte[] Get(EXTHRecordID rec)
         {
             TryGetValue((uint)rec, out byte[] val);
-            return val;
+            return val ?? new byte[0];
         }
 
         public byte[] Get(uint rec)

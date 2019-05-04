@@ -103,34 +103,34 @@ namespace Formats.Mobi.Headers
             firstNonBookRecord = 0xFFFFFFFF;
             fullTitleOffset = 0xFFFFFFFF;
             fullTitleLength = 0xFFFFFFFF;
-            locale = 1033;
+            locale = 9;
 
             inputLanguage = 0;
             outputLanguage = 0;
             minVersion = 6;
             firstImageRecord = 0xFFFFFFFF;
 
-            huffRecordOffset = 0xFFFFFFFF;
-            huffRecordCount = 0xFFFFFFFF;
-            huffTableOffset = 0xFFFFFFFF;
-            huffTableLength = 0xFFFFFFFF;
+            huffRecordOffset = 0;
+            huffRecordCount = 0;
+            huffTableOffset = 0;
+            huffTableLength = 0;
 
             exthFlags = 0x50;
             unknown1 = new byte[36];
             drmOffset = 0xFFFFFFFF;
-            drmCount = 0xFFFFFFFF;
+            drmCount = 0;
 
-            drmSize = 0xFFFFFFFF;
-            drmFlags = 0xFFFFFFFF;
+            drmSize = 0;
+            drmFlags = 0;
             unknown2 = 0x0000000000000000;
 
             firstContentRecord = 1;
             lastContentRecord = 0xFFFF;
             unknown3 = 0x00000001;
-            fcisRecord = 0xFFFFFFFF;
+            fcisRecord = 0;
             fcisRecordCount = 1;
 
-            flisRecord = 0xFFFFFFFF;
+            flisRecord = 0;
             flisRecordCount = 1;
             unknown4 = 0x0000000000000000;
 
@@ -139,8 +139,8 @@ namespace Formats.Mobi.Headers
             compilationDataCount = 0xFFFFFFFF;
             unknown6 = 0xFFFFFFFF;
 
-            extraDataFlags = 1;
-            indxRecord = 0xFFFFFFFF;
+            extraDataFlags = 0;
+            indxRecord = 0;
         }
 
         public void Parse(BinaryReader reader)
@@ -313,6 +313,10 @@ MOBI:
     textEncoding: {textEncoding}
     uid: {uid}
     generatorVersion: {formatVersion}
+    orthoIndex: {orthoIndex}
+    inflectionIndex: {inflectionIndex}
+    indexNames: {indexNames}
+    indexKeys: {indexKeys}
     firstNonBookRecord: {firstNonBookRecord}
     fullTitleOffset: {fullTitleOffset}
     fullTitleLength: {fullTitleLength}
@@ -331,11 +335,13 @@ MOBI:
     drmSize: {drmSize}
     drmFlags: {drmFlags}
     firstContentRecord: {firstContentRecord}
-    lastImageRecord: {lastContentRecord}
+    lastContentRecord: {lastContentRecord}
     fcisRecord: {fcisRecord}
     fcisRecordCount: {fcisRecordCount}
     flisRecord: {flisRecord}
     flisRecordCount: {flisRecordCount}
+    firstCompliationData: {firstCompilationData}
+    compilationDataCount: {compilationDataCount}
     extraDataFlags: {extraDataFlags}
     indxRecord: {indxRecord}
             ");

@@ -8,10 +8,13 @@ namespace Formats.Mobi.Headers
     public class PDBHeader
     {
         private static readonly byte[] nullTwo = new byte[2];
-        private static readonly byte[] nullFour = new byte[4];
 
         public int offset = 0x0;
         public readonly int baseLength = 0x4E;
+        public int TotalLength
+        {
+            get => baseLength + (8 * (recordCount + 1)) + 2;
+        }
 
         private string _title;
         public string title
@@ -120,6 +123,8 @@ namespace Formats.Mobi.Headers
                 output.AddRange(Utils.BigEndian.GetBytes(records[i])); // offset
                 output.AddRange(Utils.BigEndian.GetBytes((i * 2) & 0x00FFFFFF)); // attr + uid
             }
+
+            output.AddRange(nullTwo);
 
             return output.ToArray();
         }

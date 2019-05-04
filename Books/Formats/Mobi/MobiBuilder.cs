@@ -54,20 +54,20 @@ namespace Formats.Mobi
                 records.Add(textBytes.SubArray(i, len));
                 textRecordCount++;
             }
-            uint firstNonBookRecord = (uint)records.Count;
 
-            uint indxRecord = (uint)records.Count;
+            uint firstNonBookRecord = (uint)records.Count + 1;
+            uint indxRecord = (uint)records.Count + 1;
             records.AddRange(IndxRecords());
 
             byte[][] images = Donor.Images();
-            uint firstImageRecord = (images.Length == 0) ? uint.MaxValue: (uint)records.Count;
+            uint firstImageRecord = (images.Length == 0) ? uint.MaxValue: (uint)records.Count + 1;
             records.AddRange(Donor.Images());
-            ushort lastContentRecord = (ushort)(records.Count - 1);
+            ushort lastContentRecord = (ushort)(records.Count);
 
             records.Add(FLISRecord);
-            uint flisRecord = (uint)records.Count - 1;
+            uint flisRecord = (uint)records.Count;
             records.Add(FCISRecord((uint)textBytes.Length));
-            uint fcisRecord = (uint)records.Count - 1;
+            uint fcisRecord = (uint)records.Count;
             records.Add(EOFRecord);
 
             // Build headers backward to know lengths
@@ -80,6 +80,8 @@ namespace Formats.Mobi
             MobiHeader.lastContentRecord = lastContentRecord;
             MobiHeader.indxRecord = indxRecord;
             MobiHeader.fullTitle = Donor.Title;
+            MobiHeader.flisRecord = flisRecord;
+            MobiHeader.fcisRecord = fcisRecord;
 
             PDH.FillDefault();
             PDH.textLength = (uint)textBytes.Length;
@@ -118,9 +120,11 @@ namespace Formats.Mobi
         private uint[] CalcRecordOffsets()
         {
             List<uint> offsets = new List<uint>();
-            offsets.Add((uint)(0x4E + (0x8 * (records.Count + 1)))); // start of PalmDoc
 
-            uint currentPosition = (uint)(0x10 + MobiHeader.length + EXTH.length + postHeaderPadding);
+            uint currentPosition = (uint)PDB.TotalLength;
+            offsets.Add(currentPosition); // start of PalmDoc
+
+            currentPosition += 0x10 + MobiHeader.length + (uint)EXTH.length + postHeaderPadding;
             for (int i = 0; i < records.Count; i++)
             {
                 offsets.Add(currentPosition);
@@ -146,6 +150,9 @@ namespace Formats.Mobi
             EXTH.Set(Headers.EXTHRecordID.Rights, Donor.Rights.Encode());
             EXTH.Set(Headers.EXTHRecordID.Creator, "Lignum".Encode());
             EXTH.Set(Headers.EXTHRecordID.Language, Donor.Language.Encode());
+            EXTH.Set(Headers.EXTHRecordID.CDEType, "EBOK".Encode());
+            EXTH.Set(Headers.EXTHRecordID.Source, "Lignum".Encode());
+
         }
 
         #endregion
@@ -156,10 +163,8 @@ namespace Formats.Mobi
 
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
+            StripStyle(doc);
             FixImageRecIndexes(doc);
-            if (doc == null) { // Disabled for now
-                StripStyle(doc);
-            }
 
             (string, int)[] tocData = FixLinks(doc, true);
 
@@ -338,15 +343,9 @@ namespace Formats.Mobi
         private byte[][] IndxRecords()
         {
             byte[][] records = new byte[3][];
-
             records[0] = metaINDX();
             records[1] = dataINDX();
             records[2] = cncxLabelBuffer.ToArray();
-
-            File.WriteAllBytes(@"C:\Users\Steven\Desktop\01metaindx.bin", records[0]);
-            File.WriteAllBytes(@"C:\Users\Steven\Desktop\02dataindx.bin", records[1]);
-            File.WriteAllBytes(@"C:\Users\Steven\Desktop\03labeltable.bin", records[2]);
-
             return records;
         }
 
