@@ -4,6 +4,8 @@ using System.IO;
 using ExtensionMethods;
 using HtmlAgilityPack;
 
+using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
+
 namespace Formats.Mobi
 {
     public class Book : IBook
@@ -104,7 +106,7 @@ namespace Formats.Mobi
         public Headers.EXTHHeader EXTHHeader;
 
         private delegate byte[] Decompressor(byte[] buffer, int compressedLen);
-        private Decompressor decompress;
+        private readonly Decompressor decompress;
 
         public uint contentOffset;
 
@@ -157,46 +159,17 @@ namespace Formats.Mobi
                         ISBN = Utils.BigEndian.ToUInt32(isbn, 0x0);
                     }
 
-                    Language = EXTHHeader.Get(Headers.EXTHRecordID.Language).Decode();
-                    Contributor = EXTHHeader.Get(Headers.EXTHRecordID.Contributor).Decode();
-                    Publisher = EXTHHeader.Get(Headers.EXTHRecordID.Publisher).Decode();
-                    Subject = new string[] { EXTHHeader.Get(Headers.EXTHRecordID.Subject).Decode() };
-                    Description = EXTHHeader.Get(Headers.EXTHRecordID.Description).Decode();
-                    PubDate = EXTHHeader.Get(Headers.EXTHRecordID.PublishDate).Decode();
-                    Rights = EXTHHeader.Get(Headers.EXTHRecordID.Rights).Decode();
+                    Language = EXTHHeader.Get(EXTHRecordID.Language).Decode();
+                    Contributor = EXTHHeader.Get(EXTHRecordID.Contributor).Decode();
+                    Publisher = EXTHHeader.Get(EXTHRecordID.Publisher).Decode();
+                    Subject = new string[] { EXTHHeader.Get(EXTHRecordID.Subject).Decode() };
+                    Description = EXTHHeader.Get(EXTHRecordID.Description).Decode();
+                    PubDate = EXTHHeader.Get(EXTHRecordID.PublishDate).Decode();
+                    Rights = EXTHHeader.Get(EXTHRecordID.Rights).Decode();
 
                 }
                 Title = MobiHeader.fullTitle;
             }
-        }
-
-        /// <summary>
-        /// Parses record containing TOC names
-        /// Returns list of (int, string) containing (name offset in record, toc location name)
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <returns></returns>
-        private (int, string)[] ReadTOCNames(byte[] buffer)
-        {
-            List<(int, string)> names = new List<(int, string)>();
-
-            int offset = 0;
-            while (offset < buffer.Length)
-            {
-                (int, string) name = (0, "");
-                if (buffer[offset] == 0x00) break;
-
-                name.Item1 = offset;
-
-                int nameLen = Utils.Mobi.VarLengthInt(buffer.SubArray(offset, buffer.Length - offset), out int c);
-                offset += c;
-
-                name.Item2 = buffer.SubArray(offset, nameLen).Decode();
-                offset += nameLen;
-                names.Add(name);
-            }
-
-            return names.ToArray();
         }
 
         /// <summary>
@@ -212,7 +185,7 @@ namespace Formats.Mobi
         /// record in PDBHeader starting with firstImageRecord as 1.
         /// 
         /// </summary>
-        private string fixLinks(string html)
+        private string FixLinks(string html)
         {
             string targetNode = "<a id=\"filepos{0}\"/>";
             byte[] htmlBytes = html.Encode();
@@ -234,12 +207,11 @@ namespace Formats.Mobi
             int bytesAdded = 0;
             foreach (string offset in filePositions)
             {
-                int offs;
-                if (!int.TryParse(offset, out offs)) continue;
+                if (!int.TryParse(offset, out int offs)) continue;
 
                 byte[] tn = string.Format(targetNode, offset).Encode();
 
-                int insertPos = nearestElementPos(htmlBytes, offs + bytesAdded);
+                int insertPos = NearestElementPos(htmlBytes, offs + bytesAdded);
 
                 htmlBytes = htmlBytes.InsertRange(insertPos, tn);
 
@@ -274,7 +246,7 @@ namespace Formats.Mobi
             return doc.DocumentNode.OuterHtml;
         }
 
-        private int nearestElementPos(byte[] html, int search)
+        private int NearestElementPos(byte[] html, int search)
         {
             if (search > html.Length) return -1;
             if (html[search] == '<') return search - 1;
@@ -291,7 +263,7 @@ namespace Formats.Mobi
         /// Calculate length of extra record bytes at end of text record
         /// </summary>
         /// Crawls backward through buffer to find length of all extra records
-        private int calcExtraBytes(byte[] record)
+        private int CalcExtraBytes(byte[] record)
         {
             int pos = record.Length;
             for (int _ = 0; _ < MobiHeader.flagTrailingEntries; _++)
@@ -319,7 +291,7 @@ namespace Formats.Mobi
                 MobiHeader.fullTitleLength = (uint)value.Length;
                 PDBHeader.title = value.Length > 0x20 ? value.Substring(0x0, 0x20) : value + new byte[0x20 - value.Length].Decode();
                 PDBHeader.title = PDBHeader.title.Replace(' ', '_');
-                EXTHHeader.Set(Headers.EXTHRecordID.UpdatedTitle, value.Encode());
+                EXTHHeader.Set(EXTHRecordID.UpdatedTitle, value.Encode());
                 _Title = value;
             }
         }
@@ -453,13 +425,13 @@ namespace Formats.Mobi
                 {
                     reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
                     byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
-                    int compressedLen = calcExtraBytes(compressedText);
+                    int compressedLen = CalcExtraBytes(compressedText);
                     byte[] x = decompress(compressedText, compressedLen);
                     bytes.AddRange(x);
                 }
             }
 
-            string text = "";
+            string text;
             switch (MobiHeader.textEncoding)
             {
                 case 1252:
@@ -471,7 +443,7 @@ namespace Formats.Mobi
                 default:
                     throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
             };
-            return bytes.ToArray().Decode();
+            return text;
 
         }
 
@@ -489,13 +461,13 @@ namespace Formats.Mobi
                 {
                     reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
                     byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
-                    int compressedLen = calcExtraBytes(compressedText);
+                    int compressedLen = CalcExtraBytes(compressedText);
                     byte[] x = decompress(compressedText, compressedLen);
                     bytes.AddRange(x);
                 }
             }
 
-            string text = "";
+            string text;
             switch (MobiHeader.textEncoding)
             {
                 case 1252:
@@ -507,7 +479,7 @@ namespace Formats.Mobi
                 default:
                     throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
             };
-            return fixLinks(text);
+            return FixLinks(text);
         }
 
         public byte[][] Images()

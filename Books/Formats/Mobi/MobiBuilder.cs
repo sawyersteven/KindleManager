@@ -5,38 +5,35 @@ using System.IO;
 using HtmlAgilityPack;
 using System.Linq;
 
+using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
+
 namespace Formats.Mobi
 {
     public class Builder
     {
         private const int postHeaderPadding = 0x400;
 
-        private static readonly byte[] nullTwo = new byte[2];
-        private static readonly byte[] nullFour = new byte[4];
-
         readonly IBook Donor;
         readonly string OutputPath;
         (string, int)[] Chapters; // (title, byteoffset) in encoded html
 
-        private Headers.PDBHeader PDB = new Headers.PDBHeader();
-        private Headers.PalmDOCHeader PDH = new Headers.PalmDOCHeader();
-        private Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
-        private Headers.EXTHHeader EXTH = new Headers.EXTHHeader();
+        private readonly Headers.PDBHeader PDB = new Headers.PDBHeader();
+        private readonly Headers.PalmDOCHeader PDH = new Headers.PalmDOCHeader();
+        private readonly Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
+        private readonly Headers.EXTHHeader EXTH = new Headers.EXTHHeader();
 
-        private List<ushort> idxtOffsets = new List<ushort>();
+        private readonly List<ushort> idxtOffsets = new List<ushort>();
 
-        List<byte[]> cncxBuffer = new List<byte[]>();
-        List<byte> cncxLabelBuffer = new List<byte>();
+        private readonly List<byte[]> logicalTOCEntries = new List<byte[]>();
+        private readonly List<byte> logicalTOCLabels = new List<byte>();
 
-        private List<byte[]> records = new List<byte[]>();
-
+        private readonly List<byte[]> records = new List<byte[]>();
 
         public Builder(IBook donor, string outputPath)
         {
             Donor = donor ?? throw new ArgumentException("Input book cannot be null");
             OutputPath = outputPath;
         }
-
 
         public void Write()
         {
@@ -107,12 +104,6 @@ namespace Formats.Mobi
                 }
             }
 
-            Book book = new Book(OutputPath);
-            book.PDBHeader.Print();
-            book.PalmDOCHeader.Print();
-            book.MobiHeader.Print();
-            book.EXTHHeader.Print();
-
             return;
         }
 
@@ -140,18 +131,18 @@ namespace Formats.Mobi
         private void FillEXTHHeader()
         {
             EXTH.identifier = "EXTH".Encode();
-            EXTH.Set(Headers.EXTHRecordID.Author, Donor.Author.Encode());
-            EXTH.Set(Headers.EXTHRecordID.Publisher, Donor.Publisher.Encode());
-            EXTH.Set(Headers.EXTHRecordID.Description, Donor.Description.Encode());
-            EXTH.Set(Headers.EXTHRecordID.ISBN, Donor.ISBN.ToString().Encode());
-            EXTH.Set(Headers.EXTHRecordID.Subject, string.Join(", ", Donor.Subject).Encode());
-            EXTH.Set(Headers.EXTHRecordID.PublishDate, Donor.PubDate.Encode());
-            EXTH.Set(Headers.EXTHRecordID.Contributor, "Lignum".Encode());
-            EXTH.Set(Headers.EXTHRecordID.Rights, Donor.Rights.Encode());
-            EXTH.Set(Headers.EXTHRecordID.Creator, "Lignum".Encode());
-            EXTH.Set(Headers.EXTHRecordID.Language, Donor.Language.Encode());
-            EXTH.Set(Headers.EXTHRecordID.CDEType, "EBOK".Encode());
-            EXTH.Set(Headers.EXTHRecordID.Source, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Author, Donor.Author.Encode());
+            EXTH.Set(EXTHRecordID.Publisher, Donor.Publisher.Encode());
+            EXTH.Set(EXTHRecordID.Description, Donor.Description.Encode());
+            EXTH.Set(EXTHRecordID.ISBN, Donor.ISBN.ToString().Encode());
+            EXTH.Set(EXTHRecordID.Subject, string.Join(", ", Donor.Subject).Encode());
+            EXTH.Set(EXTHRecordID.PublishDate, Donor.PubDate.Encode());
+            EXTH.Set(EXTHRecordID.Contributor, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Rights, Donor.Rights.Encode());
+            EXTH.Set(EXTHRecordID.Creator, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Language, Donor.Language.Encode());
+            EXTH.Set(EXTHRecordID.CDEType, "EBOK".Encode());
+            EXTH.Set(EXTHRecordID.Source, "Lignum".Encode());
 
         }
 
@@ -287,12 +278,12 @@ namespace Formats.Mobi
 
                 int chapterLength = Chapters[i + 1].Item2 - chapterOffset;
 
-                idxtOffsets.Add((ushort)(Records.INDX.indxLength + cncxBuffer.TotalLength()));
+                idxtOffsets.Add((ushort)(Records.INDX.indxLength + logicalTOCEntries.TotalLength()));
 
                 byte[] cncxId = i.ToString("D3").Encode();
                 byte[] vliOffset = Utils.Mobi.EncVarLengthInt((uint)chapterOffset);
                 byte[] vliLen = Utils.Mobi.EncVarLengthInt((uint)chapterLength);
-                byte[] vliNameOffset = Utils.Mobi.EncVarLengthInt((uint)cncxLabelBuffer.Count);
+                byte[] vliNameOffset = Utils.Mobi.EncVarLengthInt((uint)logicalTOCLabels.Count);
                 byte[] vliNameLen = Utils.Mobi.EncVarLengthInt((uint)chapterName.Encode().Length);
 
                 cncxEntry.Add((byte)cncxId.Length);    // id length
@@ -303,10 +294,10 @@ namespace Formats.Mobi
                 cncxEntry.AddRange(vliNameOffset);     // offset of chapter name in nametable
                 cncxEntry.AddRange(Utils.Mobi.EncVarLengthInt(0)); // Depth -- always 0.
 
-                cncxBuffer.Add(cncxEntry.ToArray());
+                logicalTOCEntries.Add(cncxEntry.ToArray());
 
-                cncxLabelBuffer.AddRange(vliNameLen);
-                cncxLabelBuffer.AddRange(chapterName.Encode());
+                logicalTOCLabels.AddRange(vliNameLen);
+                logicalTOCLabels.AddRange(chapterName.Encode());
             }
         }
 
@@ -343,13 +334,13 @@ namespace Formats.Mobi
         private byte[][] IndxRecords()
         {
             byte[][] records = new byte[3][];
-            records[0] = metaINDX();
-            records[1] = dataINDX();
-            records[2] = cncxLabelBuffer.ToArray();
+            records[0] = MetaINDX();
+            records[1] = DataINDX();
+            records[2] = logicalTOCLabels.ToArray();
             return records;
         }
 
-        private byte[] metaINDX()
+        private byte[] MetaINDX()
         {
             // Build tagx table
             List<byte> tagx = new List<byte>();
@@ -362,7 +353,7 @@ namespace Formats.Mobi
             }
 
             // Pad between tagx and idxt
-            byte[] Rec = cncxBuffer.Last();
+            byte[] Rec = logicalTOCEntries.Last();
             Rec = Rec.SubArray(0, Rec[0] + 1);
             int Padding = (Rec.Length + 2) % 4;
 
@@ -389,7 +380,7 @@ namespace Formats.Mobi
             return record.ToArray();
         }
 
-        private byte[] dataINDX()
+        private byte[] DataINDX()
         {
             List<byte> record = new List<byte>();
 
@@ -397,11 +388,11 @@ namespace Formats.Mobi
             indx.type = 0;                              // normal
             indx.unused2 = new byte[] { 0, 0, 0, 1 };   // this should be one with type=0 because reasons
             indx.encoding = 0xFFFFFFFF;
-            indx.idxtOffset = (uint)(indx.length + cncxBuffer.TotalLength());
+            indx.idxtOffset = (uint)(indx.length + logicalTOCEntries.TotalLength());
             indx.recordCount = (uint)idxtOffsets.Count;
 
             record.AddRange(indx.Dump());
-            foreach (byte[] rec in cncxBuffer)
+            foreach (byte[] rec in logicalTOCEntries)
             {
                 record.AddRange(rec);
             }
