@@ -217,8 +217,6 @@ namespace Formats
 
         public string TextContent()
         {
-            // TODO strip <link> and <svg>
-
             HtmlDocument combinedText = new HtmlDocument();
             combinedText.LoadHtml(Resources.HtmlTemplate);
 
@@ -232,12 +230,11 @@ namespace Formats
                 if (toc == null) throw new Exception("TOC file not found, epub may be corrupt");
                 using (Stream s = toc.Open()) { tocXml.Load(s); }
 
-                string[] sortedNavPoints = NavPoints(tocXml, nsmgr);
                 string[] orderedDocumentNames = OrderedDocumentNames(zip);
 
                 Dictionary<string, HtmlDocument> documents = LoadDocuments(zip, orderedDocumentNames);
 
-                FixLinks(sortedNavPoints, documents);
+                FixLinks(NavPoints(tocXml, nsmgr), documents);
 
                 string[] docTexts = new string[orderedDocumentNames.Length];
                 for (int i = 0; i < orderedDocumentNames.Length; i++)
@@ -268,30 +265,37 @@ namespace Formats
         #region html parsing
         /// <summary>
         /// Gets all navpoints from toc sorted by PlayOrder
+        /// Returns array of tuples of (srcdocument#id, label)
         /// </summary>
-        private string[] NavPoints(XmlDocument tocXml, XmlNamespaceManager nsmgr)
+        private (string, string)[] NavPoints(XmlDocument tocXml, XmlNamespaceManager nsmgr)
         {
-            // Tuple of playOrder, src document
-            List<(int, string)> navPoints = new List<(int, string)>();
+            // Tuple of playOrder, src document, label
+            List<(int, string, string)> navPoints = new List<(int, string, string)>();
 
             foreach (XmlNode nav in tocXml.SelectNodes("//rt:navPoint", nsmgr))
             {
-                int po;
-                if (!int.TryParse(nav.Attributes["playOrder"].Value, out po)) continue;
+                int playorder;
+                if (!int.TryParse(nav.Attributes["playOrder"].Value, out playorder)) continue;
 
                 XmlNode ctnt = nav.SelectSingleNode("rt:content", nsmgr);
                 if (ctnt == null) continue;
                 string src = ctnt.Attributes["src"].Value;
                 if (src == "") continue;
 
-                navPoints.Add((po, src));
+                XmlNode lbl = nav.SelectSingleNode("rt:navLabel/rt:text", nsmgr);
+                string label = "";
+                if (lbl != null)
+                {
+                    label = lbl.InnerText;
+                }
+                navPoints.Add((playorder, src, label));
             }
 
             navPoints.Sort((x, y) => x.Item1.CompareTo(y.Item1));
-            string[] n = new string[navPoints.Count];
+            (string, string)[] n = new (string, string)[navPoints.Count];
             for (int i = 0; i < navPoints.Count; i++)
             {
-                n[i] = navPoints[i].Item2;
+                n[i] = (navPoints[i].Item2, navPoints[i].Item3);
             }
             return n;
         }
@@ -366,35 +370,23 @@ namespace Formats
             return string.Join("<mbp:pagebreak/>", docTexts);
         }
 
-        /// <summary>
-        /// Fixes cross-document links
-        /// 
-        /// Epubs can have links that point to other documents, ie href="part2.html#chapternine"
-        /// Because of this, a single book can have multiple nodes with the same ids but in different documents
-        /// All anchor nodes are collected from every document in the book. Then the document that anchor
-        ///     refers to has the id replaced with a number that is then incremented.
-        /// 
-        /// </summary>
-        /// <param name="navPoints">string[] Full value of src from toc.ncx, in order of toc.ncx's playorder</param>
-        /// <param name="documents">Dict<string docname, HtmlDocument contents> of all html docs pointed to in toc.ncx</param>
-        /// <returns></returns>
-        private void FixLinks(string[] navPoints, Dictionary<string, HtmlDocument> documents)
+        private void FixLinksOld(string[] navPoints, Dictionary<string, HtmlDocument> documents)
         {
-            List<HtmlNode> anchors = new List<HtmlNode>();
+            List<HtmlNode> bookAnchors = new List<HtmlNode>();
             HtmlNodeCollection docAnchors;
             foreach (HtmlDocument doc in documents.Values)
             {
                 docAnchors = doc.DocumentNode.SelectNodes("//a");
                 if (docAnchors != null)
                 {
-                    anchors.AddRange(docAnchors);
+                    bookAnchors.AddRange(docAnchors);
                 }
             }
 
             string[] parts;
             char[] split = new char[] { '#' };
             int counter = 1;
-            foreach (HtmlNode a in anchors)
+            foreach (HtmlNode a in bookAnchors)
             {
                 HtmlAttribute href = a.Attributes["href"];
                 if (href == null) continue;
@@ -408,6 +400,84 @@ namespace Formats
                 target.SetAttributeValue("id", newID);
                 a.SetAttributeValue("href", $"#{newID}");
                 counter++;
+            }
+        }
+
+
+        /// <summary>
+        /// Fixes cross-document links
+        /// 
+        /// Epubs can have links that point to other documents, ie href="part2.html#chapternine"
+        /// Because of this, a single book can have multiple nodes with the same ids but in different documents
+        /// All anchor nodes are collected from every document in the book. Then the document that anchor
+        ///     refers to has the id replaced with a number that is then incremented.
+        /// 
+        /// </summary>
+        /// <param name="navPoints">(srcdoc#id, label) in order of toc.ncx's playorder</param>
+        /// <param name="documents">Dict<string docname, HtmlDocument contents> of all html docs pointed to in toc.ncx</param>
+        /// <returns></returns>
+        private void FixLinks((string, string)[] navPoints, Dictionary<string, HtmlDocument> documents)
+        {
+            char[] split = new char[] { '#' };
+            string[] parts;
+
+            List<HtmlNode> bookAnchors = new List<HtmlNode>();
+            foreach (HtmlDocument doc in documents.Values)
+            {
+                HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
+                if (anchors != null)
+                {
+                    bookAnchors.AddRange(anchors.Where(x => x.Attributes["href"] != null));
+                }
+            }
+
+            int counter = 1;
+            foreach ((string url, string label) in navPoints)
+            {
+                string newId = counter.ToString("D10");
+                string targetOldId = null;
+
+                HtmlNode target;
+
+                parts = url.Split(split, 2);
+                HtmlDocument doc = documents[parts[0]];
+                if (parts.Length == 1)
+                {   // url points to document root, use first child node
+                    target = doc.DocumentNode.SelectSingleNode("//html/body/*");
+                }
+                else
+                {
+                    target = doc.DocumentNode.SelectSingleNode($"//*[@id='{parts[1]}']");
+                }
+
+                target.SetAttributeValue("label", label);
+
+                HtmlAttribute id = target.Attributes["id"];
+                if (id != null)
+                {
+                    targetOldId = id.Value;
+                }
+
+                target.SetAttributeValue("id", newId);
+                counter++;
+
+                if (targetOldId == null) continue;
+
+                foreach (HtmlNode a in bookAnchors)
+                {
+                    string href = a.Attributes["href"].Value;
+                    parts = href.Split(split, 2);
+
+                    if (parts.Length == 1)
+                    {
+                        continue;
+                    }
+
+                    if (parts[1] == targetOldId)
+                    {
+                        a.SetAttributeValue("href", "#" + newId);
+                    }
+                }
             }
         }
 

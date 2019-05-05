@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ExtensionMethods;
 using HtmlAgilityPack;
+using System.Linq;
 
 using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
 
@@ -212,6 +213,7 @@ namespace Formats.Mobi
                 byte[] tn = string.Format(targetNode, offset).Encode();
 
                 int insertPos = NearestElementPos(htmlBytes, offs + bytesAdded);
+                HtmlNode target = doc.DocumentNode.ChildNodes.FirstOrDefault(x => x.BytePosition() == insertPos);
 
                 htmlBytes = htmlBytes.InsertRange(insertPos, tn);
 

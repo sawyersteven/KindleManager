@@ -151,13 +151,12 @@ namespace Formats.Mobi
         #region HtmlProcessing
         private (byte[], (string, int)[]) ProcessHtml(string html)
         {
-
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
             StripStyle(doc);
             FixImageRecIndexes(doc);
 
-            (string, int)[] tocData = FixLinks(doc, true);
+            (string, int)[] tocData = FixLinks(doc, false);
 
             string decodedText = doc.DocumentNode.OuterHtml;
 
@@ -228,7 +227,7 @@ namespace Formats.Mobi
                 if (target == null) continue;
                 if (!targetNodes.Any(x => x.Item2 == target))
                 {
-                    targetNodes.Add((a.InnerText, target));
+                    targetNodes.Add((target.Attributes["label"].Value, target));
                 }
                 a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
             }
