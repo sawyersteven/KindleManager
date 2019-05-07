@@ -34,10 +34,9 @@ namespace Books
 
             var c = db.GetCollection<BookEntry>("BOOKS");
 
-            BookEntry entry = new BookEntry() { Format = book.Format };
+            BookEntry entry = new BookEntry();
             entry.Title = book.Title;
             entry.FilePath = book.FilePath;
-            entry.Format = book.Format;
             entry.Author = book.Author;
             entry.Series = book.Series;
             entry.SeriesNum = book.SeriesNum;
@@ -118,11 +117,7 @@ namespace Books
         }
         #endregion
 
-        public void Dispose()
-        {
-            db.Dispose();
-        }
-
+        public void Dispose() => db.Dispose();
 
         public class BookEntry : IBook
         {

@@ -3,7 +3,6 @@
     public interface IBook
     {
         string FilePath { get; set; }
-        string Format { get; }
 
         string Title { get; set; }
         string Language { get; set; }
