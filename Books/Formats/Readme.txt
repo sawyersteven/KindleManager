@@ -16,6 +16,9 @@ Methods required:
 	string TextContent()
 		A single HTML document containing all text and styles. Chapters are to be
 		separated by mobi-standard <mbp:pagebreak/> nodes.
+		TOC information can be included in markup by giving nodes a "toclabel"
+			attribute. This will then be converted in order into a toc when
+			converted to another format.
 		Img sources should be formatted as "00001.jpg" with 00001 referring to the
 		first image in Images().
 		

@@ -217,6 +217,7 @@ namespace Formats
 
         public string TextContent()
         {
+            // todo add option to remove nodes with no innerhtml
             HtmlDocument combinedText = new HtmlDocument();
             combinedText.LoadHtml(Resources.HtmlTemplate);
 
@@ -450,7 +451,7 @@ namespace Formats
                     target = doc.DocumentNode.SelectSingleNode($"//*[@id='{parts[1]}']");
                 }
 
-                target.SetAttributeValue("label", label);
+                target.SetAttributeValue("toclabel", label);
 
                 HtmlAttribute id = target.Attributes["id"];
                 if (id != null)

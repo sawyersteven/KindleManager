@@ -35,13 +35,13 @@ namespace Formats.Mobi
             OutputPath = outputPath;
         }
 
-        public void Write()
+        public IBook Convert()
         {
             (byte[] textBytes, (string, int)[] c) = ProcessHtml(Donor.TextContent());
             Chapters = c;
 
             // Make logical toc
-            GenerateCNCX();
+            GenerateLogicalTOC();
 
             // Split text records
             ushort textRecordCount = 0;
@@ -104,7 +104,16 @@ namespace Formats.Mobi
                 }
             }
 
-            return;
+            try
+            {
+                return new Mobi.Book(OutputPath);
+            }
+            catch (Exception e)
+            {
+                File.Delete(OutputPath);
+                throw e;
+            }
+
         }
 
         #region Headers
@@ -137,12 +146,12 @@ namespace Formats.Mobi
             EXTH.Set(EXTHRecordID.ISBN, Donor.ISBN.ToString().Encode());
             EXTH.Set(EXTHRecordID.Subject, string.Join(", ", Donor.Subject).Encode());
             EXTH.Set(EXTHRecordID.PublishDate, Donor.PubDate.Encode());
-            EXTH.Set(EXTHRecordID.Contributor, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Contributor, "KindleManager".Encode());
             EXTH.Set(EXTHRecordID.Rights, Donor.Rights.Encode());
-            EXTH.Set(EXTHRecordID.Creator, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Creator, "KindleManager".Encode());
             EXTH.Set(EXTHRecordID.Language, Donor.Language.Encode());
             EXTH.Set(EXTHRecordID.CDEType, "EBOK".Encode());
-            EXTH.Set(EXTHRecordID.Source, "Lignum".Encode());
+            EXTH.Set(EXTHRecordID.Source, "KindleManager".Encode());
 
         }
 
@@ -156,7 +165,7 @@ namespace Formats.Mobi
             StripStyle(doc);
             FixImageRecIndexes(doc);
 
-            (string, int)[] tocData = FixLinks(doc, false);
+            (string, int)[] tocData = FixLinks(doc);
 
             string decodedText = doc.DocumentNode.OuterHtml;
 
@@ -183,26 +192,10 @@ namespace Formats.Mobi
         }
 
         /// <summary>
-        /// Changes a href to filepos and adds TOC to end of document
+        /// Changes a href to filepos and generates toc information
         /// </summary>
-        private (string, int)[] FixLinks(HtmlDocument html, bool addTOC)
+        private (string, int)[] FixLinks(HtmlDocument html)
         {
-            HtmlNode tocReference;
-
-            if (addTOC && html.DocumentNode.SelectSingleNode("//html/head/guide/reference[@type='toc']") == null)
-            {
-                HtmlNode guide = HtmlNode.CreateNode("<guide></guide>");
-                tocReference = HtmlNode.CreateNode("<reference title='Table of Contents' type='toc' filepos='0000000000'/>");
-                HtmlNode head = html.DocumentNode.SelectSingleNode("//html/head");
-                if (head == null)
-                {
-                    throw new Exception("Unable to find <head> element in html");
-                }
-
-                guide.ChildNodes.Append(tocReference);
-                head.ChildNodes.Prepend(guide);
-            };
-
             // Give all anchors filepos property then reload html to get correct streampositions
             HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
             if (anchors == null) return new (string, int)[0];
@@ -217,35 +210,28 @@ namespace Formats.Mobi
 
             // Get all anchors again and match them to a targetnode
             anchors = html.DocumentNode.SelectNodes("//a");
-            if (anchors == null) return new (string, int)[0];
-            List<(string, HtmlNode)> targetNodes = new List<(string, HtmlNode)>();
-            foreach (HtmlNode a in anchors)
+            if (anchors != null)
             {
-                HtmlAttribute href = a.Attributes["href"];
-                if (href == null) continue;
-                HtmlNode target = html.DocumentNode.SelectSingleNode($"//*[@id='{href.Value.Substring(1)}']");
-                if (target == null) continue;
-                if (!targetNodes.Any(x => x.Item2 == target))
+                foreach (HtmlNode a in anchors)
                 {
-                    targetNodes.Add((target.Attributes["label"].Value, target));
+                    HtmlAttribute href = a.Attributes["href"];
+                    if (href == null) continue;
+                    HtmlNode target = html.DocumentNode.SelectSingleNode($"//*[@id='{href.Value.Substring(1)}']");
+                    if (target == null) continue;
+                    a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
                 }
-                a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
-            }
-
-            if (addTOC)
-            {
-                html.DocumentNode.SelectSingleNode("//html/body").InnerHtml += BuildHtmlTOC(targetNodes);
-                html.LoadHtml(html.DocumentNode.OuterHtml);
-                tocReference = html.DocumentNode.SelectSingleNode("//html/head/guide/reference[@type='toc']");
-                tocReference.SetAttributeValue("filepos", html.DocumentNode.SelectSingleNode("//p[@id='toc']").BytePosition().ToString("D10"));
             }
 
             List<(string, int)> tocData = new List<(string, int)>();
-            foreach ((string, HtmlNode) target in targetNodes)
+            HtmlNode[] tocNodes = html.DocumentNode.SelectNodes("//*").Where(x => x.Attributes["toclabel"] != null).ToArray();
+            if (tocNodes != null)
             {
-                tocData.Add((target.Item1, target.Item2.BytePosition()));
+                foreach (HtmlNode n in tocNodes)
+                {
+                    tocData.Add((n.Attributes["toclabel"].Value, n.BytePosition()));
+                }
+                tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
             }
-            tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
 
             return tocData.ToArray();
         }
@@ -265,12 +251,12 @@ namespace Formats.Mobi
         /// We are putting every chapter is as one layer at zero depth. Want to fight about it?
         /// </summary>
         /// <param name="tocData"></param>
-        private void GenerateCNCX()
+        private void GenerateLogicalTOC()
         {
-            List<byte> cncxEntry = new List<byte>();
+            List<byte> tocEntry = new List<byte>();
             for (var i = 0; i < Chapters.Length; i++)
             {
-                cncxEntry.Clear();
+                tocEntry.Clear();
 
                 (string chapterName, int chapterOffset) = Chapters[i];
                 if (chapterName == "EOF") break;
@@ -285,15 +271,15 @@ namespace Formats.Mobi
                 byte[] vliNameOffset = Utils.Mobi.EncVarLengthInt((uint)logicalTOCLabels.Count);
                 byte[] vliNameLen = Utils.Mobi.EncVarLengthInt((uint)chapterName.Encode().Length);
 
-                cncxEntry.Add((byte)cncxId.Length);    // id length
-                cncxEntry.AddRange(cncxId);            // id
-                cncxEntry.Add(0x0f);                   // control byte
-                cncxEntry.AddRange(vliOffset);         // encoded html position
-                cncxEntry.AddRange(vliLen);            // length of encoded chapter
-                cncxEntry.AddRange(vliNameOffset);     // offset of chapter name in nametable
-                cncxEntry.AddRange(Utils.Mobi.EncVarLengthInt(0)); // Depth -- always 0.
+                tocEntry.Add((byte)cncxId.Length);    // id length
+                tocEntry.AddRange(cncxId);            // id
+                tocEntry.Add(0x0f);                   // control byte
+                tocEntry.AddRange(vliOffset);         // encoded html position
+                tocEntry.AddRange(vliLen);            // length of encoded chapter
+                tocEntry.AddRange(vliNameOffset);     // offset of chapter name in nametable
+                tocEntry.AddRange(Utils.Mobi.EncVarLengthInt(0)); // Depth -- always 0.
 
-                logicalTOCEntries.Add(cncxEntry.ToArray());
+                logicalTOCEntries.Add(tocEntry.ToArray());
 
                 logicalTOCLabels.AddRange(vliNameLen);
                 logicalTOCLabels.AddRange(chapterName.Encode());
@@ -408,22 +394,6 @@ namespace Formats.Mobi
 
         #endregion
 
-        private string BuildHtmlTOC(List<(string, HtmlNode)> targets)
-        {
-            string[] parts = new string[targets.Count + 2];
-            parts[0] = "<mbp:pagebreak/><p id='toc'>Table of Contents</p>";
-            parts[parts.Length - 1] = "<mbp:pagebreak/>";
-
-            string linkTemplate = "<blockquote><a filepos='{0}'>{1}</a></blockquote>";
-
-            for (int i = 0; i < targets.Count; i++)
-            {
-                parts[i + 1] = string.Format(linkTemplate, targets[i].Item2.BytePosition().ToString("D10"), targets[i].Item1);
-            }
-
-            return string.Join("", parts);
-        }
-
         private readonly byte[] FLISRecord = new byte[] { 0x46, 0x4C, 0x49, 0x53,
                                                     0x00, 0x00, 0x00, 0x08,
                                                     0x00, 0x41,
@@ -462,6 +432,5 @@ namespace Formats.Mobi
             return rec;
         }
         private readonly byte[] EOFRecord = new byte[] { 0xe9, 0x8e, 0x0d, 0x0a };
-
     }
 }
