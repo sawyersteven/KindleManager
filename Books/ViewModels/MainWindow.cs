@@ -16,7 +16,7 @@ namespace Books.ViewModels
             ImportBook = ReactiveCommand.Create(_ImportBook);
             RemoveBook = ReactiveCommand.Create(_RemoveBook);
             EditMetadata = ReactiveCommand.Create(_EditMetadata);
-            ErrorDialog = ReactiveCommand.Create(_ErrorDialog);
+            OpenKindle = ReactiveCommand.Create(_OpenKindle);
         }
 
         #region properties
@@ -34,11 +34,9 @@ namespace Books.ViewModels
         #endregion
 
         #region button commands
-        public ReactiveCommand<Unit, Unit> ErrorDialog { get; set; }
-        private void _ErrorDialog()
+        public ReactiveCommand<Unit, Unit> OpenKindle { get; set; }
+        private void _OpenKindle()
         {
-            var err = new Dialogs.Error("Test", "Message");
-            err.ShowDialog();
         }
 
         public ReactiveCommand<Unit, Unit> ImportBook { get; set; }
@@ -50,7 +48,7 @@ namespace Books.ViewModels
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            IBook importBook = null;
+            IBook importBook;
             try
             {
                 importBook = Converters.NewIBook(dlg.FileName);
@@ -62,16 +60,33 @@ namespace Books.ViewModels
                 return;
             }
 
+            string authorDir = Path.Combine(App.DataDir, importBook.Author);
+            Directory.CreateDirectory(authorDir);
+
+            // Todo make filepath from config eg "{Author}/{Series}/{Title}.mobi"
+            string destinationFile = Path.Combine(authorDir, importBook.Title) + ".mobi";
+
             if (Path.GetExtension(dlg.FileName) != ".mobi")
-            {
-                string baseName = Path.GetFileName(dlg.FileName);
-                var convertdlg = new Dialogs.ConvertRequired(baseName);
+            {    
+                var convertdlg = new Dialogs.ConvertRequired(Path.GetFileName(dlg.FileName));
                 if (convertdlg.ShowDialog() == false) return;
                 try
                 {
-                    importBook = Converters.ToMobi(importBook);
+                    importBook = Converters.ToMobi(importBook, destinationFile);
                 }
                 catch (InvalidOperationException e)
+                {
+                    MessageBox.Show(e.Message);
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    File.Copy(importBook.FilePath,destinationFile);
+                }
+                catch (Exception e)
                 {
                     MessageBox.Show(e.Message);
                     return;
@@ -133,8 +148,5 @@ namespace Books.ViewModels
             dlg.ShowDialog();
         }
         #endregion
-
-
-
     }
 }
