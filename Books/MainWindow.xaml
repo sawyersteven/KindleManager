@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow"
         MinHeight="450"
-        MinWidth="400">
+        MinWidth="450">
 
     <Window.Resources>
         <Style x:Key="ToolbarButton" TargetType="{x:Type Button}">
@@ -48,13 +48,8 @@
                   IsReadOnly="True"
                   AlternatingRowBackground="#E3F2FD"
                   SelectedItem="{Binding SelectedTableRow}">
-            <!--<DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <EventSetter Event="MouseDoubleClick" Handler="{Binding EditMetadata}"/>
-                </Style>
-            </DataGrid.RowStyle>-->
             <DataGrid.Columns>
-                <DataGridTextColumn MinWidth="50" Width="50" Header="Type" Binding="{Binding Path=Type}" />
+                <DataGridTextColumn MinWidth="50" Width="50" Header=""/><!-- On device indicator -->
                 <DataGridTextColumn MinWidth="150" Width="*" Header="Title" Binding="{Binding Path=Title}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />

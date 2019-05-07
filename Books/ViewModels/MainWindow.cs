@@ -2,7 +2,7 @@
 using ReactiveUI;
 using System.Reactive;
 using System.Windows.Forms;
-using System.Linq;
+using Formats;
 using System.Collections.ObjectModel;
 using System.IO;
 
@@ -44,42 +44,43 @@ namespace Books.ViewModels
         public ReactiveCommand<Unit, Unit> ImportBook { get; set; }
         private void _ImportBook()
         {
-            var dlg = new OpenFileDialog();
+            OpenFileDialog dlg = new OpenFileDialog();
             dlg.Multiselect = false;
             dlg.Filter = "eBooks (*.epub;*.mobi)|*.epub;*.mobi";
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            Formats.IBook importBook = null;
+            IBook importBook = null;
             try
             {
-                switch (Path.GetExtension(dlg.FileName))
-                {
-                    case ".mobi":
-                        importBook = new Formats.Mobi.Book(dlg.FileName);
-                        break;
-                    case ".epub":
-                        importBook = new Formats.Epub(dlg.FileName);
-                        break;
-                    default:
-                        throw new Exception("Unsupported file type");
-                }
+                importBook = Converters.NewIBook(dlg.FileName);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.StackTrace);
-                MessageBox.Show(e.Message);
+                var errdlg = new Dialogs.Error("Error opening book", e.Message);
+                errdlg.ShowDialog();
                 return;
+            }
+
+            if (Path.GetExtension(dlg.FileName) != ".mobi")
+            {
+                string baseName = Path.GetFileName(dlg.FileName);
+                var convertdlg = new Dialogs.ConvertRequired(baseName);
+                if (convertdlg.ShowDialog() == false) return;
+                try
+                {
+                    importBook = Converters.ToMobi(importBook);
+                }
+                catch (InvalidOperationException e)
+                {
+                    MessageBox.Show(e.Message);
+                    return;
+                }
             }
 
             try
             {
                 App.Database.AddBook(importBook);
-            }
-            catch (InvalidOperationException e)
-            {
-                MessageBox.Show(e.Message);
-                return;
             }
             catch (Exception e)
             {
@@ -113,19 +114,10 @@ namespace Books.ViewModels
         private void _EditMetadata()
         {
             if (SelectedTableRow == null) return;
-            Formats.IBook book = null;
-
+            IBook book = null;
             try
             {
-                switch (SelectedTableRow.Format)
-                {
-                    case "MOBI":
-                        book = new Formats.Mobi.Book(SelectedTableRow.FilePath);
-                        break;
-                    case "EPUB":
-                        book = new Formats.Epub(SelectedTableRow.FilePath);
-                        break;
-                }
+                book = new Formats.Mobi.Book(SelectedTableRow.FilePath);
             }
             catch (Exception e)
             {
@@ -134,20 +126,15 @@ namespace Books.ViewModels
                 return;
             }
 
-            if(book == null)
-            {
-                throw new NotImplementedException($"Book Type {SelectedTableRow.Format} has not been added to the Metadata Editor");
-            }
-
             book.DateAdded = SelectedTableRow.DateAdded;
             book.Id = SelectedTableRow.Id;
 
             var dlg = new Dialogs.MetadataEditor(book);
             dlg.ShowDialog();
         }
-
-
         #endregion
+
+
 
     }
 }
