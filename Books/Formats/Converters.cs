@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using Formats;
 
 /// <summary>
 /// Collection of classes and methods to convert X to Y
 /// </summary>
-namespace Converters
+namespace Formats
 {
     /// <summary>
     /// All methods write a new file to disk and return an instance of that
@@ -38,8 +35,24 @@ namespace Converters
             recipient.DateAdded = donor.DateAdded;
         }
 
+        public static IBook NewIBook(string filepath)
+        {
+            IBook book;
+            switch (Path.GetExtension(filepath))
+            {
+                case ".mobi":
+                    book = new Formats.Mobi.Book(filepath);
+                    break;
+                case ".epub":
+                    book = new Epub(filepath);
+                    break;
+                default:
+                    throw new Exception("Unsupported file type");
+            }
+            return book;
+        }
 
-        public static void ToMobi(IBook input, string filePath = "")
+        public static IBook ToMobi(IBook input, string filePath = "")
         {
             if (filePath == "")
             {
@@ -50,12 +63,12 @@ namespace Converters
                 throw new ArgumentException($"Output filepath not provided.");
             }
 
-            filePath = System.IO.Path.ChangeExtension(filePath, ".mobi");
+            filePath = Path.ChangeExtension(filePath, ".mobi");
 
 
-            Formats.Mobi.Builder mobibuilder = new Formats.Mobi.Builder(input, filePath);
+            Mobi.Builder mobibuilder = new Mobi.Builder(input, filePath);
 
-            mobibuilder.Write();
+            return mobibuilder.Convert();
         }
     }
 }
