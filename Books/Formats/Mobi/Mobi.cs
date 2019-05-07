@@ -504,7 +504,7 @@ namespace Formats.Mobi
 
         public void WriteMetadata()
         {
-            EXTHHeader.Set(Headers.EXTHRecordID.Contributor, "Lignum [https://github.com/sawyersteven/Lignum]".Encode());
+            EXTHHeader.Set(EXTHRecordID.Contributor, "KindleManger [https://github.com/sawyersteven/KindleManager]".Encode());
 
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(this.FilePath, FileMode.Open)))
@@ -513,8 +513,12 @@ namespace Formats.Mobi
 
                 headerDump.AddRange(PDBHeader.Dump());
                 headerDump.AddRange(PalmDOCHeader.Dump());
+                
+                byte[] exth = EXTHHeader.Dump();
+                MobiHeader.fullTitleOffset = (uint)headerDump.Count + MobiHeader.length + (uint)exth.Length;
                 headerDump.AddRange(MobiHeader.Dump());
-                headerDump.AddRange(EXTHHeader.Dump());
+
+                headerDump.AddRange(exth);
 
 
                 uint totalHeaderLen = (uint)headerDump.Count + MobiHeader.fullTitleLength;
@@ -532,7 +536,6 @@ namespace Formats.Mobi
                 writer.Write(new byte[fillerLen]);
             }
         }
-
         #endregion
 
 
