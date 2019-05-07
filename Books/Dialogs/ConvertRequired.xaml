@@ -1,0 +1,38 @@
+﻿<Window x:Class="Books.Dialogs.ConvertRequired"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        Title="Conversion Required"
+        SizeToContent="Height"
+        Width="350">
+    <StackPanel Margin="5">
+
+        <DockPanel>
+            <icons:PackIconFontAwesome Kind="ExclamationCircleSolid" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+
+            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
+                <TextBlock Name="textBlockBookTitle"/>
+                is incompatibe with Kindle devices and must be converted to mobi.
+            </TextBlock>
+        </DockPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Click="Cancel" Grid.Column="0">
+                Cancel
+            </Button>
+            <Button Click="Confirm" Grid.Column="1">
+                Convert
+            </Button>
+
+        </Grid>
+
+    </StackPanel>
+</Window>
