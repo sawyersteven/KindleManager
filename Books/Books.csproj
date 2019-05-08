@@ -64,6 +64,9 @@
     <Reference Include="Microsoft.Xaml.Behaviors, Version=1.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Xaml.Behaviors.Wpf.1.0.1\lib\net45\Microsoft.Xaml.Behaviors.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="ReactiveUI, Version=9.11.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ReactiveUI.9.11.3\lib\net461\ReactiveUI.dll</HintPath>
     </Reference>
@@ -113,6 +116,9 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="ToastNotifications, Version=2.5.1.0, Culture=neutral, PublicKeyToken=e89d9d7314a7c797, processorArchitecture=MSIL">
+      <HintPath>..\packages\ToastNotifications.2.5.1\lib\net40\ToastNotifications.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -136,6 +142,13 @@
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
+    <Compile Include="Devices\Config.cs" />
+    <Compile Include="Devices\IDevice.cs" />
+    <Compile Include="Devices\Kindle.cs" />
+    <Compile Include="Dialogs\ConfigEditor.xaml.cs">
+      <DependentUpon>ConfigEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Formats\BookBase.cs" />
     <Compile Include="Formats\Converters.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="debugging.cs" />
@@ -167,6 +180,10 @@
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />
     <Compile Include="ViewModels\MetadataEditor.cs" />
+    <Page Include="Dialogs\ConfigEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Dialogs\Converter.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

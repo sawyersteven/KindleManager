@@ -9,7 +9,7 @@ using ExtensionMethods;
 
 namespace Formats
 {
-    public class Epub : IBook
+    public class Epub : BookBase
     {
         public Epub(string filepath)
         {
@@ -91,131 +91,10 @@ namespace Formats
 
         private string[] ImageNames;
 
-        #region IBook impl
-        public string FilePath { get; set; }
-        public string Format { get => "EPUB"; }
+        #region IBook overrides
+        public override string Format { get => "EPUB"; }
 
-        private string _Title;
-        public string Title {
-            get => _Title;
-            set
-            {
-                _Title = value;
-            }
-        }
-
-        private string _Language;
-        public string Language {
-            get => _Language;
-            set
-            {
-                _Language = value;
-            }
-        }
-
-        private ulong _ISBN;
-        public ulong ISBN
-        {
-            get => _ISBN;
-            set
-            {
-                _ISBN = value;
-            }
-        }
-
-        private string _Author;
-        public string Author {
-            get => _Author;
-            set
-            {
-                _Author = value;
-            }
-        }
-
-        private string _Contributor;
-        public string Contributor
-        {
-            get => _Contributor;
-            set
-            {
-                _Contributor = value;
-            }
-        }
-
-        private string _Publisher;
-        public string Publisher {
-            get => _Publisher;
-            set
-            {
-                _Publisher = value;
-            }
-        }
-
-        private string[] _Subject;
-        public string[] Subject
-        {
-            get => _Subject;
-            set
-            {
-                _Subject = value;
-            }
-        }
-
-        private string _Description;
-        public string Description
-        {
-            get => _Description;
-            set
-            {
-                _Description = value;
-            }
-        }
-
-        private string _PubDate;
-        public string PubDate {
-            get => _PubDate;
-            set
-            {
-                value = Utils.Metadata.GetDate(value);
-                _PubDate = value;
-            }
-        }
-
-        private string _Rights;
-        public string Rights
-        {
-            get => _Rights;
-            set
-            {
-                _Rights = value;
-            }
-        }
-
-
-        // local db only, not parsed
-        public int Id { get; set; }
-
-        private string _Series;
-        public string Series {
-            get => _Series;
-            set
-            {
-                _Series = value;
-            }
-        }
-
-        private float _SeriesNum;
-        public float SeriesNum {
-            get => _SeriesNum;
-            set
-            {
-                _SeriesNum = value;
-            }
-        }
-
-        public string DateAdded { get; set; }
-
-        public string TextContent()
+        public override string TextContent()
         {
             // todo add option to remove nodes with no innerhtml
             HtmlDocument combinedText = new HtmlDocument();
@@ -340,7 +219,6 @@ namespace Formats
             return docNames.ToArray();
         }
 
-
         private Dictionary<string, HtmlDocument> LoadDocuments(ZipArchive zip, string[] docNames)
         {
             Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
@@ -370,40 +248,6 @@ namespace Formats
             }
             return string.Join("<mbp:pagebreak/>", docTexts);
         }
-
-        private void FixLinksOld(string[] navPoints, Dictionary<string, HtmlDocument> documents)
-        {
-            List<HtmlNode> bookAnchors = new List<HtmlNode>();
-            HtmlNodeCollection docAnchors;
-            foreach (HtmlDocument doc in documents.Values)
-            {
-                docAnchors = doc.DocumentNode.SelectNodes("//a");
-                if (docAnchors != null)
-                {
-                    bookAnchors.AddRange(docAnchors);
-                }
-            }
-
-            string[] parts;
-            char[] split = new char[] { '#' };
-            int counter = 1;
-            foreach (HtmlNode a in bookAnchors)
-            {
-                HtmlAttribute href = a.Attributes["href"];
-                if (href == null) continue;
-                parts = href.Value.Split(split, 2);
-                if (parts.Length == 1) continue;
-
-                HtmlDocument doc = documents[parts[0]];
-                string newID = counter.ToString("D10");
-                HtmlNode target = doc.DocumentNode.SelectSingleNode($"//*[@id='{parts[1]}']");
-                if (target == null) continue;
-                target.SetAttributeValue("id", newID);
-                a.SetAttributeValue("href", $"#{newID}");
-                counter++;
-            }
-        }
-
 
         /// <summary>
         /// Fixes cross-document links
@@ -505,7 +349,7 @@ namespace Formats
             return html.DocumentNode.OuterHtml;
         }
 
-        public byte[][] Images()
+        public override byte[][] Images()
         {
             byte[][] images = new byte[ImageNames.Length][];
             using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
@@ -524,7 +368,7 @@ namespace Formats
             return images;
         }
 
-        public void WriteMetadata()
+        public override void WriteMetadata()
         {
             WriteOPF();
             WriteTOC();

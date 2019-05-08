@@ -1,4 +1,6 @@
-﻿namespace Formats
+﻿using System.Collections.Generic;
+
+namespace Formats
 {
     public interface IBook
     {
@@ -23,9 +25,11 @@
         string DateAdded { get; set; }
 
         #region methods
-        string TextContent(); // Complete text content in *one* html string
+        string TextContent();
         byte[][] Images();
-        void WriteMetadata(); // Everything except text, images, css, etc.
+        void WriteMetadata();
+
+        Dictionary<string, string> Props();
         #endregion
     }
 }

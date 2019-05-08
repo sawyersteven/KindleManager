@@ -119,33 +119,32 @@ namespace Books
 
         public void Dispose() => db.Dispose();
 
-        public class BookEntry : IBook
+        public class BookEntry : BookBase
         {
-            public string FilePath { get; set; }
-            public string Format { get; set; }
+            //public string FilePath { get; set; }
+            //public string Format { get; set; }
 
-            public string Title { get; set; }
-            public string Language { get; set; }
-            public ulong ISBN { get; set; }
+            //public string Title { get; set; }
+            //public string Language { get; set; }
+            //public ulong ISBN { get; set; }
 
-            public string Author { get; set; }
-            public string Contributor { get; set; }
-            public string Publisher { get; set; }
-            public string[] Subject { get; set; }
-            public string Description { get; set; }
-            public string PubDate { get; set; }
-            public string Rights { get; set; }
+            //public string Author { get; set; }
+            //public string Contributor { get; set; }
+            //public string Publisher { get; set; }
+            //public string[] Subject { get; set; }
+            //public string Description { get; set; }
+            //public string PubDate { get; set; }
+            //public string Rights { get; set; }
 
-            public int Id { get; set; }
-            public string Series { get; set; }
-            public float SeriesNum { get; set; }
-            public string DateAdded { get; set; }
+            //public int Id { get; set; }
+            //public string Series { get; set; }
+            //public float SeriesNum { get; set; }
+            //public string DateAdded { get; set; }
 
             #region methods
-            public string TextContent() => "";
-            public byte[][] Images() => new byte[0][];
-            public void WriteMetadata() { }
-            public void WriteContent(string text, byte[][] images) { }
+            public override string TextContent() => "";
+            public override byte[][] Images() => new byte[0][];
+            public override void WriteMetadata() { }
             #endregion
         }
     }

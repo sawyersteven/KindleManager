@@ -9,7 +9,7 @@ using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
 
 namespace Formats.Mobi
 {
-    public class Book : IBook
+    public class Book : BookBase
     /* https://wiki.mobileread.com/wiki/MOBI
        All numerical values are big-endian.
        
@@ -279,12 +279,11 @@ namespace Formats.Mobi
             return pos;
         }
 
-        #region IBook impl
-        public string FilePath { get; set; }
-        public string Format { get => "MOBI"; }
+        #region IBook overrides
+        public override string Format { get => "MOBI"; }
 
         private string _Title;
-        public string Title
+        public override string Title
         {
             get => _Title;
             set
@@ -298,29 +297,19 @@ namespace Formats.Mobi
             }
         }
 
-        private string _Language { get; set; }
-        public string Language
-        {
-            get => _Language;
-            set
-            {
-                _Language = value;
-            }
-        }
-
         private ulong _ISBN;
-        public ulong ISBN
+        public override ulong ISBN
         {
             get => _ISBN;
             set
             {
-                EXTHHeader.Set(Headers.EXTHRecordID.ISBN, value.ToString().Encode());
+                EXTHHeader.Set(EXTHRecordID.ISBN, value.ToString().Encode());
                 _ISBN = value;
             }
         }
 
         private string _Author;
-        public string Author
+        public override string Author
         {
             get => _Author;
             set
@@ -330,18 +319,8 @@ namespace Formats.Mobi
             }
         }
 
-        private string _Contributor;
-        public string Contributor
-        {
-            get => _Contributor;
-            set
-            {
-                _Contributor = value;
-            }
-        }
-
         private string _Publisher;
-        public string Publisher
+        public override string Publisher
         {
             get => _Publisher;
             set
@@ -351,28 +330,8 @@ namespace Formats.Mobi
             }
         }
 
-        private string[] _Subject;
-        public string[] Subject
-        {
-            get => _Subject;
-            set
-            {
-                _Subject = value;
-            }
-        }
-
-        private string _Description;
-        public string Description
-        {
-            get => _Description;
-            set
-            {
-                _Description = value;
-            }
-        }
-
         private string _PubDate;
-        public string PubDate
+        public override string PubDate
         {
             get => _PubDate;
             set
@@ -383,78 +342,12 @@ namespace Formats.Mobi
             }
         }
 
-        private string _Rights;
-        public string Rights
-        {
-            get => _Rights;
-            set
-            {
-                _Rights = value;
-            }
-        }
-
-        // local db only, not parsed
-        public int Id { get; set; }
-
-        private string _Series;
-        public string Series
-        {
-            get => _Series;
-            set
-            {
-                _Series = value;
-            }
-        }
-
-        private float _SeriesNum;
-        public float SeriesNum
-        {
-            get => _SeriesNum;
-            set
-            {
-                _SeriesNum = value;
-            }
-        }
-
-        public string DateAdded { get; set; }
-
-        public string RawText()
-        {
-            List<byte> bytes = new List<byte>();
-            using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
-            {
-                for (int i = 1; i <= PalmDOCHeader.textRecordCount; i++)
-                {
-                    reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
-                    byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
-                    int compressedLen = CalcExtraBytes(compressedText);
-                    byte[] x = decompress(compressedText, compressedLen);
-                    bytes.AddRange(x);
-                }
-            }
-
-            string text;
-            switch (MobiHeader.textEncoding)
-            {
-                case 1252:
-                    text = bytes.ToArray().Decode("CP1252");
-                    break;
-                case 65001:
-                    text = bytes.ToArray().Decode();
-                    break;
-                default:
-                    throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
-            };
-            return text;
-
-        }
-
         /// <summary>
         /// Returns mobi-html from book as string with changes made to 
         ///     work as a standard epub html doc.
         /// </summary>
         /// <returns></returns>
-        public string TextContent()
+        public override string TextContent()
         {
             List<byte> bytes = new List<byte>();
             using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
@@ -484,7 +377,7 @@ namespace Formats.Mobi
             return FixLinks(text);
         }
 
-        public byte[][] Images()
+        public override byte[][] Images()
         {
             uint imageCount = MobiHeader.lastContentRecord - MobiHeader.firstImageRecord;
 
@@ -502,10 +395,9 @@ namespace Formats.Mobi
             return images;
         }
 
-        public void WriteMetadata()
+        public override void WriteMetadata()
         {
             EXTHHeader.Set(EXTHRecordID.Contributor, "KindleManger [https://github.com/sawyersteven/KindleManager]".Encode());
-
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(this.FilePath, FileMode.Open)))
             {
@@ -513,7 +405,7 @@ namespace Formats.Mobi
 
                 headerDump.AddRange(PDBHeader.Dump());
                 headerDump.AddRange(PalmDOCHeader.Dump());
-                
+
                 byte[] exth = EXTHHeader.Dump();
                 MobiHeader.fullTitleOffset = (uint)headerDump.Count + MobiHeader.length + (uint)exth.Length;
                 headerDump.AddRange(MobiHeader.Dump());
@@ -536,8 +428,8 @@ namespace Formats.Mobi
                 writer.Write(new byte[fillerLen]);
             }
         }
-        #endregion
 
+        #endregion
 
         public void PrintHeaders()
         {

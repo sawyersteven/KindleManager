@@ -5,11 +5,15 @@ using System.Windows.Forms;
 using Formats;
 using System.Collections.ObjectModel;
 using System.IO;
+using Devices;
+using Newtonsoft.Json;
 
 namespace Books.ViewModels
 {
     class MainWindow : ReactiveObject
     {
+
+        IDevice Device;
 
         public MainWindow()
         {
@@ -17,6 +21,8 @@ namespace Books.ViewModels
             RemoveBook = ReactiveCommand.Create(_RemoveBook);
             EditMetadata = ReactiveCommand.Create(_EditMetadata);
             OpenKindle = ReactiveCommand.Create(_OpenKindle);
+            SyncDevice = ReactiveCommand.Create(_SyncDevice);
+
         }
 
         #region properties
@@ -34,9 +40,50 @@ namespace Books.ViewModels
         #endregion
 
         #region button commands
+        public ReactiveCommand<Unit, Unit> SyncDevice { get; set; }
+        private void _SyncDevice()
+        {
+            if (Device == null)
+            {
+                MessageBox.Show("Connect to Kindle before syncing library");
+                return;
+            }
+            var r = (BookBase)SelectedTableRow;
+            Device.SendBook(r);
+        }
+        
         public ReactiveCommand<Unit, Unit> OpenKindle { get; set; }
         private void _OpenKindle()
         {
+            // Todo replace with options
+            Device = new Kindle();
+
+            if (Device.firstUse)
+            {
+                MessageBox.Show(@"It appears this is the firs time you've used this device with KindleManager.");
+
+                try
+                {
+                    File.WriteAllText(Device.configFile, "");
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.Message);
+                    return;
+                }
+
+
+
+                // TODO replace with open config dialog
+                Config c = new Config();
+                c.LibraryRoot = "books/";
+                c.DirectoryFormat = "{Author}/{Title}/";
+                // End replace
+
+                c.Write(Device.configFile);
+            }
+
+            Device.config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Device.configFile));
         }
 
         public ReactiveCommand<Unit, Unit> ImportBook { get; set; }

@@ -28,8 +28,11 @@
             <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="TrashAltRegular" Height="24" Width="24"/>
             </Button>
-            <Button ToolTip="Edit Metadata" Command="{Binding ErrorDialog}" Style="{StaticResource ToolbarButton}">
-                <icons:PackIconFontAwesome Kind="BombSolid" Height="24" Width="24"/>
+            <Button ToolTip="Open Kindle" Command="{Binding OpenKindle}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="TabletSolid" Height="24" Width="24"/>
+            </Button>
+            <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>
             </Button>
             <!--
             <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
