@@ -142,6 +142,7 @@
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
+    <Compile Include="ConfigManager.cs" />
     <Compile Include="Devices\Config.cs" />
     <Compile Include="Devices\IDevice.cs" />
     <Compile Include="Devices\Kindle.cs" />

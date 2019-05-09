@@ -22,6 +22,7 @@ namespace Books.ViewModels
             EditMetadata = ReactiveCommand.Create(_EditMetadata);
             OpenKindle = ReactiveCommand.Create(_OpenKindle);
             SyncDevice = ReactiveCommand.Create(_SyncDevice);
+            EditSettings = ReactiveCommand.Create(_EditSettings);
 
         }
 
@@ -40,6 +41,14 @@ namespace Books.ViewModels
         #endregion
 
         #region button commands
+        public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
+        public void _EditSettings()
+        {
+            var dlg = new Dialogs.ConfigEditor();
+            dlg.ShowDialog();
+
+        }
+
         public ReactiveCommand<Unit, Unit> SyncDevice { get; set; }
         private void _SyncDevice()
         {
@@ -107,11 +116,12 @@ namespace Books.ViewModels
                 return;
             }
 
-            string authorDir = Path.Combine(App.DataDir, importBook.Author);
-            Directory.CreateDirectory(authorDir);
+            throw new NotImplementedException();
+            //string authorDir = Path.Combine(App.DataDir, importBook.Author);
+            //Directory.CreateDirectory(authorDir);
 
             // Todo make filepath from config eg "{Author}/{Series}/{Title}.mobi"
-            string destinationFile = Path.Combine(authorDir, importBook.Title) + ".mobi";
+            string destinationFile = ""; // Path.Combine(authorDir, importBook.Title) + ".mobi";
 
             if (Path.GetExtension(dlg.FileName) != ".mobi")
             {    

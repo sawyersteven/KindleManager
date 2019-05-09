@@ -6,25 +6,80 @@
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
-        Title="Confirm Remove Book"
+        Title="Kindle Manager Settings"
         SizeToContent="Height"
-        Width="350">
+        Width="400">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
     <StackPanel Margin="5">
+        <Grid Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <DockPanel>
-            <icons:PackIconFontAwesome Kind="ExclamationCircleSolid" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="4"/>
+            </Grid.RowDefinitions>
 
-            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
-                Are you sure you want to remove
-                <TextBlock Name="textBlockBookTitle"/>
-                from the library?
-            </TextBlock>
-            <CheckBox IsChecked="{Binding DeleteFile}" HorizontalAlignment="Left" Margin="5">
-                Delete file from disk.
-            </CheckBox>
-        </DockPanel>
+            <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center">Library Directory</TextBlock>
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding Config.LibraryDir}" IsReadOnly="True" Grid.Column="0"/>
+                <Button Width="32" Padding="2" Margin="0" Grid.Column="1">
+                    <icons:PackIconFontAwesome Kind="FolderOpenRegular" Height="14" Width="14"/>
+                </Button>
+            </Grid>
 
-        <Grid>
+            <TextBlock Grid.Column="0" Grid.Row="2" Margin="0,0,5,0" VerticalAlignment="Center">Library Format</TextBlock>
+            <Grid Grid.Column="1" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding Config.LibraryFormat}" Grid.Column="0"/>
+                <Button Grid.Column="1" Width="32" Height="32" Margin="0" Background="Transparent" BorderBrush="Transparent">
+                    <icons:PackIconFontAwesome Kind="QuestionSolid"  VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Button.ToolTip>
+                        <ToolTip Placement="Left" VerticalOffset="32" HorizontalOffset="32">
+                            <StackPanel>
+                                <TextBlock FontWeight="Bold" FontSize="14" Margin="0,0,0,5">Library Format</TextBlock>
+                                <TextBlock>Organize books in your Library Directory subdirectories using {tags}</TextBlock>
+                                <Border BorderBrush="Silver" BorderThickness="0,1,0,0" Margin="0,8,0,0" />
+                                <TextBlock>
+                            <TextBlock FontWeight="Bold" FontSize="12" Margin="0">Example:</TextBlock> <LineBreak/>
+                                {Author}\{Series}\{Title} <LineBreak/>
+                                Christopher Morley\Parnassus\Parnassus on Wheels 
+                            </TextBlock>
+                                <Border BorderBrush="Silver" BorderThickness="0,1,0,0" Margin="0,8,0,0" />
+                                <TextBlock>
+                            <TextBlock FontWeight="Bold" FontSize="12" Margin="0">Tags:</TextBlock> <LineBreak/>
+                                {Author}  {Title}  {Series}  {SeriesNum}  {Publisher}  {PubDate}  {ISBN} 
+                            </TextBlock>
+                            </StackPanel>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+
+            </Grid>
+
+        </Grid>
+        <Grid Margin="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -32,11 +87,10 @@
             <Button Click="Cancel" Grid.Column="0">
                 Cancel
             </Button>
-            <Button Click="Confirm" Grid.Column="1">
-                Remove Book
+            <Button Click="SaveSettings" Grid.Column="1">
+                Save and Close
             </Button>
 
         </Grid>
-
     </StackPanel>
 </Window>

@@ -34,6 +34,9 @@
             <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>
             </Button>
+            <Button ToolTip="Edit Settings" Command="{Binding EditSettings}" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconFontAwesome Kind="CogsSolid" Height="24" Width="24"/>
+            </Button>
             <!--
             <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>

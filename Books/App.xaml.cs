@@ -2,26 +2,23 @@
 using System.IO;
 using System;
 
-
 namespace Books
 {
     public partial class App : Application
     {
         public static Database Database;
-        readonly string DataDir = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\BookApp\");
+        public string LibraryDirectory;
+        public static ConfigManager ConfigManager;
 
         public void StartApp(object sender, StartupEventArgs e)
         {
-            //Test.DumpTextHtml();
-            //return;
-            //Debug.Open();
-            Debug.EpubToMobi();
+            ConfigManager = new ConfigManager();
 
-            Console.WriteLine("END");
-            return;
-            Directory.CreateDirectory(DataDir);
+            LibraryDirectory = Environment.ExpandEnvironmentVariables(ConfigManager.config.LibraryDir);
 
-            Database = new Database(Path.Combine(DataDir, "Library.db"));
+            Directory.CreateDirectory(LibraryDirectory);
+
+            Database = new Database(Path.Combine(LibraryDirectory, "Library.db"));
 
             MainWindow = new MainWindow();
             MainWindow.Show();

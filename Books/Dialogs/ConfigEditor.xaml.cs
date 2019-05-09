@@ -4,14 +4,15 @@ namespace Books.Dialogs
 {
     public partial class ConfigEditor : Window
     {
-        public ConfigEditor(string title)
+        public ConfigManager.Config Config { get; }
+
+        public ConfigEditor()
         {
             this.DataContext = this;
+            this.Config = new ConfigManager.Config(App.ConfigManager.config);
             this.Owner = App.Current.MainWindow;
             InitializeComponent();
-            this.textBlockBookTitle.Text = title;
         }
-        public bool DeleteFile { get; set; } = false;
 
         private void Cancel(object sender, RoutedEventArgs e)
         {
@@ -19,8 +20,11 @@ namespace Books.Dialogs
             this.Close();
         }
 
-        private void Confirm(object sender, RoutedEventArgs e)
+        private void SaveSettings(object sender, RoutedEventArgs e)
         {
+            App.ConfigManager.config = Config;
+            App.ConfigManager.Write();
+
             DialogResult = true;
             this.Close();
         }
