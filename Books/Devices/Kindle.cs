@@ -1,33 +1,48 @@
 ﻿using Formats;
 using System.IO;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Devices
 {
     class Kindle : IDevice
     {
 
-        private readonly string directory;
-        public bool firstUse { get; }
-        public string configFile { get; }
-        public Config config { get; set; }
-
-        public Kindle()
-        {
-            directory = @"C:\Users\Steven\Desktop\FakeKindle\";
-            configFile = Path.Combine(directory, "KindleManager.conf");
-
-            firstUse = !File.Exists(Path.Combine(directory, "KindleManager.conf"));
+        public string DriveLetter { get; set; }
+        public string Name { get; }
+        public string Description { get; }
+        public bool FirstUse {
+            get
+            {
+                return !File.Exists(Path.Combine(DriveLetter, "KindleManager.conf"));
+            }
         }
+        public string ConfigFile { get; }
+        public DeviceConfig Config { get; set; }
+
+        public Kindle(string Letter, string Name, string Description)
+        {
+            DriveLetter = Letter;
+            this.Name = Name;
+            this.Description = Description;
+            ConfigFile = Path.Combine(DriveLetter, "KindleManager.conf");
+        }
+
+        public void WriteConfig(DeviceConfig c)
+        {
+            File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(this));
+            Config = c;
+        }
+
 
         public void SendBook(IBook localBook)
         {
             Dictionary<string, string> props = localBook.Props();
 
-            string remoteFile = Path.Combine(directory, config.DirectoryFormat);
-            if (config.ChangeTitleOnSync)
+            string remoteFile = Path.Combine(DriveLetter, Config.DirectoryFormat);
+            if (Config.ChangeTitleOnSync)
             {
-                remoteFile = Path.Combine(remoteFile, config.TitleFormat) + ".mobi";
+                remoteFile = Path.Combine(remoteFile, Config.TitleFormat) + ".mobi";
             }
             else
             {
