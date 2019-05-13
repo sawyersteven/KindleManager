@@ -1,8 +1,10 @@
 ﻿using System.Windows;
+using MahApps.Metro.Controls;
+using System.Windows.Controls;
 
 namespace Books.Dialogs
 {
-    public partial class ConfirmRemoveFile : Window
+    public partial class ConfirmRemoveFile : MetroWindow
     {
         public ConfirmRemoveFile(string title)
         {

@@ -1,8 +1,9 @@
 ﻿using System.Windows;
+using MahApps.Metro.Controls;
 
 namespace Books.Dialogs
 {
-    public partial class ConvertRequired : Window
+    public partial class ConvertRequired : MetroWindow 
     {
         public ConvertRequired(string title)
         {

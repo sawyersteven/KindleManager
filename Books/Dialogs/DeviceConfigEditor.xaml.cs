@@ -1,12 +1,13 @@
 ﻿using System.Windows;
 using MahApps.Metro.Controls;
-using System.Windows.Forms;
+using System.Windows.Controls;
 
 namespace Books.Dialogs
 {
-    public partial class ConfigEditor : MetroWindow
+    public partial class DeviceConfigEditor : MetroWindow
     {
-        public ConfigManager.Config Config { get; }
+        public Devices.DeviceConfig Config { get; set; }
+        private readonly Devices.IDevice Kindle;
         public bool HelpOpen { get; set; }
 
         private void ToggleHelpOpen(object sender, RoutedEventArgs e)
@@ -14,11 +15,13 @@ namespace Books.Dialogs
             HelpOpen = !HelpOpen;
         }
 
-        public ConfigEditor()
+        public DeviceConfigEditor(Devices.IDevice kindle)
         {
             this.DataContext = this;
-            this.Config = new ConfigManager.Config(App.ConfigManager.config);
+            this.Kindle = kindle;
+            this.Config = new Devices.DeviceConfig(kindle.Config);
             this.Owner = App.Current.MainWindow;
+            ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(int.MaxValue));
             InitializeComponent();
         }
 
@@ -28,21 +31,9 @@ namespace Books.Dialogs
             this.Close();
         }
 
-        private void SelectLibraryDir(object sender, RoutedEventArgs e)
-        {
-            var dlg = new FolderBrowserDialog();
-            dlg.ShowDialog();
-            if (dlg.SelectedPath != null)
-            {
-                Config.LibraryDir = dlg.SelectedPath;
-            }
-        }
-
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
-            App.ConfigManager.config = Config;
-            App.ConfigManager.Write();
-
+            Kindle.WriteConfig(Config);
             DialogResult = true;
             this.Close();
         }

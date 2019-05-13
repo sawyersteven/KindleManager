@@ -1,14 +1,16 @@
-﻿<Window x:Class="Books.MainWindow"
+﻿<Controls:MetroWindow x:Class="Books.MainWindow"
+                      x:Name="Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
-        Title="MainWindow"
+        Title="Kindle Manager"
         MinHeight="450"
         MinWidth="450">
-
+    
     <Window.Resources>
         <Style x:Key="ToolbarButton" TargetType="{x:Type Button}">
             <Setter Property="BorderThickness" Value="0"/>
@@ -16,6 +18,44 @@
             <Setter Property="Background" Value="Transparent"/>
         </Style>
     </Window.Resources>
+
+    <Controls:MetroWindow.Flyouts>
+        <Controls:FlyoutsControl x:Name="DeviceListFlyout">
+            <Controls:Flyout Header="Kindle" Position="Right" Width="300" IsOpen="True">
+                <StackPanel Orientation="Vertical" Margin="10">
+                    <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
+                    <Border BorderThickness="1" BorderBrush="Gray"/>
+                    <StackPanel Orientation="Horizontal">
+                        <icons:PackIconFontAwesome Kind="EditRegular" Height="16" Width="16"/>
+                    </StackPanel>
+                    <Button Margin="0,5">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text=""/>
+                            <TextBlock Text=""/>
+                        </StackPanel>
+                    </Button>
+                    
+                    
+                    <TextBlock FontSize="14" FontWeight="Bold" Margin="0,10,0,0">Devices</TextBlock>
+                    <Border BorderThickness="1" BorderBrush="Gray"/>
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding DevManager.DeviceList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="0,5" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}">
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock Text="{Binding DriveLetter}"/>
+                                            <TextBlock Text="{Binding Description}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Controls:Flyout>
+        </Controls:FlyoutsControl>
+    </Controls:MetroWindow.Flyouts>
 
     <StackPanel>
         <StackPanel Orientation="Horizontal" Height="48">
@@ -28,25 +68,13 @@
             <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="TrashAltRegular" Height="24" Width="24"/>
             </Button>
-            <Button ToolTip="Open Kindle" Command="{Binding OpenKindle}" Style="{StaticResource ToolbarButton}">
-                <icons:PackIconFontAwesome Kind="TabletSolid" Height="24" Width="24"/>
-            </Button>
             <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>
             </Button>
             <Button ToolTip="Edit Settings" Command="{Binding EditSettings}" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconFontAwesome Kind="CogsSolid" Height="24" Width="24"/>
             </Button>
-            <!--
-            <Button ToolTip="Sync Device" Command="{Binding SyncDevice}" Style="{StaticResource ToolbarButton}">
-                <icons:PackIconFontAwesome Kind="SyncAltSolid" Height="24" Width="24"/>
-            </Button>-->
         </StackPanel>
-        <!--<StackPanel Orientation="Horizontal" Height="24">
-            <Button ToolTip="Select Columns" Command="{Binding SelectColumns}" Style="{StaticResource ToolbarButton}" Height="24" Width="24">
-                <icons:PackIconFontAwesome Kind="TableSolid" Height="16" Width="16"/>
-            </Button>
-        </StackPanel>-->
 
         <DataGrid Name="Library"
                   ItemsSource="{Binding Library}"
@@ -67,4 +95,4 @@
     </StackPanel>
 
 
-</Window>
+</Controls:MetroWindow>

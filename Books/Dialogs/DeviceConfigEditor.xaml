@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow x:Class="Books.Dialogs.ConfigEditor"
+﻿<Controls:MetroWindow x:Class="Books.Dialogs.DeviceConfigEditor"          
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,7 +7,7 @@
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
-        Title="Kindle Manager Settings"
+        Title="Kindle Settings"
         SizeToContent="Height"
         Width="400">
 
@@ -36,25 +36,23 @@
                 </Button.ToolTip>
             </Button>
         </Controls:WindowCommands>
-    </Controls:MetroWindow.LeftWindowCommands>
+    </Controls:MetroWindow.LeftWindowCommands>  
 
     <StackPanel Margin="10">
+        <Label>Library Root Folder</Label>
+        <TextBox Text="{Binding Config.LibraryRoot}" IsReadOnly="True"/>
 
-        <Label>Library Directory</Label>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding Config.LibraryDir}" IsReadOnly="True" Grid.Column="0" BorderThickness="1,1,0,1"/>
-            <Button Click="SelectLibraryDir" Width="24" Height="24" Padding="0" Grid.Column="1" BorderThickness="1" VerticalAlignment="Top">
-                <icons:PackIconFontAwesome Kind="FolderOpenRegular" Height="14" Width="14"/>
-            </Button>
-        </Grid>
+        <Label>Library Directory Format</Label>
+        <TextBox Text="{Binding Config.DirectoryFormat}"/>
 
-        <Label>Library Format</Label>
-        <TextBox Text="{Binding Config.LibraryFormat}"/>
-        
+        <Label>
+            <StackPanel Orientation="Horizontal">
+                <Controls:ToggleSwitchButton IsChecked="{Binding Config.ChangeTitleOnSync}" Height="24" Width="48"/>
+                <TextBlock VerticalAlignment="Center">Format Transferred Book Titles</TextBlock>
+            </StackPanel>
+        </Label>
+        <TextBox Text="{Binding Config.TitleFormat}" IsEnabled="{Binding Config.ChangeTitleOnSync}" Controls:TextBoxHelper.Watermark="BookTitleFormat"/>
+
         <Grid Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

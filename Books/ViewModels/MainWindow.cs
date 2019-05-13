@@ -12,21 +12,23 @@ namespace Books.ViewModels
 {
     class MainWindow : ReactiveObject
     {
-
-        IDevice Device;
-
         public MainWindow()
         {
             ImportBook = ReactiveCommand.Create(_ImportBook);
             RemoveBook = ReactiveCommand.Create(_RemoveBook);
             EditMetadata = ReactiveCommand.Create(_EditMetadata);
-            OpenKindle = ReactiveCommand.Create(_OpenKindle);
             SyncDevice = ReactiveCommand.Create(_SyncDevice);
             EditSettings = ReactiveCommand.Create(_EditSettings);
+            SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice);
 
+            DevManager = new DevManager();
+            DevManager.FindKindles();
         }
 
         #region properties
+        public DevManager DevManager { get; set; }
+        public IDevice SelectedDevice { get; }
+
         public ObservableCollection<Database.BookEntry> Library { get; } = App.Database.Library;
 
         private Database.BookEntry _SelectedTableRow;
@@ -38,62 +40,100 @@ namespace Books.ViewModels
                 this.RaiseAndSetIfChanged(ref _SelectedTableRow, value);
             }
         }
+
+        private string[] _Devices;
+        public string[] Devices
+        {
+            get => _Devices;
+            set { _Devices = value; }
+        }
+
+        private string _ConnectedDevice;
+        public string ConnectedDevice
+        {
+            get => _ConnectedDevice;
+            set { _ConnectedDevice = value; }
+        }
+
+
         #endregion
 
         #region button commands
+
+        public ReactiveCommand<string, bool> SelectDevice { get; set; }
+        public bool _SelectDevice(string driveLetter)
+        {
+            bool setupRequired;
+            try
+            {
+                setupRequired = DevManager.OpenDevice(driveLetter);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return false;
+            }
+
+            if (setupRequired)
+            {
+                SetupDevice(DevManager.SelectedDevice);
+            }
+            return true;
+        }
+
         public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
         public void _EditSettings()
         {
             var dlg = new Dialogs.ConfigEditor();
             dlg.ShowDialog();
-
         }
 
         public ReactiveCommand<Unit, Unit> SyncDevice { get; set; }
         private void _SyncDevice()
         {
-            if (Device == null)
+            if (DevManager.SelectedDevice == null)
             {
                 MessageBox.Show("Connect to Kindle before syncing library");
                 return;
             }
             var r = (BookBase)SelectedTableRow;
-            Device.SendBook(r);
+            DevManager.SelectedDevice.SendBook(r);
         }
         
-        public ReactiveCommand<Unit, Unit> OpenKindle { get; set; }
-        private void _OpenKindle()
+        private void SetupDevice(IDevice kindle)
         {
-            // Todo replace with options
-            Device = new Kindle();
-
-            if (Device.firstUse)
+            if (MessageBox.Show("It appears this is the first time you've used this device with KindleManager. " +
+                "A new configuration will be created.", "Device Setup") == DialogResult.Cancel)
             {
-                MessageBox.Show(@"It appears this is the firs time you've used this device with KindleManager.");
+                DevManager.SelectedDevice = null;
+                return;
+            };
 
-                try
-                {
-                    File.WriteAllText(Device.configFile, "");
-                }
-                catch (Exception e)
-                {
-                    MessageBox.Show(e.Message);
-                    return;
-                }
-
-
-
-                // TODO replace with open config dialog
-                Config c = new Config();
-                c.LibraryRoot = "books/";
-                c.DirectoryFormat = "{Author}/{Title}/";
-                // End replace
-
-                c.Write(Device.configFile);
+            try
+            {
+                DeviceConfig c = new DeviceConfig();
+                kindle.WriteConfig(c);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return;
             }
 
-            Device.config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Device.configFile));
+            kindle.Config = JsonConvert.DeserializeObject<DeviceConfig>(File.ReadAllText(kindle.ConfigFile));
+
+            _EditDeviceSettings();
         }
+
+        public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
+        private void _EditDeviceSettings()
+        {
+            if (DevManager.SelectedDevice == null) return;
+            var dlg = new Dialogs.DeviceConfigEditor(DevManager.SelectedDevice);
+            dlg.ShowDialog();
+        }
+
+
 
         public ReactiveCommand<Unit, Unit> ImportBook { get; set; }
         private void _ImportBook()

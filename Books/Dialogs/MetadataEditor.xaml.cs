@@ -1,9 +1,10 @@
 ﻿using System.Windows;
 using System;
+using MahApps.Metro.Controls;
 
 namespace Books.Dialogs
 {
-    public partial class MetadataEditor : Window
+    public partial class MetadataEditor : MetroWindow
     {
         public MetadataEditor(Formats.IBook book)
         {

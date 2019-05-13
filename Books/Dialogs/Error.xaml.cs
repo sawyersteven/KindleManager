@@ -1,11 +1,12 @@
 ﻿using System.Windows;
+using MahApps.Metro.Controls;
 
 namespace Books.Dialogs
 {
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class Error : Window
+    public partial class Error : MetroWindow
     {
         public Error(string title, string message)
         {
