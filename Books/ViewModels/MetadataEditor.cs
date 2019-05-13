@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System;
 using ExtensionMethods;
 
-
 namespace Books.ViewModels
 {
     class MetadataEditor : ReactiveObject

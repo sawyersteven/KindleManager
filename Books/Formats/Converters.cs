@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Formats;
 
 /// <summary>
 /// Collection of classes and methods to convert X to Y

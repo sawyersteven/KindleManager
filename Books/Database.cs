@@ -1,12 +1,9 @@
-﻿using System.Data.SQLite;
-using System.IO;
-using LiteDB;
+﻿using LiteDB;
 using Formats;
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Reflection;
 
 namespace Books
 {
