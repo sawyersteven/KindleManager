@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.IO;
 using System;
+using System.Windows.Controls;
 
 namespace Books
 {
@@ -20,10 +21,10 @@ namespace Books
 
             Database = new Database(Path.Combine(LibraryDirectory, "Library.db"));
 
+            ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(int.MaxValue));
+                        
             MainWindow = new MainWindow();
             MainWindow.Show();
         }
-
-
     }
 }

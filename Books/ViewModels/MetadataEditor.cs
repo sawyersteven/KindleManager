@@ -9,7 +9,7 @@ namespace Books.ViewModels
     class MetadataEditor : ReactiveObject
     {
 
-        public MetadataEditor(Formats.IBook book)
+        public MetadataEditor(Formats.BookBase book)
         {
             this.Title = book.Title;
 
@@ -40,7 +40,7 @@ namespace Books.ViewModels
         public string[] AuthorsList { get; set; }
         public string[] SeriesList { get; set; }
         public string[] PublisherList { get; set; }
-        public Formats.IBook Book { get; set; }
+        public Formats.BookBase Book { get; set; }
         public string Title { get; set; }
         public Action CloseDialog { get; set; }
         #endregion
@@ -51,7 +51,7 @@ namespace Books.ViewModels
         {
             try
             {
-                this.Book.WriteMetadata();
+                Book.WriteMetadata();
                 App.Database.UpdateBook(Book);
                 CloseDialog();
             }

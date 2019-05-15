@@ -173,6 +173,23 @@ namespace ExtensionMethods
             if (data.Length <= maxLength) return data;
             return data.Substring(0, maxLength);
         }
+
+        public static string DictFormat(this string s, Dictionary<string, string> d)
+        {
+            foreach (KeyValuePair<string, string> kv in d)
+            {
+                s = s.Replace($"{{{kv.Key}}}", kv.Value);
+            }
+            while (s.Contains("  "))
+            {
+                s = s.Replace("  ", " ");
+            }
+            s = s.Replace("[]", "");
+            s = s.Replace("{}", "");
+            s = s.Replace("()", "");
+            
+            return s;
+        }
     }
 
     public static class DictExtensions

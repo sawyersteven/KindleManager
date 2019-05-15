@@ -280,7 +280,6 @@ namespace Formats.Mobi
         }
 
         #region IBook overrides
-        public override string Format { get => "MOBI"; }
 
         private string _Title;
         public override string Title

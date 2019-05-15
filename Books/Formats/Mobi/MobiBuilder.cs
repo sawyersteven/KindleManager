@@ -13,7 +13,7 @@ namespace Formats.Mobi
     {
         private const int postHeaderPadding = 0x400;
 
-        readonly IBook Donor;
+        readonly BookBase Donor;
         readonly string OutputPath;
         (string, int)[] Chapters; // (title, byteoffset) in encoded html
 
@@ -29,13 +29,13 @@ namespace Formats.Mobi
 
         private readonly List<byte[]> records = new List<byte[]>();
 
-        public Builder(IBook donor, string outputPath)
+        public Builder(BookBase donor, string outputPath)
         {
             Donor = donor ?? throw new ArgumentException("Input book cannot be null");
             OutputPath = outputPath;
         }
 
-        public IBook Convert()
+        public BookBase Convert()
         {
             (byte[] textBytes, (string, int)[] c) = ProcessHtml(Donor.TextContent());
             Chapters = c;

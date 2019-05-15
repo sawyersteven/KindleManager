@@ -3,14 +3,17 @@ using MahApps.Metro.Controls;
 
 namespace Books.Dialogs
 {
-    public partial class ConvertRequired : MetroWindow 
+    public partial class YesNo : MetroWindow 
     {
-        public ConvertRequired(string title)
+        public YesNo(string title, string text, string yesButtonText = "OK")
         {
             this.DataContext = this;
             this.Owner = App.Current.MainWindow;
             InitializeComponent();
-            this.textBlockBookTitle.Text = title;
+            this.Title = title;
+            this.BodyText.Text = text;
+            this.YesButton.Text = yesButtonText;
+
         }
         public bool DeleteFile { get; set; } = false;
 
@@ -25,6 +28,5 @@ namespace Books.Dialogs
             DialogResult = true;
             this.Close();
         }
-
     }
 }

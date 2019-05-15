@@ -11,6 +11,7 @@ namespace Books.Dialogs
         public Error(string title, string message)
         {
             this.DataContext = new ViewModels.ErrorDialog(title, message);
+            this.Owner = App.Current.MainWindow;
             InitializeComponent();
         }
 

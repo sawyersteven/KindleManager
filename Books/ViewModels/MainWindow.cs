@@ -6,7 +6,11 @@ using Formats;
 using System.Collections.ObjectModel;
 using System.IO;
 using Devices;
-using Newtonsoft.Json;
+using System.Linq;
+using ExtensionMethods;
+using ReactiveUI.Fody.Helpers;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Books.ViewModels
 {
@@ -14,70 +18,140 @@ namespace Books.ViewModels
     {
         public MainWindow()
         {
-            ImportBook = ReactiveCommand.Create(_ImportBook);
+            BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
             RemoveBook = ReactiveCommand.Create(_RemoveBook);
             EditMetadata = ReactiveCommand.Create(_EditMetadata);
-            SyncDevice = ReactiveCommand.Create(_SyncDevice);
+            SendBook = ReactiveCommand.Create(_SendBook);
             EditSettings = ReactiveCommand.Create(_EditSettings);
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice);
+            EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings);
+            OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
+            OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
+            SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary);
 
             DevManager = new DevManager();
             DevManager.FindKindles();
+
+            TaskbarIcon = "None";
+            TaskbarText = "";
+            SideBarOpen = true;
         }
 
         #region properties
-        public DevManager DevManager { get; set; }
-        public IDevice SelectedDevice { get; }
+        [Reactive] public bool BackgroundWork { get; set; }
+        [Reactive] public string TaskbarText { get; set; }
+        [Reactive] public string TaskbarIcon { get; set; }
 
+        public DevManager DevManager { get; set; }
+        
         public ObservableCollection<Database.BookEntry> Library { get; } = App.Database.Library;
 
-        private Database.BookEntry _SelectedTableRow;
-        public Database.BookEntry SelectedTableRow
-        {
-            get => _SelectedTableRow;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _SelectedTableRow, value);
-            }
-        }
+        [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
 
-        private string[] _Devices;
-        public string[] Devices
-        {
-            get => _Devices;
-            set { _Devices = value; }
-        }
+        [Reactive] public Device SelectedDevice { get; set; }
 
-        private string _ConnectedDevice;
-        public string ConnectedDevice
-        {
-            get => _ConnectedDevice;
-            set { _ConnectedDevice = value; }
-        }
-
+        [Reactive] public bool SideBarOpen { get; set; }
 
         #endregion
 
         #region button commands
+        public ReactiveCommand<Unit, Unit> SyncDeviceLibrary { get; set; }
+        public void _SyncDeviceLibrary()
+        {
+            if (SelectedDevice == null)
+            {
+                // Todo alert
+                return;
+            }
+
+            List<BookBase> toTransfer = new List<BookBase>();
+
+            foreach (BookBase book in App.Database.Library)
+            {
+                if (!SelectedDevice.Database.Library.Any(x => x.Id == book.Id))
+                {
+                    toTransfer.Add(book);
+                }
+            }
+
+            var dlg = new Dialogs.SyncConfirm(toTransfer, SelectedDevice);
+            if (dlg.ShowDialog() == false)
+            {
+                return;
+            }
+            // TODO check toTransfer members
+            Task.Run(() =>
+            {
+                TaskbarIcon = "";
+                BackgroundWork = true;
+                foreach (BookBase book in toTransfer)
+                {
+                    try
+                    {
+                        TaskbarText = $"Copying {book.Title}";
+                        SelectedDevice.SendBook(book);
+                    }
+                    catch (Exception e)
+                    {
+                        TaskbarIcon = "AlertCircle";
+                        TaskbarText = e.Message;
+                    }
+                    finally
+                    {
+                        
+                    }
+                }
+                BackgroundWork = false;
+
+            });
+        }
+
+        public ReactiveCommand<Unit, Unit> OpenSideBar { get; set; }
+        public void _OpenSideBar()
+        {
+            SideBarOpen = true;
+        }
+
+        public ReactiveCommand<Unit, Unit> OpenDeviceFolder { get; set; }
+        public void _OpenDeviceFolder()
+        {
+            if (SelectedDevice == null) return;
+            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot);
+            while (!Directory.Exists(p))
+            {
+                p = Directory.GetParent(p).FullName;
+            }
+            System.Diagnostics.Process.Start(p);
+        }
 
         public ReactiveCommand<string, bool> SelectDevice { get; set; }
         public bool _SelectDevice(string driveLetter)
         {
-            bool setupRequired;
             try
             {
-                setupRequired = DevManager.OpenDevice(driveLetter);
+                SelectedDevice = DevManager.OpenDevice(driveLetter);
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message);
+                var dlg = new Dialogs.Error("Unable to open Device", e.Message);
+                dlg.ShowDialog();
                 return false;
             }
 
-            if (setupRequired)
+            if (SelectedDevice.FirstUse)
             {
-                SetupDevice(DevManager.SelectedDevice);
+                if (!SetupDevice(SelectedDevice)) return false;
             }
+            else
+            {
+                SelectedDevice.Init();
+            }
+
+            foreach(Database.BookEntry gridRow in App.Database.Library)
+            {
+                gridRow.OnDevice = SelectedDevice.Database.Library.Any(x => x.Id == gridRow.Id);
+            }
+            //App.Database.Library.CollectionChanged;
             return true;
         }
 
@@ -88,55 +162,51 @@ namespace Books.ViewModels
             dlg.ShowDialog();
         }
 
-        public ReactiveCommand<Unit, Unit> SyncDevice { get; set; }
-        private void _SyncDevice()
+        public ReactiveCommand<Unit, Unit> SendBook { get; set; }
+        private void _SendBook()
         {
-            if (DevManager.SelectedDevice == null)
+            if (SelectedDevice == null)
             {
-                MessageBox.Show("Connect to Kindle before syncing library");
+                var dlg = new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books");
+                dlg.ShowDialog();
                 return;
             }
-            var r = (BookBase)SelectedTableRow;
-            DevManager.SelectedDevice.SendBook(r);
+
+            Task.Run(() =>
+            {
+                TaskbarIcon = "";
+                BackgroundWork = true;
+                var r = (BookBase)SelectedTableRow;
+
+# if DEBUG
+                Task.Delay(5000);
+#endif
+                try
+                {
+                    SelectedDevice.SendBook(r);
+                }
+                catch (Exception e)
+                {
+                    TaskbarIcon = "AlertCircle";
+                    TaskbarText = e.Message;
+                }
+                finally
+                {
+                    BackgroundWork = false;
+                }
+            });
         }
         
-        private void SetupDevice(IDevice kindle)
-        {
-            if (MessageBox.Show("It appears this is the first time you've used this device with KindleManager. " +
-                "A new configuration will be created.", "Device Setup") == DialogResult.Cancel)
-            {
-                DevManager.SelectedDevice = null;
-                return;
-            };
-
-            try
-            {
-                DeviceConfig c = new DeviceConfig();
-                kindle.WriteConfig(c);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return;
-            }
-
-            kindle.Config = JsonConvert.DeserializeObject<DeviceConfig>(File.ReadAllText(kindle.ConfigFile));
-
-            _EditDeviceSettings();
-        }
-
         public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
         private void _EditDeviceSettings()
         {
-            if (DevManager.SelectedDevice == null) return;
-            var dlg = new Dialogs.DeviceConfigEditor(DevManager.SelectedDevice);
+            if (SelectedDevice == null) return;
+            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice);
             dlg.ShowDialog();
         }
 
-
-
-        public ReactiveCommand<Unit, Unit> ImportBook { get; set; }
-        private void _ImportBook()
+        public ReactiveCommand<Unit, Unit> BrowseForImport { get; set; }
+        private void _BrowseForImport()
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Multiselect = false;
@@ -144,61 +214,19 @@ namespace Books.ViewModels
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            IBook importBook;
+            BookBase importBook;
             try
             {
                 importBook = Converters.NewIBook(dlg.FileName);
             }
             catch (Exception e)
             {
-                var errdlg = new Dialogs.Error("Error opening book", e.Message);
+                var errdlg = new Dialogs.Error("Error Opening Book", e.Message);
                 errdlg.ShowDialog();
                 return;
             }
+            ImportBook(importBook);
 
-            throw new NotImplementedException();
-            //string authorDir = Path.Combine(App.DataDir, importBook.Author);
-            //Directory.CreateDirectory(authorDir);
-
-            // Todo make filepath from config eg "{Author}/{Series}/{Title}.mobi"
-            string destinationFile = ""; // Path.Combine(authorDir, importBook.Title) + ".mobi";
-
-            if (Path.GetExtension(dlg.FileName) != ".mobi")
-            {    
-                var convertdlg = new Dialogs.ConvertRequired(Path.GetFileName(dlg.FileName));
-                if (convertdlg.ShowDialog() == false) return;
-                try
-                {
-                    importBook = Converters.ToMobi(importBook, destinationFile);
-                }
-                catch (InvalidOperationException e)
-                {
-                    MessageBox.Show(e.Message);
-                    return;
-                }
-            }
-            else
-            {
-                try
-                {
-                    File.Copy(importBook.FilePath,destinationFile);
-                }
-                catch (Exception e)
-                {
-                    MessageBox.Show(e.Message);
-                    return;
-                }
-            }
-
-            try
-            {
-                App.Database.AddBook(importBook);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return;
-            }
         }
 
         public ReactiveCommand<Unit, Unit> RemoveBook { get; set; }
@@ -206,7 +234,8 @@ namespace Books.ViewModels
         {
             if (SelectedTableRow == null) { return; }
 
-            var dlg = new Dialogs.ConfirmRemoveFile(SelectedTableRow.Title);
+            string msg = $"Are you sure you want to remove {SelectedTableRow.Title} from your library?";
+            var dlg = new Dialogs.YesNo("Confirm Remove", msg, "Remove");
 
             if (dlg.ShowDialog() == false) { return; }
 
@@ -226,7 +255,7 @@ namespace Books.ViewModels
         private void _EditMetadata()
         {
             if (SelectedTableRow == null) return;
-            IBook book = null;
+            BookBase book = null;
             try
             {
                 book = new Formats.Mobi.Book(SelectedTableRow.FilePath);
@@ -244,6 +273,122 @@ namespace Books.ViewModels
             var dlg = new Dialogs.MetadataEditor(book);
             dlg.ShowDialog();
         }
+
+        //public ReactiveCommand<Unit, Unit> 
         #endregion
+
+        private bool SetupDevice(Device kindle)
+        {
+            var dlg = new Dialogs.YesNo("Device Setup", "It appears this is the first time you've used this device with KindleManager. " +
+                "A new configuration will be created.");
+            if (dlg.ShowDialog() == false)
+            {
+                SelectedDevice = null;
+                return false;
+            }
+
+            DeviceConfig c;
+            try
+            {
+                c = new DeviceConfig();
+                kindle.WriteConfig(c);
+            }
+            catch (Exception e)
+            {
+                var errdlg = new Dialogs.Error("Error Creating Config File", e.Message);
+                errdlg.ShowDialog();
+                return false;
+            }
+
+            kindle.Config = c;
+            _EditDeviceSettings();
+
+            // Setup directories
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot));
+            }
+            catch (Exception e)
+            {
+                var errdlg = new Dialogs.Error("Error Creating Library Structure", e.Message);
+                errdlg.ShowDialog();
+                return false;
+            }
+
+            // Device DB
+            try
+            {
+                SelectedDevice.Database = new Database(Path.Combine(SelectedDevice.DriveLetter, "KindleManager.db"));
+            }
+            catch (Exception e)
+            {
+                var errdlg = new Dialogs.Error("Error Creating Device Database", e.Message);
+                errdlg.ShowDialog();
+                return false;
+            }
+            return true;
+        }
+
+        private void ImportBook(BookBase book)
+        {
+            string destinationFile = App.ConfigManager.config.LibraryFormat.DictFormat(book.Props());
+            destinationFile = Path.Combine(App.ConfigManager.config.LibraryDir, destinationFile, book.Title) + ".mobi";
+
+            if (Path.GetExtension(book.FilePath) != ".mobi")
+            {
+                string msg = $"{book.FilePath} is not compatible and must be converted to mobi before adding to library.";
+
+                var convertdlg = new Dialogs.YesNo(Path.GetFileName(book.FilePath), msg, "Convert");
+                if (convertdlg.ShowDialog() == false) return;
+                try
+                {
+                    book = Converters.ToMobi(book, destinationFile);
+                }
+                catch (Exception e)
+                {
+                    var errdlg = new Dialogs.Error("Conversion Failed", e.Message);
+                    errdlg.ShowDialog();
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    Directory.CreateDirectory(Directory.GetParent(destinationFile).FullName);
+                    File.Copy(book.FilePath, destinationFile);
+                }
+                catch (Exception e)
+                {
+                    var errdlg = new Dialogs.Error("Copy File Error", e.Message);
+                    errdlg.ShowDialog();
+                    return;
+                }
+            }
+
+            try
+            {
+                App.Database.AddBook(book);
+            }
+            catch (InvalidOperationException e)
+            {
+                var errdlg = new Dialogs.Error("Could Not Write To Database", e.Message);
+                errdlg.ShowDialog();
+
+                try
+                {
+                    File.Delete(destinationFile);
+                }
+                catch { }
+
+                return;
+            }
+            catch (Exception e)
+            {
+                var errdlg = new Dialogs.Error("Could Not Write To Database", e.Message);
+                errdlg.ShowDialog();
+                return;
+            }
+        }
     }
 }

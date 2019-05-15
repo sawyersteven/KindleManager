@@ -2,12 +2,11 @@
 
 namespace Formats
 {
-    public abstract class BookBase : IBook
+    public abstract class BookBase
     {
 
         #region IBook impl
         public virtual string FilePath { get; set; }
-        public virtual string Format { get; }
         public virtual string Title { get; set; }
         public virtual string Language { get; set; }
         public virtual ulong ISBN { get; set; }
@@ -26,7 +25,6 @@ namespace Formats
         }
         public virtual string Rights { get; set; }
 
-        // local db only, not parsed
         public virtual int Id { get; set; }
         public virtual string Series { get; set; }
         public virtual float SeriesNum { get; set; }
@@ -38,6 +36,8 @@ namespace Formats
         public abstract void WriteMetadata();
 
         #endregion
+
+        public BookBase() { }
 
         public Dictionary<string, string> Props()
         {

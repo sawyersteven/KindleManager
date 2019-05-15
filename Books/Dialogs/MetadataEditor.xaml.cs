@@ -6,10 +6,11 @@ namespace Books.Dialogs
 {
     public partial class MetadataEditor : MetroWindow
     {
-        public MetadataEditor(Formats.IBook book)
+        public MetadataEditor(Formats.BookBase book)
         {
             ViewModels.MetadataEditor dc = new ViewModels.MetadataEditor(book);
             dc.CloseDialog = new Action(() => this.Close());
+            this.Owner = App.Current.MainWindow;
             this.DataContext = dc;
 
             InitializeComponent();

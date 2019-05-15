@@ -4,13 +4,14 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using ReactiveUI.Fody.Helpers;
 
 namespace Books
 {
     public class Database : IDisposable
     {
         private LiteDatabase db;
-        public readonly ObservableCollection<BookEntry> Library;
+        public ObservableCollection<BookEntry> Library { get; set; }
 
         public Database(string DBFile)
         {
@@ -18,15 +19,14 @@ namespace Books
             Library = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
         }
 
-
         #region Create
 
-        public void AddBook(IBook book)
+        public void AddBook(BookBase book)
         {
 
-            if (Library.Any(x => x.FilePath == book.FilePath))
+            if (Library.Any(x => x.Id == book.Id))
             {
-                throw new InvalidOperationException($"{book.FilePath} already exists in library"); ;
+                throw new InvalidOperationException($"{book.FilePath} [{book.Id}] already exists in library"); ;
             }
 
             var c = db.GetCollection<BookEntry>("BOOKS");
@@ -41,6 +41,11 @@ namespace Books
             entry.PubDate = book.PubDate;
             entry.ISBN = book.ISBN;
             entry.DateAdded = DateTime.Now.ToString("yyyy-MM-dd"); // 1950-01-01
+
+            if (book.Id != 0)
+            {
+                entry.Id = book.Id;
+            }
 
             c.Insert(entry);
             Library.Add(entry);
@@ -72,6 +77,11 @@ namespace Books
             return series.ToArray();
         }
 
+        public BookEntry GetByFileName(string FileName)
+        {
+            return Library.FirstOrDefault(x => x.FilePath == FileName);
+        }
+
         #endregion
 
         #region Update
@@ -79,7 +89,7 @@ namespace Books
         /// Updates BOOKS entry with matching filename
         /// Raises exception if filename not in colletion
         /// </summary>
-        public void UpdateBook(IBook update)
+        public void UpdateBook(BookBase update)
         {
             var col = db.GetCollection<BookEntry>("BOOKS");
             BookEntry dbEntry = col.FindOne(x => x.Id == update.Id);
@@ -89,18 +99,13 @@ namespace Books
             }
 
             BookEntry tableRow = Library.First(x => x.Id == update.Id);
-            Library.Remove(tableRow);
 
             var updateProps = update.GetType().GetProperties();
 
-            foreach (var prop in updateProps)
-            {
-                dbEntry.GetType().GetProperty(prop.Name).SetValue(dbEntry, prop.GetValue(update));
-                tableRow.GetType().GetProperty(prop.Name).SetValue(tableRow, prop.GetValue(update));
-            }
+            dbEntry = new BookEntry(update);
+            tableRow.CopyFrom(update);
 
             col.Update(dbEntry);
-            Library.Add(tableRow);
         }
         #endregion
 
@@ -118,31 +123,73 @@ namespace Books
 
         public class BookEntry : BookBase
         {
-            //public string FilePath { get; set; }
-            //public string Format { get; set; }
+            [Reactive] public override int Id { get; set; }
 
-            //public string Title { get; set; }
-            //public string Language { get; set; }
-            //public ulong ISBN { get; set; }
+            [Reactive] public override string FilePath { get; set; }
+             
+            [Reactive] public override string Title { get; set; }
+            [Reactive] public override string Language { get; set; }
+            [Reactive] public override ulong ISBN { get; set; }
+                    
+            [Reactive] public override string Author { get; set; }
+            [Reactive] public override string Contributor { get; set; }
+            [Reactive] public override string Publisher { get; set; }
+            [Reactive] public override string[] Subject { get; set; }
+            [Reactive] public override string Description { get; set; }
+            [Reactive] public override string PubDate { get; set; }
+            [Reactive] public override string Rights { get; set; }
+                    
+            [Reactive] public override string Series { get; set; }
+            [Reactive] public override float SeriesNum { get; set; }
+            [Reactive] public override string DateAdded { get; set; }
 
-            //public string Author { get; set; }
-            //public string Contributor { get; set; }
-            //public string Publisher { get; set; }
-            //public string[] Subject { get; set; }
-            //public string Description { get; set; }
-            //public string PubDate { get; set; }
-            //public string Rights { get; set; }
-
-            //public int Id { get; set; }
-            //public string Series { get; set; }
-            //public float SeriesNum { get; set; }
-            //public string DateAdded { get; set; }
+            [Reactive] public bool OnDevice { get; set; }
 
             #region methods
             public override string TextContent() => "";
             public override byte[][] Images() => new byte[0][];
             public override void WriteMetadata() { }
             #endregion
+
+            public BookEntry() { }
+
+            public BookEntry(BookBase b)
+            {
+                this.FilePath = b.FilePath;
+                this.Title = b.Title;
+                this.Language = b.Language;
+                this.ISBN = b.ISBN;
+                this.Author = b.Author;
+                this.Contributor = b.Contributor;
+                this.Publisher = b.Publisher;
+                this.Subject = b.Subject;
+                this.Description = b.Description;
+                this.PubDate = b.PubDate;
+                this.Rights = b.Rights;
+                this.Id = b.Id;
+                this.Series = b.Series;
+                this.SeriesNum = b.SeriesNum;
+                this.DateAdded = b.DateAdded;
+            }
+
+            public void CopyFrom(BookBase b)
+            {
+                this.FilePath = b.FilePath;
+                this.Title = b.Title;
+                this.Language = b.Language;
+                this.ISBN = b.ISBN;
+                this.Author = b.Author;
+                this.Contributor = b.Contributor;
+                this.Publisher = b.Publisher;
+                this.Subject = b.Subject;
+                this.Description = b.Description;
+                this.PubDate = b.PubDate;
+                this.Rights = b.Rights;
+                this.Id = b.Id;
+                this.Series = b.Series;
+                this.SeriesNum = b.SeriesNum;
+                this.DateAdded = b.DateAdded;
+            }
         }
     }
 }

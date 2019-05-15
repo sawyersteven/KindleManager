@@ -14,7 +14,7 @@ namespace Formats
     /// </summary>
     class Converters
     {
-        private void Merge(IBook donor, IBook recipient)
+        private void Merge(BookBase donor, BookBase recipient)
         {
             recipient.Title = donor.Title;
             recipient.Language = donor.Language;
@@ -34,9 +34,9 @@ namespace Formats
             recipient.DateAdded = donor.DateAdded;
         }
 
-        public static IBook NewIBook(string filepath)
+        public static BookBase NewIBook(string filepath)
         {
-            IBook book;
+            BookBase book;
             switch (Path.GetExtension(filepath))
             {
                 case ".mobi":
@@ -51,7 +51,7 @@ namespace Formats
             return book;
         }
 
-        public static IBook ToMobi(IBook input, string filePath = "")
+        public static BookBase ToMobi(BookBase input, string filePath = "")
         {
             if (filePath == "")
             {

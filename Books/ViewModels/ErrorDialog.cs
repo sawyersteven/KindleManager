@@ -8,11 +8,9 @@ namespace Books.ViewModels
         {
             TitleText = title;
             MessageText = message;
-
         }
 
         public string TitleText { get; set; }
         public string MessageText { get; set; }
-
     }
 }

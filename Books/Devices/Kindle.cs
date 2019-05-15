@@ -1,24 +1,12 @@
 ﻿using Formats;
 using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+using ExtensionMethods;
+using System;
 
 namespace Devices
 {
-    class Kindle : IDevice
+    class Kindle : Device
     {
-
-        public string DriveLetter { get; set; }
-        public string Name { get; }
-        public string Description { get; }
-        public bool FirstUse {
-            get
-            {
-                return !File.Exists(Path.Combine(DriveLetter, "KindleManager.conf"));
-            }
-        }
-        public string ConfigFile { get; }
-        public DeviceConfig Config { get; set; }
 
         public Kindle(string Letter, string Name, string Description)
         {
@@ -26,20 +14,19 @@ namespace Devices
             this.Name = Name;
             this.Description = Description;
             ConfigFile = Path.Combine(DriveLetter, "KindleManager.conf");
+            DatabaseFile = Path.Combine(DriveLetter, "KindleManager.db");
         }
 
-        public void WriteConfig(DeviceConfig c)
+        public override void SendBook(BookBase localBook)
         {
-            File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(this));
-            Config = c;
-        }
+            string remoteFile = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat);
 
+            Books.Database.BookEntry dbrow = Books.App.Database.GetByFileName(remoteFile);
+            if (dbrow != null)
+            {
+                throw new Exception("Book already exists on kindle");
+            }
 
-        public void SendBook(IBook localBook)
-        {
-            Dictionary<string, string> props = localBook.Props();
-
-            string remoteFile = Path.Combine(DriveLetter, Config.DirectoryFormat);
             if (Config.ChangeTitleOnSync)
             {
                 remoteFile = Path.Combine(remoteFile, Config.TitleFormat) + ".mobi";
@@ -49,16 +36,16 @@ namespace Devices
                 remoteFile = Path.Combine(remoteFile, Path.GetFileName(localBook.FilePath));
             }
 
-            foreach (KeyValuePair<string, string> kv in props)
-            {
-                remoteFile = remoteFile.Replace($"{{{kv.Key}}}", kv.Value);
-            }
+            remoteFile = remoteFile.DictFormat(localBook.Props());
 
-            remoteFile = Path.Combine(remoteFile);
+            remoteFile = Path.Combine(remoteFile); // normalizes path
 
             Directory.CreateDirectory(Path.GetDirectoryName(remoteFile));
 
             File.Copy(localBook.FilePath, remoteFile);
+
+            localBook.FilePath = remoteFile;
+            this.Database.AddBook(localBook);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow x:Class="Books.Dialogs.ConvertRequired"
+﻿<Controls:MetroWindow x:Class="Books.Dialogs.YesNo"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -13,15 +13,13 @@
 
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconFontAwesome Kind="ExclamationCircleSolid" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
+            <icons:PackIconModern Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
 
-            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
-                <TextBlock Name="textBlockBookTitle"/>
-                is incompatibe with Kindle devices and must be converted to mobi before copying to library.
+            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top" Name="BodyText">
             </TextBlock>
         </DockPanel>
 
-        <Grid Margin="0,10,0,0">
+        <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="5"/>
@@ -31,10 +29,8 @@
                 Cancel
             </Button>
             <Button Click="Confirm" Grid.Column="2">
-                Convert
+                <TextBlock Name="YesButton"/>
             </Button>
-
         </Grid>
-
     </StackPanel>
 </Controls:MetroWindow>

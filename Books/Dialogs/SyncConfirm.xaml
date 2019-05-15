@@ -1,0 +1,57 @@
+﻿<Controls:MetroWindow x:Class="Books.Dialogs.SyncConfirm"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ThreeDBorderWindow"
+        Title="Sync Library"
+        SizeToContent="Height"
+        Width="350">
+    <StackPanel Margin="10">
+        <DockPanel>
+            <icons:PackIconMaterial Kind="BookOpenPageVariant" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
+                
+                The following books are prepared to be transferred to <TextBlock Text="{Binding KindleName}"/>.
+                <LineBreak/>
+                Other operations may be disabled while transfers are in progress.
+            </TextBlock>
+        </DockPanel>
+        <Expander Header="Books" Margin="0,4,0,0">
+            <ScrollViewer MaxHeight="200">
+                <ItemsControl Name="BooksListItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding Checked}"/>
+                                <TextBlock Text="{Binding Title}" Grid.Column="1"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Expander>
+
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Click="Cancel" Grid.Column="0">
+                Cancel
+            </Button>
+            <Button Click="Confirm" Grid.Column="2">
+                SYNC
+            </Button>
+        </Grid>
+    </StackPanel>
+</Controls:MetroWindow>

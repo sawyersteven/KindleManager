@@ -1,11 +1,8 @@
-﻿using Newtonsoft.Json;
-using System.IO;
-
-namespace Devices
+﻿namespace Devices
 {
     public class DeviceConfig
     {
-        public string _LibraryRoot = "books/";
+        public string _LibraryRoot = "documents/";
         public string LibraryRoot {
             get => _LibraryRoot;
             set

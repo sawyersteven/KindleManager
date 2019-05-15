@@ -77,7 +77,6 @@ namespace Formats
             Console.WriteLine($@"
                 Id: {Id}
                 FilePath: {FilePath}
-                Type: {Format}
                 Title: {Title}
                 Author: {Author}
                 Publisher: {Publisher}
@@ -92,8 +91,6 @@ namespace Formats
         private string[] ImageNames;
 
         #region IBook overrides
-        public override string Format { get => "EPUB"; }
-
         public override string TextContent()
         {
             // todo add option to remove nodes with no innerhtml

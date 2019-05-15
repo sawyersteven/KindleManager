@@ -1,13 +1,12 @@
 ﻿using System.Windows;
 using MahApps.Metro.Controls;
-using System.Windows.Controls;
 
 namespace Books.Dialogs
 {
     public partial class DeviceConfigEditor : MetroWindow
     {
         public Devices.DeviceConfig Config { get; set; }
-        private readonly Devices.IDevice Kindle;
+        private readonly Devices.Device Kindle;
         public bool HelpOpen { get; set; }
 
         private void ToggleHelpOpen(object sender, RoutedEventArgs e)
@@ -15,13 +14,12 @@ namespace Books.Dialogs
             HelpOpen = !HelpOpen;
         }
 
-        public DeviceConfigEditor(Devices.IDevice kindle)
+        public DeviceConfigEditor(Devices.Device kindle)
         {
             this.DataContext = this;
             this.Kindle = kindle;
             this.Config = new Devices.DeviceConfig(kindle.Config);
             this.Owner = App.Current.MainWindow;
-            ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(int.MaxValue));
             InitializeComponent();
         }
 

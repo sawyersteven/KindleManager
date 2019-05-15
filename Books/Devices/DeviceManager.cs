@@ -6,31 +6,29 @@ namespace Devices
 {
     class DevManager
     {
-        public IDevice[] _DeviceList;
-        public IDevice[] DeviceList { get => _DeviceList; }
-
-        public IDevice SelectedDevice { get; set; }
+        public Device[] _DeviceList;
+        public Device[] DeviceList { get => _DeviceList; }
 
         public DevManager()
         {
             _DeviceList = FindKindles();
         }
 
-        public bool OpenDevice(string driveLetter)
+        public Device OpenDevice(string driveLetter)
         {
-            SelectedDevice = DeviceList.FirstOrDefault(x => x.DriveLetter == driveLetter);
+            Device SelectedDevice = DeviceList.FirstOrDefault(x => x.DriveLetter == driveLetter);
             if (SelectedDevice == null)
             {
                 throw new KeyNotFoundException($"Drive {driveLetter} could not be opened.");
             }
 
-            return SelectedDevice.FirstUse;
+            return SelectedDevice;
         }
 
 
-        public static IDevice[] FindKindles()
+        public static Device[] FindKindles()
         {
-            List<IDevice> devices = new List<IDevice>();
+            List<Device> devices = new List<Device>();
 
             foreach (ManagementObject drive in new ManagementObjectSearcher("select * from Win32_DiskDrive").Get())
             {

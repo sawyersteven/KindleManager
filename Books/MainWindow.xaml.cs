@@ -12,6 +12,20 @@ namespace Books
             this.DataContext = new ViewModels.MainWindow();
             InitializeComponent();
 
+            Library.DragEnter += Library_DragEnter;
+            Library.Drop += Library_Drop;
+
+        }
+
+        private void Library_Drop(object sender, System.Windows.DragEventArgs e)
+        {
+            ViewModels.MainWindow vm = (ViewModels.MainWindow)DataContext;
+         //   this.DataContext
+        }
+
+        private void Library_DragEnter(object sender, System.Windows.DragEventArgs e)
+        {
+            //throw new System.NotImplementedException();
         }
     }
 }
