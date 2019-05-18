@@ -2,6 +2,7 @@
 using ExtensionMethods;
 using System.Globalization;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Utils
 {
@@ -301,5 +302,30 @@ namespace Utils
             return output;
         }
         #endregion
+    }
+
+    class Files
+    {
+        static string[] DirSearch(string dirs)
+        {
+            List<string> files = new List<string>();
+
+            try
+            {
+                foreach (string d in Directory.GetDirectories(dirs))
+                {
+                    foreach (string f in Directory.GetFiles(d))
+                    {
+                        files.Add(f);
+                    }
+                    DirSearch(d);
+                }
+            }
+            catch (System.Exception excpt)
+            {
+                Console.WriteLine(excpt.Message);
+            }
+            return files.ToArray();
+        }
     }
 }
