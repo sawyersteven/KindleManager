@@ -157,6 +157,12 @@
     <Compile Include="Devices\DeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
     <Compile Include="Devices\Kindle.cs" />
+    <Compile Include="Dialogs\BulkImportErrors.xaml.cs">
+      <DependentUpon>BulkImportErrors.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\BulkImport.xaml.cs">
+      <DependentUpon>BulkImport.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\SyncConfirm.xaml.cs">
       <DependentUpon>SyncConfirm.xaml</DependentUpon>
     </Compile>
@@ -186,10 +192,19 @@
     <Compile Include="Formats\Mobi\Headers\PalmDOCHeader.cs" />
     <Compile Include="Formats\Mobi\Headers\PDBHeader.cs" />
     <Compile Include="Formats\Resources.cs" />
+    <Compile Include="Library.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />
     <Compile Include="ViewModels\MetadataEditor.cs" />
+    <Page Include="Dialogs\BulkImportErrors.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Dialogs\BulkImport.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Dialogs\SyncConfirm.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

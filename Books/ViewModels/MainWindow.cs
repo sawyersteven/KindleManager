@@ -3,31 +3,30 @@ using ReactiveUI;
 using System.Reactive;
 using System.Windows.Forms;
 using Formats;
-using System.Collections.ObjectModel;
 using System.IO;
 using Devices;
 using System.Linq;
-using ExtensionMethods;
 using ReactiveUI.Fody.Helpers;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace Books.ViewModels
 {
+    
     class MainWindow : ReactiveObject
     {
         public MainWindow()
         {
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
-            RemoveBook = ReactiveCommand.Create(_RemoveBook);
-            EditMetadata = ReactiveCommand.Create(_EditMetadata);
-            SendBook = ReactiveCommand.Create(_SendBook);
+            RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
+            EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable));
+            SendBook = ReactiveCommand.Create(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditSettings = ReactiveCommand.Create(_EditSettings);
-            SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice);
-            EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings);
+            SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
+            EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
             OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
-            SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary);
+            SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             DevManager = new DevManager();
             DevManager.FindKindles();
@@ -35,17 +34,25 @@ namespace Books.ViewModels
             TaskbarIcon = "None";
             TaskbarText = "";
             SideBarOpen = true;
+            BackgroundWork = false;
         }
 
         #region properties
-        [Reactive] public bool BackgroundWork { get; set; }
+        private bool _BackgroundWork;
+        public bool BackgroundWork {
+            get => _BackgroundWork;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _BackgroundWork, value);
+                ButtonEnable = !value;
+            }
+        }
+        [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string TaskbarText { get; set; }
         [Reactive] public string TaskbarIcon { get; set; }
 
         public DevManager DevManager { get; set; }
         
-        public ObservableCollection<Database.BookEntry> Library { get; } = App.Database.Library;
-
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
 
         [Reactive] public Device SelectedDevice { get; set; }
@@ -79,13 +86,25 @@ namespace Books.ViewModels
             {
                 return;
             }
-            // TODO check toTransfer members
-            Task.Run(() =>
+
+            var a = dlg.UserSelectedBooks;
+
+            foreach (var b in dlg.UserSelectedBooks)
+            {
+                if (!b.Checked)
+                {
+                    BookBase t = toTransfer.FirstOrDefault(x => x.Id == b.Id);
+                    if (t != null) toTransfer.Remove(t);
+                }
+            }
+
+            Task.Run(async () =>
             {
                 TaskbarIcon = "";
                 BackgroundWork = true;
                 foreach (BookBase book in toTransfer)
                 {
+                    await Task.Delay(10000);
                     try
                     {
                         TaskbarText = $"Copying {book.Title}";
@@ -96,12 +115,13 @@ namespace Books.ViewModels
                         TaskbarIcon = "AlertCircle";
                         TaskbarText = e.Message;
                     }
-                    finally
-                    {
-                        
-                    }
                 }
+                TaskbarText = $"Sync Complete";
+                TaskbarIcon = "CheckCircle";
                 BackgroundWork = false;
+
+                var ndlg = new Dialogs.YesNo("Test", "test");
+                ndlg.ShowDialog();
 
             });
         }
@@ -110,6 +130,12 @@ namespace Books.ViewModels
         public void _OpenSideBar()
         {
             SideBarOpen = true;
+            Task.Run(() =>
+            {
+                BackgroundWork = true;
+                DevManager.FindKindles();
+                BackgroundWork = false;
+            });
         }
 
         public ReactiveCommand<Unit, Unit> OpenDeviceFolder { get; set; }
@@ -177,10 +203,6 @@ namespace Books.ViewModels
                 TaskbarIcon = "";
                 BackgroundWork = true;
                 var r = (BookBase)SelectedTableRow;
-
-# if DEBUG
-                Task.Delay(5000);
-#endif
                 try
                 {
                     SelectedDevice.SendBook(r);
@@ -210,23 +232,20 @@ namespace Books.ViewModels
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Multiselect = false;
-            dlg.Filter = "eBooks (*.epub;*.mobi)|*.epub;*.mobi";
+
+            string types = string.Join(";*", Formats.Resources.CompatibleFileTypes);
+            dlg.Filter = $"eBooks (*{types})|*{types}";
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            BookBase importBook;
-            try
+            if (Path.GetExtension(dlg.FileName) != ".mobi")
             {
-                importBook = Converters.NewIBook(dlg.FileName);
+                string msg = $"{dlg.FileName} is not compatible and must be converted to mobi before adding to library.";
+                var convertdlg = new Dialogs.YesNo(Path.GetFileName(dlg.FileName), msg, "Convert");
+                if (convertdlg.ShowDialog() == false) return;
             }
-            catch (Exception e)
-            {
-                var errdlg = new Dialogs.Error("Error Opening Book", e.Message);
-                errdlg.ShowDialog();
-                return;
-            }
-            ImportBook(importBook);
 
+            ImportBook(dlg.FileName);
         }
 
         public ReactiveCommand<Unit, Unit> RemoveBook { get; set; }
@@ -329,64 +348,73 @@ namespace Books.ViewModels
             return true;
         }
 
-        private void ImportBook(BookBase book)
+        private void ImportBook(string filePath)
         {
-            string destinationFile = App.ConfigManager.config.LibraryFormat.DictFormat(book.Props());
-            destinationFile = Path.Combine(App.ConfigManager.config.LibraryDir, destinationFile, book.Title) + ".mobi";
-
-            if (Path.GetExtension(book.FilePath) != ".mobi")
-            {
-                string msg = $"{book.FilePath} is not compatible and must be converted to mobi before adding to library.";
-
-                var convertdlg = new Dialogs.YesNo(Path.GetFileName(book.FilePath), msg, "Convert");
-                if (convertdlg.ShowDialog() == false) return;
-                try
-                {
-                    book = Converters.ToMobi(book, destinationFile);
-                }
-                catch (Exception e)
-                {
-                    var errdlg = new Dialogs.Error("Conversion Failed", e.Message);
-                    errdlg.ShowDialog();
-                    return;
-                }
-            }
-            else
-            {
-                try
-                {
-                    Directory.CreateDirectory(Directory.GetParent(destinationFile).FullName);
-                    File.Copy(book.FilePath, destinationFile);
-                }
-                catch (Exception e)
-                {
-                    var errdlg = new Dialogs.Error("Copy File Error", e.Message);
-                    errdlg.ShowDialog();
-                    return;
-                }
-            }
-
             try
             {
-                App.Database.AddBook(book);
+                BackgroundWork = true;
+                Library.ImportBook(filePath);
             }
-            catch (InvalidOperationException e)
+            catch (LiteDB.LiteException e)
             {
-                var errdlg = new Dialogs.Error("Could Not Write To Database", e.Message);
-                errdlg.ShowDialog();
-
-                try
-                {
-                    File.Delete(destinationFile);
-                }
-                catch { }
-
+                new Dialogs.Error("Unable to write to database", e.Message).ShowDialog();
                 return;
             }
             catch (Exception e)
             {
-                var errdlg = new Dialogs.Error("Could Not Write To Database", e.Message);
-                errdlg.ShowDialog();
+                new Dialogs.Error("Import Error", e.Message).ShowDialog();
+                return;
+            }
+            finally
+            {
+                BackgroundWork = false;
+            }
+        }
+
+        public void ImportBooksDrop(string path)
+        {
+            if (File.Exists(path))
+            {
+                if (!Formats.Resources.CompatibleFileTypes.Contains(Path.GetExtension(path)))
+                {
+                    new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(path)} format books has not yet been implemented.").ShowDialog();
+                    return;
+                }
+                ImportBook(path);
+            }
+            else if (Directory.Exists(path))
+            {
+                var dlg = new Dialogs.BulkImport(path);
+                dlg.ShowDialog();
+                if (dlg.DialogResult == false) return;
+
+                string[] files = dlg.SelectedFiles();
+
+                Task.Run(() =>
+                {
+                    List<(string, string)> errors = new List<(string, string)>();
+
+                    foreach (string file in files)
+                    {
+                        try
+                        {
+                            Library.ImportBook(file);
+                        }
+                        catch (Exception e)
+                        {
+                            errors.Add((file, e.Message));
+                        }
+                    }
+
+                    App.Current.Dispatcher.Invoke(delegate
+                    {
+                        new Dialogs.BulkImportErrors(errors.ToArray()).ShowDialog();
+                    });
+
+                    TaskbarText = "Import Complete";
+                    TaskbarIcon = "CheckCircle";
+
+                });
                 return;
             }
         }

@@ -21,24 +21,22 @@
                 Other operations may be disabled while transfers are in progress.
             </TextBlock>
         </DockPanel>
-        <Expander Header="Books" Margin="0,4,0,0">
-            <ScrollViewer MaxHeight="200">
-                <ItemsControl Name="BooksListItemsControl">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="0,2,0,2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <CheckBox Grid.Column="0" IsChecked="{Binding Checked}"/>
-                                <TextBlock Text="{Binding Title}" Grid.Column="1"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Expander>
+        <ScrollViewer MaxHeight="200">
+            <ItemsControl Name="BooksListItemsControl">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,2,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Checked}"/>
+                            <TextBlock Text="{Binding Title}" Grid.Column="1"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
 
         <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>

@@ -51,7 +51,7 @@
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
-                                <icons:PackIconModern Kind="RefreshCounterClockwiseUp" Height="16" Width="16"/>
+                                <icons:PackIconModern Kind="PageDuplicate" Height="16" Width="16"/>
                             </Button>
                             <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
                                 <icons:PackIconMaterial Kind="Settings" Height="16" Width="16"/>
@@ -59,8 +59,15 @@
                             <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
                                 <icons:PackIconMaterial Kind="FolderOpen" Height="16" Width="16" />
                             </Button>
-                            <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="3" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
-                                <icons:PackIconMaterial Kind="Menu" Height="16" Width="16" />
+                            <Button x:Name="DeviceExtraMenu" Click="OpenDeviceExtraMenu" ToolTip="Open Library Folder" Grid.Column="3" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Rebuild Database" Command="{Binding SendBook}"/>
+                                        <MenuItem Header="Edit Metadata" Command="{Binding EditMetadata}"/>
+                                        <MenuItem Header="Delete" Command="{Binding RemoveBook}"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                                <icons:PackIconMaterial Kind="DotsVertical" Height="16" Width="16" />
                             </Button>
                         </Grid>
                     </Grid>
@@ -110,13 +117,13 @@
                 <icons:PackIconMaterial Kind="BookPlus" Height="24" Width="24"/>
             </Button>
             <Border BorderBrush="{DynamicResource GrayBrush5}" Margin="0,8,16,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
-            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" Style="{StaticResource ToolbarButton}" Grid.Column="4">
-                <icons:PackIconMaterial Kind="FileSend" Height="24" Width="24"/>
+            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
+                <icons:PackIconMaterial Kind="ContentDuplicate" Height="24" Width="24"/>
             </Button>
-            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
+            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}" Grid.Column="3">
                 <icons:PackIconMaterial Kind="TableEdit" Height="24" Width="24"/>
             </Button>
-            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}" Grid.Column="3">
+            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}" Grid.Column="4">
                 <icons:PackIconMaterial Kind="DeleteForever" Height="24" Width="24"/>
             </Button>
             <Button ToolTip="Open Sidebar" Command="{Binding OpenSideBar}" Grid.Column="6" Height="32" Width="32" Margin="0,0,8,0" Style="{StaticResource ToolbarButton}">
@@ -124,14 +131,17 @@
             </Button>
         </Grid>
 
-        <DataGrid Name="Library"
+
+        <DataGrid Name="LibraryTable"
                   BorderBrush="{DynamicResource GrayBrush5}"
                   BorderThickness="0,1,0,0"
-                  ItemsSource="{Binding Library}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   SelectedItem="{Binding SelectedTableRow}"
-                  Grid.Row="1">
+                  Grid.Row="1"
+                  AllowDrop="True"
+                  Background="{DynamicResource WhiteColorBrush}"
+                  Grid.ZIndex="1">
             <DataGrid.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}"/>
@@ -155,6 +165,9 @@
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
             </DataGrid.Columns>
         </DataGrid>
+        <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource LabelTextBrush}">
+            <icons:PackIconMaterial Kind="PlusBox" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
 
         <StatusBar Grid.Row="2" Height="32">
             <StatusBar.Style>
@@ -175,7 +188,7 @@
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
                     <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
-                    <icons:PackIconMaterial Kind="{Binding TaskbarIcon}" Margin="4,4,0,0"/>
+                    <icons:PackIconMaterial Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Foreground="{DynamicResource TextBrush}"/>
 
                     <TextBlock Text="{Binding TaskbarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
                     <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2" Width="32" Padding="0">
