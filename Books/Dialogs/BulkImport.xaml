@@ -1,0 +1,56 @@
+﻿<Controls:MetroWindow x:Class="Books.Dialogs.BulkImport"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:Books.BindingConverters"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Title="Import Directory"
+        SizeToContent="Height"
+        Width="600">
+
+    <Window.Resources>
+        <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
+    </Window.Resources>
+
+    <StackPanel Margin="10">
+        <DockPanel>
+            <icons:PackIconMaterial Kind="BookOpenPageVariant" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
+                The following books have been found and may be imported.
+                <LineBreak/>
+                This process may take some time as books will be automatically converted as needed.
+                <LineBreak/>
+                Other operations may be disabled while imports are in progress.
+            </TextBlock>
+        </DockPanel>
+        <TreeView x:Name="DirectoryTree" ItemsSource="{Binding Tree}" MaxHeight="200">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding Checked}" Visibility="{Binding IsFile, Converter={StaticResource CollapseIfFalse}}"/>
+                        <TextBlock Text="{Binding Name}"/>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Click="Cancel" Grid.Column="0">
+                Cancel
+            </Button>
+            <Button Click="Confirm" Grid.Column="2">
+                Import
+            </Button>
+        </Grid>
+    </StackPanel>
+</Controls:MetroWindow>
