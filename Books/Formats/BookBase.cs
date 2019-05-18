@@ -2,7 +2,7 @@
 
 namespace Formats
 {
-    public abstract class BookBase
+    public abstract class BookBase : ReactiveUI.ReactiveObject
     {
 
         #region IBook impl

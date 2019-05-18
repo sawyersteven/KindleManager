@@ -43,12 +43,6 @@ namespace Devices
                     }
                 }
             }
-
-#if DEBUG
-            devices.Add(new Kindle("G:\\", "Emtec", "Kindle Device Caption"));
-            devices.Add(new Kindle("Y:\\", "Kindle", "Kindle Device Caption"));
-            devices.Add(new Kindle("Z:\\", "Kindle", "Kindle Device Caption"));
-#endif
             return devices.ToArray();
         }
     }

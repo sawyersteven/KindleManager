@@ -86,6 +86,10 @@ namespace Formats.Mobi.Headers
             byte[] buffer = reader.ReadBytes(0xC);
 
             identifier = buffer.SubArray(0x0, 0x4);
+            if (identifier.Decode() != "EXTH")
+            {
+                throw new FileFormatException($"Invalid EXTH header; Expected 'EXTH', found '{identifier.Decode()}'");
+            }
             uint _recordCount = Utils.BigEndian.ToUInt32(buffer, 0x8);
 
             for (int i = 0; i < _recordCount; i++)

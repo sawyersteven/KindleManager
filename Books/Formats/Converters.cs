@@ -46,7 +46,7 @@ namespace Formats
                     book = new Epub(filepath);
                     break;
                 default:
-                    throw new Exception("Unsupported file type");
+                    throw new FileFormatException("Unsupported file type");
             }
             return book;
         }

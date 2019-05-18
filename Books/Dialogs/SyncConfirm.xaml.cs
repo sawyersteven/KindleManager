@@ -14,12 +14,12 @@ namespace Books.Dialogs
     public partial class SyncConfirm : MetroWindow
     {
         #region Fields      
-        private List<BookBase> ToTransfer;
-        private UserSelectBook[] UserSelectedBooks { get; set; }
-        public struct UserSelectBook
+        public UserSelectBook[] UserSelectedBooks { get; set; }
+        public class UserSelectBook
         {
             [Reactive] public bool Checked { get; set; }
             [Reactive] public string Title { get; set; }
+            public int Id { get; set; }
         }
         #endregion
 
@@ -29,18 +29,10 @@ namespace Books.Dialogs
 
         public SyncConfirm(List<BookBase> toTransfer, Device kindle)
         {
-            UserSelectedBooks = new UserSelectBook[toTransfer.Count * 3];
+            UserSelectedBooks = new UserSelectBook[toTransfer.Count];
             for (int i = 0; i < toTransfer.Count; i++)
             {
-                UserSelectedBooks[i] = new UserSelectBook { Checked = true, Title = toTransfer[i].Title };
-            }
-            for (int i = toTransfer.Count; i < toTransfer.Count * 2; i++)
-            {
-                UserSelectedBooks[i] = new UserSelectBook { Checked = true, Title = toTransfer[i - toTransfer.Count].Title };
-            }
-            for (int i = toTransfer.Count * 2; i < toTransfer.Count * 3; i++)
-            {
-                UserSelectedBooks[i] = new UserSelectBook { Checked = true, Title = toTransfer[i - (toTransfer.Count * 2)].Title };
+                UserSelectedBooks[i] = new UserSelectBook { Checked = true, Title = toTransfer[i].Title, Id = toTransfer[i].Id };
             }
 
             UserSelectedBooks.OrderByDescending(x => x.Title);
@@ -48,7 +40,6 @@ namespace Books.Dialogs
             this.DataContext = this;
             this.Owner = App.Current.MainWindow;
             InitializeComponent();
-            this.ToTransfer = toTransfer;
             this.KindleName = kindle.Name;
 
             this.BooksListItemsControl.ItemsSource = UserSelectedBooks;

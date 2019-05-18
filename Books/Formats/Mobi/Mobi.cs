@@ -101,10 +101,10 @@ namespace Formats.Mobi
      */
 
     {
-        public Headers.PDBHeader PDBHeader;
-        public Headers.PalmDOCHeader PalmDOCHeader;
-        public Headers.MobiHeader MobiHeader;
-        public Headers.EXTHHeader EXTHHeader;
+        public Headers.PDBHeader PDBHeader = new Headers.PDBHeader();
+        public Headers.PalmDOCHeader PalmDOCHeader = new Headers.PalmDOCHeader();
+        public Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
+        public Headers.EXTHHeader EXTHHeader = new Headers.EXTHHeader();
 
         private delegate byte[] Decompressor(byte[] buffer, int compressedLen);
         private readonly Decompressor decompress;
@@ -117,15 +117,18 @@ namespace Formats.Mobi
 
             using (BinaryReader reader = new BinaryReader(new FileStream(filepath, FileMode.Open)))
             {
+                if (reader.BaseStream.Length < (PDBHeader.baseLength + PalmDOCHeader.length + MobiHeader.length))
+                {
+                    throw new FileFormatException("File is too short to contain all required header data");
+                }
+
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
 
                 // Basic header metadata
-                this.PDBHeader = new Headers.PDBHeader();
                 PDBHeader.Parse(reader);
                 contentOffset = PDBHeader.records[1];
 
                 // PalmDOCHeader
-                this.PalmDOCHeader = new Headers.PalmDOCHeader();
                 this.PalmDOCHeader.offset = PDBHeader.records[0];
                 this.PalmDOCHeader.Parse(reader);
                 switch (PalmDOCHeader.compression)
@@ -141,12 +144,10 @@ namespace Formats.Mobi
                 }
 
                 // MobiHeader
-                this.MobiHeader = new Headers.MobiHeader();
                 this.MobiHeader.offset = (uint)reader.BaseStream.Position;
                 this.MobiHeader.Parse(reader);
 
                 // EXTHHeader
-                this.EXTHHeader = new Headers.EXTHHeader();
                 if (this.MobiHeader.hasEXTH)
                 {
                     EXTHHeader.offset = MobiHeader.offset + MobiHeader.length;

@@ -91,6 +91,11 @@ namespace Formats.Mobi.Headers
             reader.BaseStream.Seek(0x4E, SeekOrigin.Begin);
             byte[] rawBuffer = reader.ReadBytes(0x8 * recordCount);
 
+            if (recordCount < 2)
+            {
+                throw new FileFormatException("Invalid PDBHeader record count.");
+            }
+
             for (var i = 0; i < recordCount; i++)
             {
                 records[i] = Utils.BigEndian.ToUInt32(rawBuffer, i * 0x8);

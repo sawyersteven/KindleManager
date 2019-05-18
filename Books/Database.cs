@@ -23,13 +23,10 @@ namespace Books
 
         public void AddBook(BookBase book)
         {
-
             if (Library.Any(x => x.Id == book.Id))
             {
-                throw new InvalidOperationException($"{book.FilePath} [{book.Id}] already exists in library"); ;
+                throw new LiteException($"{book.FilePath} [{book.Id}] already exists in library"); ;
             }
-
-            var c = db.GetCollection<BookEntry>("BOOKS");
 
             BookEntry entry = new BookEntry();
             entry.Title = book.Title;
@@ -47,8 +44,14 @@ namespace Books
                 entry.Id = book.Id;
             }
 
-            c.Insert(entry);
-            Library.Add(entry);
+            db.GetCollection<BookEntry>("BOOKS").Insert(entry);
+
+            // ObservableCollections *must* be updated from the main/ui thread
+            App.Current.Dispatcher.Invoke(delegate
+            {
+                Library.Add(entry);
+            });
+
         }
 
         #endregion

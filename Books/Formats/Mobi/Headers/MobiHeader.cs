@@ -149,6 +149,11 @@ namespace Formats.Mobi.Headers
             byte[] buffer = reader.ReadBytes(0x8);
 
             identifier = buffer.SubArray(0x0, 0x4); // MOBI
+            if (identifier.Decode() != "MOBI")
+            {
+                throw new FileFormatException($"Invalid Mobi header magic; Expected 'MOBI' found '{identifier.Decode()}'");
+            }
+
             length = Utils.BigEndian.ToUInt32(buffer, 0x4);
 
             reader.BaseStream.Seek(offset, SeekOrigin.Begin);
