@@ -306,24 +306,20 @@ namespace Utils
 
     class Files
     {
-        static string[] DirSearch(string dirs)
+        public static string[] DirSearch(string dir)
         {
             List<string> files = new List<string>();
 
             try
             {
-                foreach (string d in Directory.GetDirectories(dirs))
+                foreach (string subdir in Directory.GetDirectories(dir))
                 {
-                    foreach (string f in Directory.GetFiles(d))
-                    {
-                        files.Add(f);
-                    }
-                    DirSearch(d);
+                    files.AddRange(Directory.GetFiles(dir));
+                    DirSearch(subdir);
                 }
             }
-            catch (System.Exception excpt)
+            catch (Exception e)
             {
-                Console.WriteLine(excpt.Message);
             }
             return files.ToArray();
         }
