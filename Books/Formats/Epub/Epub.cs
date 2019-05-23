@@ -7,11 +7,11 @@ using HtmlAgilityPack;
 using System.Collections.Generic;
 using ExtensionMethods;
 
-namespace Formats
+namespace Formats.Epub
 {
-    public class Epub : BookBase
+    public class Book : BookBase
     {
-        public Epub(string filepath)
+        public Book(string filepath)
         {
             FilePath = filepath;
 
@@ -72,23 +72,7 @@ namespace Formats
             return (target == null) ? "" : target.InnerText;
         }
 
-        public void Print()
-        {
-            Console.WriteLine($@"
-                Id: {Id}
-                FilePath: {FilePath}
-                Title: {Title}
-                Author: {Author}
-                Publisher: {Publisher}
-                PubDate: {PubDate}
-                ISBN: {ISBN}
-                Series: {Series}
-                SeriesNum: {SeriesNum}
-                DateAdded: {DateAdded}
-            ");
-        }
-
-        private string[] ImageNames;
+        private readonly string[] ImageNames;
 
         #region IBook overrides
         public override string TextContent()
@@ -151,8 +135,7 @@ namespace Formats
 
             foreach (XmlNode nav in tocXml.SelectNodes("//rt:navPoint", nsmgr))
             {
-                int playorder;
-                if (!int.TryParse(nav.Attributes["playOrder"].Value, out playorder)) continue;
+                if (!int.TryParse(nav.Attributes["playOrder"].Value, out int playorder)) continue;
 
                 XmlNode ctnt = nav.SelectSingleNode("rt:content", nsmgr);
                 if (ctnt == null) continue;

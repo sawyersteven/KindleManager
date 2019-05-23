@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System;
 
 namespace Formats
 {
     public abstract class BookBase : ReactiveUI.ReactiveObject
     {
-
         #region IBook impl
         public virtual string FilePath { get; set; }
         public virtual string Title { get; set; }
@@ -39,17 +40,37 @@ namespace Formats
 
         public BookBase() { }
 
+        public static BookBase Auto(string filepath)
+        {
+            BookBase b = null;
+            switch (Path.GetExtension(filepath))
+            {
+                case ".mobi":
+                    b = new Formats.Mobi.Book(filepath);
+                    break;
+                case ".epub":
+                    b = new Formats.Epub.Book(filepath);
+                    break;
+            }
+            if (b == null)
+            {
+                throw new NotImplementedException($"File type {Path.GetExtension(filepath)} is not supported");
+            }
+            return b;
+        }
+
         public Dictionary<string, string> Props()
         {
-            Dictionary<string, string> p = new Dictionary<string, string>();
-
-            p.Add("Title", Title);
-            p.Add("ISBN", ISBN.ToString());
-            p.Add("Author", Author);
-            p.Add("Publisher", Publisher);
-            p.Add("PubDate", PubDate);
-            p.Add("Series", Series);
-            p.Add("SeriesNum", SeriesNum.ToString());
+            Dictionary<string, string> p = new Dictionary<string, string>
+            {
+                { "Title", Title },
+                { "ISBN", ISBN.ToString() },
+                { "Author", Author },
+                { "Publisher", Publisher },
+                { "PubDate", PubDate },
+                { "Series", Series },
+                { "SeriesNum", SeriesNum.ToString() }
+            };
 
             return p;
         }

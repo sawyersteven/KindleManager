@@ -11,10 +11,12 @@ namespace Books
     public class Database : IDisposable
     {
         private LiteDatabase db;
+        public readonly string DBFile;
         public ObservableCollection<BookEntry> Library { get; set; }
 
         public Database(string DBFile)
         {
+            this.DBFile = DBFile;
             db = new LiteDatabase(DBFile);
             Library = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
         }
@@ -28,7 +30,7 @@ namespace Books
                 throw new LiteException($"{book.FilePath} [{book.Id}] already exists in library"); ;
             }
 
-            BookEntry entry = new BookEntry();
+            BookEntry entry = new BookEntry(); // todo use copy constructor?
             entry.Title = book.Title;
             entry.FilePath = book.FilePath;
             entry.Author = book.Author;
@@ -85,11 +87,16 @@ namespace Books
             return Library.FirstOrDefault(x => x.FilePath == FileName);
         }
 
+        public BookEntry GetById(int id)
+        {
+            return Library.FirstOrDefault(x => x.Id == id);
+        }
+
         #endregion
 
         #region Update
         /// <summary>
-        /// Updates BOOKS entry with matching filename
+        /// Updates BOOKS entry with matching Id
         /// Raises exception if filename not in colletion
         /// </summary>
         public void UpdateBook(BookBase update)
@@ -102,8 +109,6 @@ namespace Books
             }
 
             BookEntry tableRow = Library.First(x => x.Id == update.Id);
-
-            var updateProps = update.GetType().GetProperties();
 
             dbEntry = new BookEntry(update);
             tableRow.CopyFrom(update);
@@ -145,8 +150,6 @@ namespace Books
             [Reactive] public override string Series { get; set; }
             [Reactive] public override float SeriesNum { get; set; }
             [Reactive] public override string DateAdded { get; set; }
-
-            [Reactive] public bool OnDevice { get; set; }
 
             #region methods
             public override string TextContent() => "";

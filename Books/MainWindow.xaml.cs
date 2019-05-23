@@ -1,5 +1,4 @@
 ﻿using MahApps.Metro.Controls;
-using System.Windows.Controls;
 using System.Windows;
 using System.Linq;
 
@@ -15,7 +14,7 @@ namespace Books
             this.DataContext = new ViewModels.MainWindow();
             InitializeComponent();
 
-            LibraryTable.ItemsSource = Library.Books;
+            //LibraryTable.ItemsSource = App.Database.Library;
             LibraryTable.DragEnter += Library_DragEnter;
             LibraryTable.DragLeave += Library_DragLeave;
             LibraryTable.Drop += Library_Drop;
@@ -23,7 +22,7 @@ namespace Books
 
         private void OpenDeviceExtraMenu(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).ContextMenu.IsOpen = true;
+            DeviceContextMenu.IsOpen = true;
         }
 
         private void Library_Drop(object sender, DragEventArgs e)
@@ -62,5 +61,6 @@ namespace Books
             if (System.IO.Directory.Exists(paths[0])) return true;
             return Formats.Resources.CompatibleFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
         }
+
     }
 }

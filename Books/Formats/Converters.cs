@@ -34,22 +34,7 @@ namespace Formats
             recipient.DateAdded = donor.DateAdded;
         }
 
-        public static BookBase NewIBook(string filepath)
-        {
-            BookBase book;
-            switch (Path.GetExtension(filepath))
-            {
-                case ".mobi":
-                    book = new Formats.Mobi.Book(filepath);
-                    break;
-                case ".epub":
-                    book = new Epub(filepath);
-                    break;
-                default:
-                    throw new FileFormatException("Unsupported file type");
-            }
-            return book;
-        }
+
 
         public static BookBase ToMobi(BookBase input, string filePath = "")
         {

@@ -2,6 +2,7 @@
 using System.IO;
 using ExtensionMethods;
 using System;
+using System.Collections.Generic;
 
 namespace Devices
 {
@@ -15,37 +16,35 @@ namespace Devices
             this.Description = Description;
             ConfigFile = Path.Combine(DriveLetter, "KindleManager.conf");
             DatabaseFile = Path.Combine(DriveLetter, "KindleManager.db");
+            CompatibleFiletypes = new string[] { ".mobi" };
         }
 
         public override void SendBook(BookBase localBook)
         {
-            string remoteFile = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat);
-
-            Books.Database.BookEntry dbrow = Books.App.Database.GetByFileName(remoteFile);
-            if (dbrow != null)
+            if (Database.GetById(localBook.Id) != null)
             {
-                throw new Exception("Book already exists on kindle");
+                throw new Exception($"Book already exists on kindle. [{localBook.Id}]");
             }
 
-            if (Config.ChangeTitleOnSync)
-            {
-                remoteFile = Path.Combine(remoteFile, Config.TitleFormat) + ".mobi";
-            }
-            else
-            {
-                remoteFile = Path.Combine(remoteFile, Path.GetFileName(localBook.FilePath));
-            }
+            Dictionary<string, string> bookMetadata = localBook.Props();
 
-            remoteFile = remoteFile.DictFormat(localBook.Props());
-
+            string remoteFile = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath));
+            remoteFile = remoteFile.DictFormat(bookMetadata);
             remoteFile = Path.Combine(remoteFile); // normalizes path
+            string remoteFileAbs = Path.Combine(this.DriveLetter, remoteFile);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile));
-
-            File.Copy(localBook.FilePath, remoteFile);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFileAbs));
+            File.Copy(localBook.FilePath, remoteFileAbs);
 
             localBook.FilePath = remoteFile;
             this.Database.AddBook(localBook);
+
+            if (Config.ChangeTitleOnSync)
+            {
+                BookBase remoteBook = new Formats.Mobi.Book(remoteFile);
+                remoteBook.Title = Config.TitleFormat.DictFormat(bookMetadata);
+                remoteBook.WriteMetadata();
+            }    
         }
     }
 }

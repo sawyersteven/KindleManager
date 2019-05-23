@@ -157,8 +157,8 @@
     <Compile Include="Devices\DeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
     <Compile Include="Devices\Kindle.cs" />
-    <Compile Include="Dialogs\BulkImportErrors.xaml.cs">
-      <DependentUpon>BulkImportErrors.xaml</DependentUpon>
+    <Compile Include="Dialogs\BulkProcessErrors.xaml.cs">
+      <DependentUpon>BulkProcessErrors.xaml</DependentUpon>
     </Compile>
     <Compile Include="Dialogs\BulkImport.xaml.cs">
       <DependentUpon>BulkImport.xaml</DependentUpon>
@@ -184,7 +184,7 @@
     <Compile Include="Dialogs\MetadataEditor.xaml.cs">
       <DependentUpon>MetadataEditor.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Formats\Epub.cs" />
+    <Compile Include="Formats\Epub\Epub.cs" />
     <Compile Include="Formats\Mobi\Headers\EXTHHeader.cs" />
     <Compile Include="Formats\Mobi\Records\INDX.cs" />
     <Compile Include="Formats\Mobi\MobiBuilder.cs" />
@@ -197,7 +197,7 @@
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />
     <Compile Include="ViewModels\MetadataEditor.cs" />
-    <Page Include="Dialogs\BulkImportErrors.xaml">
+    <Page Include="Dialogs\BulkProcessErrors.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

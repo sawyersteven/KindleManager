@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow x:Class="Books.Dialogs.BulkImportErrors"
+﻿<Controls:MetroWindow x:Class="Books.Dialogs.BulkProcessErrors"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -20,21 +20,15 @@
     <StackPanel Margin="10">
         <DockPanel>
             <icons:PackIconMaterial Kind="AlertDecagram" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
-            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center">
-                The following errors occurred while importing books.
-            </TextBlock>
+            <TextBlock Margin="5" x:Name="Message" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center"/>
         </DockPanel>
 
         <DataGrid Name="ErrorTable"
                   BorderBrush="{DynamicResource GrayBrush5}"
                   BorderThickness="1"
-                  AutoGenerateColumns="False"
+                  AutoGenerateColumns="True"
                   IsReadOnly="True"
                   Background="{DynamicResource WhiteColorBrush}">
-            <DataGrid.Columns>
-                <DataGridTextColumn MinWidth="100" Width="auto" Header="File" Binding="{Binding Path=File}"/>
-                <DataGridTextColumn MinWidth="100" Width="auto" Header="Error" Binding="{Binding Path=Message}" />
-            </DataGrid.Columns>
         </DataGrid>
 
         <Button Click="Close" Margin="0,8,0,0">

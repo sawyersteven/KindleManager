@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Data;
-using System.Windows.Controls;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Books.BindingConverters
 {
@@ -33,14 +34,15 @@ namespace Books.BindingConverters
         }
     }
 
-    public class BoolToCheck : IValueConverter
+    public class BookInLibrary : IMultiValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return (bool)value ? "✓" : "";
+            var id = ((Database.BookEntry)values[0]).Id;
+            return ((ObservableCollection<Database.BookEntry>)values[1]).Any(x => x.Id == id) ? "✓" : "";
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             throw new NotImplementedException();
         }

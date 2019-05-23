@@ -9,10 +9,12 @@ using System.Linq;
 using ReactiveUI.Fody.Helpers;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows.Data;
 
 namespace Books.ViewModels
 {
-    
+
     class MainWindow : ReactiveObject
     {
         public MainWindow()
@@ -20,13 +22,20 @@ namespace Books.ViewModels
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
             RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable));
+            OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
+            OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
             SendBook = ReactiveCommand.Create(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditSettings = ReactiveCommand.Create(_EditSettings);
+
+            #region device buttonss
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
-            OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ReorganizeLibrary = ReactiveCommand.Create(_ReorganizeLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+            RecreateLibrary = ReactiveCommand.Create(_RecreateLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+
+            #endregion
 
             DevManager = new DevManager();
             DevManager.FindKindles();
@@ -50,30 +59,109 @@ namespace Books.ViewModels
         [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string TaskbarText { get; set; }
         [Reactive] public string TaskbarIcon { get; set; }
-
         public DevManager DevManager { get; set; }
-        
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
-
         [Reactive] public Device SelectedDevice { get; set; }
-
         [Reactive] public bool SideBarOpen { get; set; }
-
+        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.Database.Library;
+        [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
         #endregion
 
+
         #region button commands
+        public ReactiveCommand<Unit, Unit> ReorganizeLibrary { get; set; }
+        public void _ReorganizeLibrary()
+        {
+            var dlg = new Dialogs.YesNo("Reorganize Library", "All books in your Kindle's library will be moved and renamed according to your Kindle's settings. This may take some time depending on the size of your library.");
+            dlg.ShowDialog();
+            if (dlg.DialogResult == false) return;
+            
+            Task.Run(() => {
+                BackgroundWork = true;
+                TaskbarIcon = "None";
+                try
+                {
+                    foreach (string title in SelectedDevice.ReorganizeLibrary())
+                    {
+                        TaskbarText = $"Processing {title}";
+                    }
+                }
+                catch (AggregateException e)
+                {
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs.BulkProcessErrors("The following errors occurred while reorganizing your library.", e.InnerExceptions.ToArray()).ShowDialog();
+                    });
+                }
+                catch (Exception e)
+                {
+                    new Dialogs.Error("Processing Error", e.Message).ShowDialog();
+                }
+                finally
+                {
+                    BackgroundWork = false;
+                    TaskbarText = "Kindle library reorganization complete.";
+                    TaskbarIcon = "CheckCircle";
+                }
+            });
+        }
+
+        public ReactiveCommand<Unit, Unit> RecreateLibrary { get; set; }
+        public void _RecreateLibrary()
+        {
+            var dlg = new Dialogs.YesNo("Recreate Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
+            dlg.ShowDialog();
+            if (dlg.DialogResult == false) return;
+
+            BackgroundWork = true;
+            TaskbarIcon = "None";
+            Task.Run(() =>
+            {
+                try
+                {
+                    foreach (string title in SelectedDevice.RecreateLibraryAndDatabse())
+                    {
+                        App.Current.Dispatcher.Invoke(() =>
+                        {
+                            TaskbarText = $"Processing {title}";
+                        });
+                    }
+                }
+                catch (AggregateException e)
+                {
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs.BulkProcessErrors("The following errors occurred while rebuilding your library.", e.InnerExceptions.ToArray()).ShowDialog();
+                    });
+                }
+                catch (Exception e)
+                {
+                    new Dialogs.Error("Recreating Library Failed", e.Message);
+                }
+                finally
+                {
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        BackgroundWork = false;
+                        TaskbarText = "Kindle library recreation complete.";
+                        TaskbarIcon = "CheckCircle";
+                    });
+                }
+            });
+        }
+
         public ReactiveCommand<Unit, Unit> SyncDeviceLibrary { get; set; }
         public void _SyncDeviceLibrary()
         {
             if (SelectedDevice == null)
             {
-                // Todo alert
+                new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books").ShowDialog();
                 return;
             }
 
-            List<BookBase> toTransfer = new List<BookBase>();
+            List<Database.BookEntry> toTransfer = new List<Database.BookEntry>();
 
-            foreach (BookBase book in App.Database.Library)
+            foreach (Database.BookEntry book in App.Database.Library)
             {
                 if (!SelectedDevice.Database.Library.Any(x => x.Id == book.Id))
                 {
@@ -93,18 +181,18 @@ namespace Books.ViewModels
             {
                 if (!b.Checked)
                 {
-                    BookBase t = toTransfer.FirstOrDefault(x => x.Id == b.Id);
+                    Database.BookEntry t = toTransfer.FirstOrDefault(x => x.Id == b.Id);
                     if (t != null) toTransfer.Remove(t);
                 }
             }
 
-            Task.Run(async () =>
+            Task.Run(() =>
             {
+                List<Exception> errors = new List<Exception>();
                 TaskbarIcon = "";
                 BackgroundWork = true;
-                foreach (BookBase book in toTransfer)
+                foreach (Database.BookEntry book in toTransfer)
                 {
-                    await Task.Delay(10000);
                     try
                     {
                         TaskbarText = $"Copying {book.Title}";
@@ -112,17 +200,20 @@ namespace Books.ViewModels
                     }
                     catch (Exception e)
                     {
-                        TaskbarIcon = "AlertCircle";
-                        TaskbarText = e.Message;
+                        errors.Add(e);
                     }
                 }
                 TaskbarText = $"Sync Complete";
                 TaskbarIcon = "CheckCircle";
                 BackgroundWork = false;
 
-                var ndlg = new Dialogs.YesNo("Test", "test");
-                ndlg.ShowDialog();
-
+                if (errors.Count > 0)
+                {
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs. BulkProcessErrors("The following errors occurred while syncing your Kindle library.", errors.ToArray()).ShowDialog();
+                    });
+                }
             });
         }
 
@@ -136,6 +227,13 @@ namespace Books.ViewModels
                 DevManager.FindKindles();
                 BackgroundWork = false;
             });
+        }
+
+        public ReactiveCommand<Unit, Unit> OpenBookFolder { get; set; }
+        public void _OpenBookFolder()
+        {
+            if (SelectedTableRow == null) return;
+            System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
         }
 
         public ReactiveCommand<Unit, Unit> OpenDeviceFolder { get; set; }
@@ -172,12 +270,13 @@ namespace Books.ViewModels
             {
                 SelectedDevice.Init();
             }
-
-            foreach(Database.BookEntry gridRow in App.Database.Library)
+            foreach (Database.BookEntry gridRow in App.Database.Library)
             {
-                gridRow.OnDevice = SelectedDevice.Database.Library.Any(x => x.Id == gridRow.Id);
+                // gridRow.OnDevice = SelectedDevice.Database.Library.Any(x => x.Id == gridRow.Id);
             }
-            //App.Database.Library.CollectionChanged;
+
+            RemoteLibrary = SelectedDevice.Database.Library;
+            
             return true;
         }
 
@@ -193,8 +292,7 @@ namespace Books.ViewModels
         {
             if (SelectedDevice == null)
             {
-                var dlg = new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books");
-                dlg.ShowDialog();
+                new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books").ShowDialog();
                 return;
             }
 
@@ -202,10 +300,13 @@ namespace Books.ViewModels
             {
                 TaskbarIcon = "";
                 BackgroundWork = true;
-                var r = (BookBase)SelectedTableRow;
+                var r = (Database.BookEntry)SelectedTableRow;
                 try
                 {
                     SelectedDevice.SendBook(r);
+                    //r.OnDevice = true;
+                    TaskbarIcon = "CheckCircle";
+                    TaskbarText = $"{r.Title} sent to {SelectedDevice.Name}.";
                 }
                 catch (Exception e)
                 {
@@ -292,8 +393,6 @@ namespace Books.ViewModels
             var dlg = new Dialogs.MetadataEditor(book);
             dlg.ShowDialog();
         }
-
-        //public ReactiveCommand<Unit, Unit> 
         #endregion
 
         private bool SetupDevice(Device kindle)
@@ -345,6 +444,8 @@ namespace Books.ViewModels
                 errdlg.ShowDialog();
                 return false;
             }
+
+            // TODO ask to scan
             return true;
         }
 
@@ -392,24 +493,29 @@ namespace Books.ViewModels
 
                 Task.Run(() =>
                 {
-                    List<(string, string)> errors = new List<(string, string)>();
+                    List<Exception> errors = new List<Exception>();
 
                     foreach (string file in files)
                     {
+                        TaskbarText = $"Importing {file}";
                         try
                         {
                             Library.ImportBook(file);
                         }
                         catch (Exception e)
                         {
-                            errors.Add((file, e.Message));
+                            e.Data["File"] = file;
+                            errors.Add(e);
                         }
                     }
 
-                    App.Current.Dispatcher.Invoke(delegate
+                    if (errors.Count > 0)
                     {
-                        new Dialogs.BulkImportErrors(errors.ToArray()).ShowDialog();
-                    });
+                        App.Current.Dispatcher.Invoke(delegate
+                        {
+                            new Dialogs.BulkProcessErrors("The following errors occurred while adding to your library.", errors.ToArray()).ShowDialog();
+                        });
+                    }
 
                     TaskbarText = "Import Complete";
                     TaskbarIcon = "CheckCircle";

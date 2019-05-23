@@ -27,7 +27,7 @@ namespace Books.Dialogs
         [Reactive] public string KindleName { get; set; }
         #endregion
 
-        public SyncConfirm(List<BookBase> toTransfer, Device kindle)
+        public SyncConfirm(List<Database.BookEntry> toTransfer, Device kindle)
         {
             UserSelectedBooks = new UserSelectBook[toTransfer.Count];
             for (int i = 0; i < toTransfer.Count; i++)
