@@ -10,7 +10,6 @@ using ReactiveUI.Fody.Helpers;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows.Data;
 
 namespace Books.ViewModels
 {
@@ -270,11 +269,6 @@ namespace Books.ViewModels
             {
                 SelectedDevice.Init();
             }
-            foreach (Database.BookEntry gridRow in App.Database.Library)
-            {
-                // gridRow.OnDevice = SelectedDevice.Database.Library.Any(x => x.Id == gridRow.Id);
-            }
-
             RemoteLibrary = SelectedDevice.Database.Library;
             
             return true;
@@ -296,26 +290,32 @@ namespace Books.ViewModels
                 return;
             }
 
+            TaskbarIcon = "";
+            BackgroundWork = true;
             Task.Run(() =>
             {
-                TaskbarIcon = "";
-                BackgroundWork = true;
-                var r = (Database.BookEntry)SelectedTableRow;
+                var r = SelectedTableRow;
                 try
                 {
                     SelectedDevice.SendBook(r);
-                    //r.OnDevice = true;
                     TaskbarIcon = "CheckCircle";
                     TaskbarText = $"{r.Title} sent to {SelectedDevice.Name}.";
                 }
                 catch (Exception e)
                 {
-                    TaskbarIcon = "AlertCircle";
-                    TaskbarText = e.Message;
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        TaskbarIcon = "AlertCircle";
+                        TaskbarText = e.Message;
+                    });
                 }
                 finally
                 {
-                    BackgroundWork = false;
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        BackgroundWork = false;
+                    });
+                    
                 }
             });
         }
