@@ -49,7 +49,7 @@ namespace Books
             db.GetCollection<BookEntry>("BOOKS").Insert(entry);
 
             // ObservableCollections *must* be updated from the main/ui thread
-            App.Current.Dispatcher.Invoke(delegate
+            App.Current.Dispatcher.Invoke(() =>
             {
                 Library.Add(entry);
             });

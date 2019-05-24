@@ -511,7 +511,7 @@ namespace Books.ViewModels
 
                     if (errors.Count > 0)
                     {
-                        App.Current.Dispatcher.Invoke(delegate
+                        App.Current.Dispatcher.Invoke(() =>
                         {
                             new Dialogs.BulkProcessErrors("The following errors occurred while adding to your library.", errors.ToArray()).ShowDialog();
                         });
