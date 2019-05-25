@@ -147,7 +147,8 @@
                   Grid.Row="1"
                   AllowDrop="True"
                   Background="{DynamicResource WhiteColorBrush}"
-                  Grid.ZIndex="1">
+                  Grid.ZIndex="1"
+                  Sorting="SortLibraryTable">
             <DataGrid.ItemsSource>
                 <MultiBinding Converter="{StaticResource MergeLibraries}">
                     <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
