@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Data;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -45,8 +44,9 @@ namespace Books.BindingConverters
     {
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            var id = ((Database.BookEntry)values[0]).Id;
-            return ((IEnumerable<Database.BookEntry>)values[1]).Any(x => x.Id == id);// ? "✓" : "";
+            Database.BookEntry book = values[0] as Database.BookEntry;
+            if (book == null) return false;
+            return ((IEnumerable<Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -62,7 +62,7 @@ namespace Books.BindingConverters
     public class MergeLibraries : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
+        {         
             var local = (IEnumerable<Database.BookEntry>)values[0];
             var remote = (IEnumerable<Database.BookEntry>)values[1];
             var l = local.ToList();

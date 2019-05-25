@@ -19,7 +19,6 @@ namespace Books
             this.DataContext = new ViewModels.MainWindow();
             InitializeComponent();
 
-            //LibraryTable.ItemsSource = App.Database.Library;
             LibraryTable.DragEnter += Library_DragEnter;
             LibraryTable.DragLeave += Library_DragLeave;
             LibraryTable.Drop += Library_Drop;
