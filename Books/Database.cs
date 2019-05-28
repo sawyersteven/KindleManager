@@ -31,14 +31,7 @@ namespace Books
             }
 
             BookEntry entry = new BookEntry(); // todo use copy constructor?
-            entry.Title = book.Title;
-            entry.FilePath = book.FilePath;
-            entry.Author = book.Author;
-            entry.Series = book.Series;
-            entry.SeriesNum = book.SeriesNum;
-            entry.Publisher = book.Publisher;
-            entry.PubDate = book.PubDate;
-            entry.ISBN = book.ISBN;
+            entry.CopyFrom(book);
             entry.DateAdded = DateTime.Now.ToString("yyyy-MM-dd"); // 1950-01-01
 
             if (book.Id != 0)
@@ -161,21 +154,7 @@ namespace Books
 
             public BookEntry(BookBase b)
             {
-                this.FilePath = b.FilePath;
-                this.Title = b.Title;
-                this.Language = b.Language;
-                this.ISBN = b.ISBN;
-                this.Author = b.Author;
-                this.Contributor = b.Contributor;
-                this.Publisher = b.Publisher;
-                this.Subject = b.Subject;
-                this.Description = b.Description;
-                this.PubDate = b.PubDate;
-                this.Rights = b.Rights;
-                this.Id = b.Id;
-                this.Series = b.Series;
-                this.SeriesNum = b.SeriesNum;
-                this.DateAdded = b.DateAdded;
+                this.CopyFrom(b);
             }
 
             public void CopyFrom(BookBase b)
