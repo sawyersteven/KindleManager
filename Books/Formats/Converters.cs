@@ -13,29 +13,7 @@ namespace Formats
     ///     file will be the same as IBook's filePath with the new extension.
     /// </summary>
     class Converters
-    {
-        private void Merge(BookBase donor, BookBase recipient)
-        {
-            recipient.Title = donor.Title;
-            recipient.Language = donor.Language;
-            recipient.ISBN = donor.ISBN;
-
-            recipient.Author = donor.Author;
-            recipient.Contributor = donor.Contributor;
-            recipient.Publisher = donor.Publisher;
-            recipient.Subject = donor.Subject;
-            recipient.Description = donor.Description;
-
-            recipient.PubDate = donor.PubDate;
-            recipient.Rights = donor.Rights;
-
-            recipient.Series = donor.Series;
-            recipient.SeriesNum = donor.SeriesNum;
-            recipient.DateAdded = donor.DateAdded;
-        }
-
-
-
+    {        
         public static BookBase ToMobi(BookBase input, string filePath = "")
         {
             if (filePath == "")

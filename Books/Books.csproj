@@ -196,7 +196,6 @@
     <Compile Include="Utils.cs" />
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />
-    <Compile Include="ViewModels\MetadataEditor.cs" />
     <Page Include="Dialogs\BulkProcessErrors.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

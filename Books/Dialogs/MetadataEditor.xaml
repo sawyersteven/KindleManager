@@ -4,14 +4,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:converters="clr-namespace:Books.BindingConverters"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
-        Title="{Binding Title}"
+        Title="{Binding Book.Title}"
         SizeToContent="Height"
         MinWidth="500"
         Width="500"
         Loaded="WindowLoaded">
+
+    <Window.Resources>
+    </Window.Resources>
+    
     
     <StackPanel Margin="10">
         <Grid>
@@ -25,32 +30,26 @@
                 <TextBox Text="{Binding Book.Title}" Tag="{Binding Book.Title}"></TextBox>
 
                 <Label>Series</Label>
-                <ComboBox Grid.Column="1" Grid.Row="2" IsEditable="True" ItemsSource="{Binding SeriesList}" SelectedValue="{Binding Book.Series}"></ComboBox>
+                <ComboBox x:Name="SeriesCB" Grid.Column="1" Grid.Row="2" IsEditable="True" ItemsSource="{Binding SeriesList}" Text="{Binding Book.Series}"></ComboBox>
 
                 <Label>Publisher</Label>
-                <ComboBox IsEditable="True" ItemsSource="{Binding PublisherList}" SelectedValue="{Binding Book.Publisher}"></ComboBox>
+                <ComboBox IsEditable="True" ItemsSource="{Binding PublisherList}" Text="{Binding Book.Publisher}"></ComboBox>
 
             </StackPanel>
             <StackPanel Orientation="Vertical" Grid.Column="2">
                 <Label>Author</Label>
-                <ComboBox IsEditable="True" ItemsSource="{Binding AuthorsList}" SelectedValue="{Binding Book.Author}"></ComboBox>
+                <ComboBox x:Name="AuthorCB" IsEditable="True" ItemsSource="{Binding AuthorsList}" Text="{Binding Book.Author}"></ComboBox>
                 
                 <Label>Series Number</Label>
                 <xctk:DecimalUpDown Height="24" Value="{Binding Book.SeriesNum}" FormatString="F1" Increment="1.0" Minimum="0"/>
-                
-
 
                 <Label>Publish Date</Label>
                 <DatePicker Grid.Column="4" Grid.Row="4" SelectedDate="{Binding Book.PubDate}" SelectedDateFormat="Short"/>
-
 
                 <Label>ISBN ID</Label>
                 <TextBox Grid.Column="4" Grid.Row="6" Text="{Binding Book.ISBN}" Tag="{Binding Book.ISBN}"/>
 
             </StackPanel>
-            
-            
-            
         </Grid>
 
         <Grid Margin="0,8,0,0">
@@ -62,7 +61,7 @@
             <Button Click="Cancel" Grid.Column="0">
                 Cancel
             </Button>
-            <Button Command="{Binding SaveMetadata}" Grid.Column="2">
+            <Button Click="CloseAndSave" Grid.Column="2">
                 OK
             </Button>
         </Grid>

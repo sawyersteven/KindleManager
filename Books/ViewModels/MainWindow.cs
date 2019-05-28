@@ -25,6 +25,7 @@ namespace Books.ViewModels
             OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
             SendBook = ReactiveCommand.Create(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditSettings = ReactiveCommand.Create(_EditSettings);
+            ReceiveBook = ReactiveCommand.Create(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #region device buttonss
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
@@ -68,6 +69,12 @@ namespace Books.ViewModels
 
 
         #region button commands
+        public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
+        public void _ReceiveBook()
+        {
+
+        }
+
         public ReactiveCommand<Unit, Unit> ReorganizeLibrary { get; set; }
         public void _ReorganizeLibrary()
         {
@@ -84,6 +91,7 @@ namespace Books.ViewModels
                     {
                         TaskbarText = $"Processing {title}";
                     }
+                    SelectedDevice.CleanLibrary();
                 }
                 catch (AggregateException e)
                 {
@@ -94,13 +102,19 @@ namespace Books.ViewModels
                 }
                 catch (Exception e)
                 {
-                    new Dialogs.Error("Processing Error", e.Message).ShowDialog();
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs.Error("Processing Error", e.Message).ShowDialog();
+                    });
                 }
                 finally
                 {
-                    BackgroundWork = false;
-                    TaskbarText = "Kindle library reorganization complete.";
-                    TaskbarIcon = "CheckCircle";
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        BackgroundWork = false;
+                        TaskbarText = "Kindle library reorganization complete.";
+                        TaskbarIcon = "CheckCircle";
+                    });
                 }
             });
         }
@@ -354,6 +368,8 @@ namespace Books.ViewModels
         {
             if (SelectedTableRow == null) { return; }
 
+            // TODO new dialog asking to remove from kindle or pc or both.
+
             string msg = $"Are you sure you want to remove {SelectedTableRow.Title} from your library?";
             var dlg = new Dialogs.YesNo("Confirm Remove", msg, "Remove");
 
@@ -375,23 +391,22 @@ namespace Books.ViewModels
         private void _EditMetadata()
         {
             if (SelectedTableRow == null) return;
-            BookBase book = null;
+            BookBase book;
             try
             {
-                book = new Formats.Mobi.Book(SelectedTableRow.FilePath);
+                book = Formats.BookBase.Auto(SelectedTableRow.FilePath);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.StackTrace);
-                var err = new Dialogs.Error("Unable to open book for editing", e.Message);
+                new Dialogs.Error("Unable to open book for editing", e.Message).ShowDialog();
                 return;
             }
 
-            book.DateAdded = SelectedTableRow.DateAdded;
-            book.Id = SelectedTableRow.Id;
-
-            var dlg = new Dialogs.MetadataEditor(book);
+            var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow));
             dlg.ShowDialog();
+            if (dlg.DialogResult == false) return;
+            BookBase.Merge(dlg.ModBook, book);
+            App.Database.UpdateBook(dlg.ModBook);
         }
         #endregion
 
