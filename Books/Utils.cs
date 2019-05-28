@@ -185,7 +185,7 @@ namespace Utils
 
         private static CultureInfo culture = new CultureInfo("en-US");
 
-        private static string[] dateFormats = new string[]{ "yyyy", "yyyy-MM", "yyyy-MM-dd" };
+        private static string[] dateFormats = new string[]{ "yyyy", "yyyy-MM", "yyyy-MM-dd", "MM/dd/yyyy" };
 
         /// <summary>
         /// Reorders author name for standard lastname-first sorting ie "Charles Dickens" becomes "Dickens, Charles"
@@ -306,7 +306,12 @@ namespace Utils
 
     class Files
     {
-        public static string[] DirSearch(string dir)
+        /// <summary>
+        /// Creates string[] of absolute paths to all files and folders in dir
+        /// Ignores dirs that throw any errors (typically access denied)
+        /// Pass 'true' for subdirsOnly to get array of subdirs without files
+        /// </summary>
+        public static string[] DirSearch(string dir, bool subdirsOnly = false)
         {
             List<string> files = new List<string>();
 
@@ -314,7 +319,10 @@ namespace Utils
             {
                 foreach (string subdir in Directory.GetDirectories(dir))
                 {
-                    files.AddRange(Directory.GetFiles(dir));
+                    if (!subdirsOnly)
+                    {
+                        files.AddRange(Directory.GetFiles(dir));
+                    }
                     DirSearch(subdir);
                 }
             }
