@@ -16,6 +16,7 @@
         <converters:CollapseIfNull x:Key="CollapseIfNull" />
         <converters:BookInLibrary x:Key="BookInLibrary" />
         <converters:MergeLibraries x:Key="MergeLibraries" />
+        <converters:FloatToString x:Key="FloatToString" />
 
         <CollectionViewSource x:Key="localBooks" Source="{Binding LocalLibrary}"/>
         <CollectionViewSource x:Key="remoteBooks" Source="{Binding RemoteLibrary}"/>
@@ -256,7 +257,7 @@
                 <DataGridTextColumn MinWidth="150" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
-                <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum}" />
+                <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
             </DataGrid.Columns>
