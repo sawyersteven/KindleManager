@@ -167,12 +167,19 @@
 
             <DataGrid.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}"/>
-                    <MenuItem Header="Copy To Library" Command="{Binding RecieveBook}">
+                    <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}">
                         <MenuItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                <Binding ElementName="Window" Path="DataContext.SelectedTableRow"/>
-                                <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                                <Binding Path="SelectedTableRow"/>
+                                <Binding Path="LocalLibrary"/>
+                            </MultiBinding>
+                        </MenuItem.IsEnabled>
+                    </MenuItem>
+                    <MenuItem Header="Copy To Library" Command="{Binding ReceiveBook}">
+                        <MenuItem.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                <Binding Path="SelectedTableRow"/>
+                                <Binding Path="RemoteLibrary"/>
                             </MultiBinding>
                         </MenuItem.IsEnabled>
                     </MenuItem> 
