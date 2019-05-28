@@ -59,16 +59,26 @@ namespace Devices
         public virtual IEnumerable<string> ReorganizeLibrary()
         {
             List<Exception> errs = new List<Exception>();
-            foreach (Formats.BookBase book in Books.App.Database.Library)
+            foreach (Formats.BookBase book in this.Database.Library)
             {
                 yield return book.Title;
                 try
                 {
-                    string origPath = book.FilePath;
-                    string newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, Config.TitleFormat) + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
-                    Directory.CreateDirectory(Path.GetDirectoryName(origPath));
+                    string origPath = Path.Combine(DriveLetter, book.FilePath);
+                    string newPath = "";
+                    if (Config.ChangeTitleOnSync)
+                    {
+                        newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, Config.TitleFormat) + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
+                    }
+                    else
+                    {
+                        newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}") + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
+                    }
+                    newPath = newPath.NormPath();
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(newPath));
                     File.Move(origPath, newPath);
-                    book.FilePath = newPath;
+                    book.FilePath = newPath.Substring(DriveLetter.Length);
                     Books.App.Database.UpdateBook(book);
                 }
                 catch (Exception e)
@@ -125,6 +135,35 @@ namespace Devices
                 throw new AggregateException(errors.ToArray());
             }
 
+        }
+
+        /// <summary>
+        /// Removes empty directories from library dir
+        /// </summary>
+        public virtual void CleanLibrary()
+        {
+            List<Exception> errs = new List<Exception>();
+
+            string[] dirs = Utils.Files.DirSearch(Path.Combine(DriveLetter, Config.LibraryRoot), true);
+
+            foreach (string dir in dirs)
+            {
+                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                {
+                    try
+                    {
+                        Directory.Delete(dir);
+                    }
+                    catch (Exception e)
+                    {
+                        errs.Add(e);
+                    }
+                }
+            }
+            if (errs.Count > 0)
+            {
+                throw new AggregateException(errs.ToArray());
+            }
         }
 
         public abstract void SendBook(Formats.BookBase localbook);
