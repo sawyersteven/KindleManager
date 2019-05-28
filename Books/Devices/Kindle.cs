@@ -30,7 +30,7 @@ namespace Devices
 
             string remoteFile = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath));
             remoteFile = remoteFile.DictFormat(bookMetadata);
-            remoteFile = Path.Combine(remoteFile); // normalizes path
+            remoteFile = remoteFile.NormPath();
             string remoteFileAbs = Path.Combine(this.DriveLetter, remoteFile);
 
             Directory.CreateDirectory(Path.GetDirectoryName(remoteFileAbs));

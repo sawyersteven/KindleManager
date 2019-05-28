@@ -157,6 +157,11 @@ namespace ExtensionMethods
 
     public static class StringExtensions
     {
+        public static string NormPath(this string s)
+        {
+            return Path.Combine(Path.GetDirectoryName(s), Path.GetFileName(s));
+        }
+
         /// <summary>
         /// Converts strings into byte array
         /// </summary>
