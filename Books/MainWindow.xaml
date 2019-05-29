@@ -28,7 +28,35 @@
         <Style x:Key="ToolbarButton" TargetType="{x:Type Button}">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Width" Value="48"/>
+            
             <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Set context menu on datagridrow without overriding metro style for grid row -->
+        <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}">
+                <MenuItem.IsEnabled>
+                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                        <Binding/>
+                        <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                    </MultiBinding>
+                </MenuItem.IsEnabled>
+            </MenuItem>
+            <MenuItem Header="Copy To Library" Command="{Binding ReceiveBook}">
+                <MenuItem.IsEnabled>
+                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                        <Binding/>
+                        <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                    </MultiBinding>
+                </MenuItem.IsEnabled>
+            </MenuItem>
+            <MenuItem Header="Edit Metadata" Command="{Binding EditMetadata}"/>
+            <MenuItem Header="Show In Explorer" Command="{Binding OpenBookFolder}"/>
+            <MenuItem Header="Delete" Command="{Binding RemoveBook}"/>
+        </ContextMenu>
+
+        <Style x:Key="DataGridRowCtx" TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
+            <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}" />
         </Style>
     </Window.Resources>
 
@@ -163,32 +191,12 @@
                     <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
                     <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
                 </MultiBinding>
-                
-            </DataGrid.ItemsSource>
 
-            <DataGrid.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}">
-                        <MenuItem.IsEnabled>
-                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                <Binding Path="SelectedTableRow"/>
-                                <Binding Path="LocalLibrary"/>
-                            </MultiBinding>
-                        </MenuItem.IsEnabled>
-                    </MenuItem>
-                    <MenuItem Header="Copy To Library" Command="{Binding ReceiveBook}">
-                        <MenuItem.IsEnabled>
-                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                <Binding Path="SelectedTableRow"/>
-                                <Binding Path="RemoteLibrary"/>
-                            </MultiBinding>
-                        </MenuItem.IsEnabled>
-                    </MenuItem> 
-                    <MenuItem Header="Edit Metadata" Command="{Binding EditMetadata}"/>
-                    <MenuItem Header="Show In Explorer" Command="{Binding OpenBookFolder}"/>
-                    <MenuItem Header="Delete" Command="{Binding RemoveBook}"/>
-                </ContextMenu>
-            </DataGrid.ContextMenu>
+            </DataGrid.ItemsSource>
+            
+            <DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource DataGridRowCtx}"/>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="48" SortMemberPath="Id">
                     <DataGridTemplateColumn.HeaderTemplate>
