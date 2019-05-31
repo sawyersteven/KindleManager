@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 
 namespace Books
 {
@@ -55,6 +56,14 @@ namespace Books
                 get => _LibraryFormat;
                 set { _LibraryFormat = value; }
             }
+
+            private List<string> _HiddenColumns = new List<string>() { "Id", "Language", "ISBN", "FilePath", "Contributor", "Subject", "Description", "Rights" };
+            public List<string> HiddenColumns
+            {
+                get => _HiddenColumns;
+                set { _HiddenColumns = value; }
+            }
+
         }
 
     }
