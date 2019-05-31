@@ -13,7 +13,6 @@ using System.Collections.ObjectModel;
 
 namespace Books.ViewModels
 {
-
     class MainWindow : ReactiveObject
     {
         public MainWindow()
@@ -66,7 +65,6 @@ namespace Books.ViewModels
         public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.Database.Library;
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
         #endregion
-
 
         #region button commands
         public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
@@ -296,7 +294,7 @@ namespace Books.ViewModels
         }
 
         public ReactiveCommand<Unit, Unit> SendBook { get; set; }
-        private void _SendBook()
+        public void _SendBook()
         {
             if (SelectedDevice == null)
             {
@@ -364,7 +362,7 @@ namespace Books.ViewModels
         }
 
         public ReactiveCommand<Unit, Unit> RemoveBook { get; set; }
-        private void _RemoveBook()
+        public void _RemoveBook()
         {
             if (SelectedTableRow == null) { return; }
 
@@ -388,7 +386,7 @@ namespace Books.ViewModels
         }
 
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
-        private void _EditMetadata()
+        public void _EditMetadata()
         {
             if (SelectedTableRow == null) return;
             BookBase book;

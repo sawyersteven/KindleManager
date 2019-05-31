@@ -12,8 +12,8 @@
         Title="Kindle Manager"
         MinHeight="200"
         MinWidth="450">
-    
-    <Window.Resources> 
+
+    <Window.Resources>
         <converters:CollapseIfNull x:Key="CollapseIfNull" />
         <converters:BookInLibrary x:Key="BookInLibrary" />
         <converters:MergeLibraries x:Key="MergeLibraries" />
@@ -35,7 +35,7 @@
 
         <!-- Set context menu on datagridrow without overriding metro style for grid row -->
         <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-            <MenuItem Header="Copy To Kindle" Command="{Binding SendBook}">
+            <MenuItem Header="Copy To Kindle" Click="SendBook">
                 <MenuItem.IsEnabled>
                     <MultiBinding Converter="{StaticResource BookInLibrary}">
                         <Binding/>
@@ -43,7 +43,7 @@
                     </MultiBinding>
                 </MenuItem.IsEnabled>
             </MenuItem>
-            <MenuItem Header="Copy To Library" Command="{Binding ReceiveBook}">
+            <MenuItem Header="Copy To Library" Click="ReceiveBook">
                 <MenuItem.IsEnabled>
                     <MultiBinding Converter="{StaticResource BookInLibrary}">
                         <Binding/>
@@ -51,9 +51,9 @@
                     </MultiBinding>
                 </MenuItem.IsEnabled>
             </MenuItem>
-            <MenuItem Header="Edit Metadata" Command="{Binding EditMetadata}"/>
-            <MenuItem Header="Show In Explorer" Command="{Binding OpenBookFolder}"/>
-            <MenuItem Header="Delete" Command="{Binding RemoveBook}"/>
+            <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
+            <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
+            <MenuItem Header="Delete" Click="RemoveBook"/>
         </ContextMenu>
 
         <Style x:Key="DataGridRowCtx" TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
@@ -166,8 +166,6 @@
             <Button ToolTip="Open Devices" Command="{Binding OpenSideBar}" Grid.Column="6" Height="16" Width="16" Margin="0,0,8,0" Style="{StaticResource ToolbarButton}">
                 <icons:PackIconMaterial Kind="Backburger"/>
             </Button>
-
-
         </Grid>
 
         <DataGrid Name="LibraryTable"
@@ -195,7 +193,7 @@
                     <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
                 </MultiBinding>
             </DataGrid.ItemsSource>
-            
+
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource DataGridRowCtx}"/>
             </DataGrid.RowStyle>

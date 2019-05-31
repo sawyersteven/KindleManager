@@ -31,11 +31,8 @@ namespace Books
                 }
             }
         }
-
-        private void OpenContextMenu(object sender, RoutedEventArgs e)
-        {
-            ((Button)sender).ContextMenu.IsOpen = true;
-        }
+               
+        #region Library Drag/Drop
 
         private void Library_Drop(object sender, DragEventArgs e)
         {
@@ -73,6 +70,7 @@ namespace Books
             if (System.IO.Directory.Exists(paths[0])) return true;
             return Formats.Resources.CompatibleFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
         }
+        #endregion
 
         /// <summary>
         /// Custom sort logic for InLibrary columns
@@ -120,5 +118,42 @@ namespace Books
                 return (direction == ListSortDirection.Ascending) ? a - b : b - a;
             }
         }
+
+        #region ContextMenu Helpers
+
+        private void OpenContextMenu(object sender, RoutedEventArgs e)
+        {
+            ((Control)sender).ContextMenu.IsOpen = true;
+        }
+
+        /* Because ContextMenu controls can't use the main window's datacontext
+         * and therefore cannot bind directly to methods in the dc, this is a
+         * workaround. These methods just call their equivalent in the dc.
+         */
+
+        private void SendBook(object sender, RoutedEventArgs e)
+        {
+            ((ViewModels.MainWindow)DataContext)._SendBook();
+        }
+
+        private void ReceiveBook(object sender, RoutedEventArgs e)
+        {
+            ((ViewModels.MainWindow)DataContext)._ReceiveBook();
+        }
+
+        private void EditMetadata(object sender, RoutedEventArgs e)
+        {
+            ((ViewModels.MainWindow)DataContext)._EditMetadata();
+        }
+        
+        private void OpenBookFolder(object sender, RoutedEventArgs e)
+        {
+            ((ViewModels.MainWindow)DataContext)._OpenBookFolder();
+        }
+        private void RemoveBook(object sender, RoutedEventArgs e)
+        {
+            ((ViewModels.MainWindow)DataContext)._RemoveBook();
+        }
+        #endregion
     }
 }
