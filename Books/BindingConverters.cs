@@ -3,6 +3,7 @@ using System.Windows.Data;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Windows;
 
 namespace Books.BindingConverters
 {
@@ -35,6 +36,29 @@ namespace Books.BindingConverters
         }
     }
 
+    public class VisibilityToBool : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            switch ((Visibility)value)
+            {
+                case Visibility.Collapsed:
+                    return false;
+                case Visibility.Hidden:
+                    return false;
+                case Visibility.Visible:
+                    return true;
+            }
+            return false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+
     /// <summary>
     /// Returns unicode checkmark if Book ID is in IEnumerable<Databse.BookEntry>
     /// 
@@ -46,8 +70,7 @@ namespace Books.BindingConverters
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             Database.BookEntry book = values[0] as Database.BookEntry;
-            if (book == null) return false;
-            return ((IEnumerable<Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
+            return book == null ? false : ((IEnumerable<Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -57,15 +80,17 @@ namespace Books.BindingConverters
     }
 
     /// <summary>
-    /// Merges two IEnumerable<Database.BookEntry> byt including objects in the
+    /// Merges two IEnumerable<Database.BookEntry> by including objects in the
     ///   second IEnumerable only if their ID prop is not in the first IEnumerable
     /// </summary>
     public class MergeLibraries : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {         
-            var local = (IEnumerable<Database.BookEntry>)values[0];
-            var remote = (IEnumerable<Database.BookEntry>)values[1];
+
+            var local = values[0] as IEnumerable<Database.BookEntry>;
+            var remote = values[1] as IEnumerable<Database.BookEntry>;
+            if (local == null || remote == null) return local;
             var l = local.ToList();
             l.AddRange(remote.Where(x => !local.Any(y => y.Id == x.Id)));
             return l;
