@@ -14,10 +14,6 @@
         Width="500"
         Loaded="WindowLoaded">
 
-    <Window.Resources>
-    </Window.Resources>
-    
-    
     <StackPanel Margin="10">
         <Grid>
             <Grid.ColumnDefinitions>

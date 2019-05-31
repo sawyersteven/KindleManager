@@ -32,9 +32,9 @@ namespace Books
             }
         }
 
-        private void OpenDeviceExtraMenu(object sender, RoutedEventArgs e)
+        private void OpenContextMenu(object sender, RoutedEventArgs e)
         {
-            DeviceContextMenu.IsOpen = true;
+            ((Button)sender).ContextMenu.IsOpen = true;
         }
 
         private void Library_Drop(object sender, DragEventArgs e)
@@ -102,7 +102,7 @@ namespace Books
 
         }
 
-        private struct Sorter : IComparer
+        private class Sorter : IComparer
         {
             private ListSortDirection direction;
             private ObservableCollection<Database.BookEntry> library;
