@@ -191,14 +191,13 @@
                     <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
                     <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
                 </MultiBinding>
-
             </DataGrid.ItemsSource>
             
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource DataGridRowCtx}"/>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn Width="48" SortMemberPath="Id">
+                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <icons:PackIconMaterial Kind="Monitor" Height="16" Width="16"/>
@@ -230,7 +229,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Width="48" SortMemberPath="Id">
+                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <icons:PackIconMaterial Kind="TabletAndroid" Height="16" Width="16"/>
@@ -268,8 +267,12 @@
                 <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Language" Binding="{Binding Path=Language}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="ISBN" Binding="{Binding Path=ISBN}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
             </DataGrid.Columns>
         </DataGrid>
+
         <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource LabelTextBrush}">
             <icons:PackIconMaterial Kind="PlusBox" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>

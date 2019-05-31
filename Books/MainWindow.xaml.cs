@@ -22,6 +22,14 @@ namespace Books
             LibraryTable.DragEnter += Library_DragEnter;
             LibraryTable.DragLeave += Library_DragLeave;
             LibraryTable.Drop += Library_Drop;
+
+            foreach (var c in LibraryTable.Columns)
+            {
+                if (App.ConfigManager.config.HiddenColumns.Contains(c.Header))
+                {
+                    c.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
         private void OpenDeviceExtraMenu(object sender, RoutedEventArgs e)
