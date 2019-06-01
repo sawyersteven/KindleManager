@@ -114,7 +114,8 @@ namespace Devices
                 try
                 {
                     book = Formats.BookBase.Auto(filepath);
-                    if (Config.ChangeTitleOnSync){
+                    if (Config.ChangeTitleOnSync)
+                    {
                         book.Title = Config.TitleFormat.DictFormat(book.Props());
                         book.WriteMetadata();
                     }
@@ -122,6 +123,13 @@ namespace Devices
                     book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
                     Directory.CreateDirectory(Path.GetDirectoryName(filepath));
                     File.Move(filepath, dest);
+
+                    Books.Database.BookEntry local = Books.App.Database.Library.FirstOrDefault(x => x.ISBN == book.ISBN);
+                    if (local != null)
+                    {
+                        book.Id = local.Id;
+                    }
+
                     Database.AddBook(book);
                 }
                 catch (Exception e)
