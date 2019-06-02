@@ -154,7 +154,7 @@
                 <icons:PackIconMaterial Kind="BookPlus" Height="16" Width="16"/>
             </Button>
             <Border BorderBrush="{DynamicResource GrayBrush5}" Margin="0,8,16,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
-            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
+            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
                 <icons:PackIconMaterial Kind="ContentDuplicate" Height="16" Width="16"/>
             </Button>
             <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}" Grid.Column="3">

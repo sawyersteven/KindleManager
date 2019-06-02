@@ -133,7 +133,7 @@ namespace Books
 
         private void SendBook(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._SendBook();
+            ((ViewModels.MainWindow)DataContext)._SendBook(LibraryTable.SelectedItems);
         }
 
         private void ReceiveBook(object sender, RoutedEventArgs e)

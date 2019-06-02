@@ -8,6 +8,7 @@ using Devices;
 using System.Linq;
 using ReactiveUI.Fody.Helpers;
 using System.Threading.Tasks;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -15,6 +16,8 @@ namespace Books.ViewModels
 {
     class MainWindow : ReactiveObject
     {
+        private readonly Unit UnitNull = new Unit();
+
         public MainWindow()
         {
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
@@ -22,7 +25,7 @@ namespace Books.ViewModels
             EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
             OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
-            SendBook = ReactiveCommand.Create(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
+            SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditSettings = ReactiveCommand.Create(_EditSettings);
             ReceiveBook = ReactiveCommand.Create(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
@@ -147,7 +150,10 @@ namespace Books.ViewModels
                 }
                 catch (Exception e)
                 {
-                    new Dialogs.Error("Recreating Library Failed", e.Message);
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs.Error("Recreating Library Failed", e.Message);
+                    });
                 }
                 finally
                 {
@@ -293,20 +299,25 @@ namespace Books.ViewModels
             dlg.ShowDialog();
         }
 
-        public ReactiveCommand<Unit, Unit> SendBook { get; set; }
-        public void _SendBook()
+        /* This method is set up to be able to use multiple selections in the
+         * LibraryTable datagrid. It current only uses the first and is an 
+         * example for how to convert other methods to accept multiple
+         * datagrid selections. 
+         */
+        public ReactiveCommand<IList, Unit> SendBook { get; set; }
+        public Unit _SendBook(IList p)
         {
             if (SelectedDevice == null)
             {
                 new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books").ShowDialog();
-                return;
+                return UnitNull;
             }
 
             TaskbarIcon = "";
             BackgroundWork = true;
             Task.Run(() =>
             {
-                var r = SelectedTableRow;
+                var r = (Database.BookEntry)p[0];
                 try
                 {
                     SelectedDevice.SendBook(r);
@@ -330,6 +341,7 @@ namespace Books.ViewModels
                     
                 }
             });
+            return UnitNull;
         }
         
         public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
