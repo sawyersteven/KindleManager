@@ -2,6 +2,7 @@
 using Formats;
 using System;
 using System.Linq;
+using ExtensionMethods;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ReactiveUI.Fody.Helpers;
@@ -117,6 +118,20 @@ namespace Books
             c.Delete(x => x.FilePath == book.FilePath);
             Library.Remove(book);
 
+        }
+
+        /// <summary>
+        /// Drops DB tables.
+        /// Does not make a backup.
+        /// Be careful.
+        /// </summary>
+        public void ScorchedEarth()
+        {
+            foreach (string collectionName in db.GetCollectionNames())
+            {
+                db.DropCollection(collectionName);
+            }
+            Library.Clear();
         }
         #endregion
 

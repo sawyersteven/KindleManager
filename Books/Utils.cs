@@ -314,19 +314,19 @@ namespace Utils
         public static string[] DirSearch(string dir, bool subdirsOnly = false)
         {
             List<string> files = new List<string>();
-
             try
             {
                 foreach (string subdir in Directory.GetDirectories(dir))
                 {
                     if (!subdirsOnly)
                     {
-                        files.AddRange(Directory.GetFiles(dir));
+                        Console.WriteLine(string.Join(", ", Directory.GetFiles(subdir)));
+                        files.AddRange(Directory.GetFiles(subdir));
                     }
-                    DirSearch(subdir);
+                    files.AddRange(DirSearch(subdir));
                 }
             }
-            catch (Exception e)
+            catch
             {
             }
             return files.ToArray();

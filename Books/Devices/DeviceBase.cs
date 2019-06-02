@@ -101,12 +101,11 @@ namespace Devices
             List<Exception> errors = new List<Exception>();
             string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
-            string dbfp = Books.App.Database.DBFile;
-            Books.App.Database.Dispose();
-            File.Delete(dbfp);
+            Database.ScorchedEarth();
 
-            IEnumerable<string> books = Utils.Files.DirSearch(Path.Combine(DriveLetter, Config.LibraryRoot)).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
+            IEnumerable<string> books = Utils.Files.DirSearch(DriveLetter).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
 
+            var a = books.ToArray();
             BookBase book;
             foreach (string filepath in books)
             {
@@ -121,13 +120,18 @@ namespace Devices
                     }
                     string dest = destTemplate.DictFormat(book.Props()) + Path.GetExtension(filepath);
                     book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
-                    Directory.CreateDirectory(Path.GetDirectoryName(filepath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     File.Move(filepath, dest);
 
-                    Books.Database.BookEntry local = Books.App.Database.Library.FirstOrDefault(x => x.ISBN == book.ISBN);
-                    if (local != null)
+                    if (book.ISBN != 0)
                     {
-                        book.Id = local.Id;
+                        Books.Database.BookEntry local = Books.App.Database.Library.FirstOrDefault(x => x.ISBN == book.ISBN);
+                        if (local != null && !Database.Library.Any(x => x.Id == local.Id))
+                        {
+                            book.Id = local.Id;
+                            book.Series = local.Series;
+                            book.SeriesNum = local.SeriesNum;
+                        }
                     }
 
                     Database.AddBook(book);
