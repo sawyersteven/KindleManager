@@ -1,0 +1,313 @@
+﻿<Controls:MetroWindow
+        x:Class="KindleManager.MainWindow"
+        x:Name="Window"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:KindleManager.BindingConverters"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        Title="Kindle Manager"
+        MinHeight="200"
+        MinWidth="450">
+
+    <Window.Resources>
+        <converters:CollapseIfNull x:Key="CollapseIfNull" />
+        <converters:BookInLibrary x:Key="BookInLibrary" />
+        <converters:MergeLibraries x:Key="MergeLibraries" />
+        <converters:FloatToString x:Key="FloatToString" />
+
+        <CollectionViewSource x:Key="localBooks" Source="{Binding LocalLibrary}"/>
+        <CollectionViewSource x:Key="remoteBooks" Source="{Binding RemoteLibrary}"/>
+        <CompositeCollection x:Key="CombinedLibraries">
+            <CollectionContainer Collection="{Binding Source={StaticResource localBooks}}"/>
+            <CollectionContainer Collection="{Binding Source={StaticResource remoteBooks}}"/>
+        </CompositeCollection>
+        
+        <Style x:Key="ToolbarButton" TargetType="{x:Type Button}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="24"/>
+            
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Set context menu on datagridrow without overriding metro style for grid row -->
+        <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Copy To Kindle" Click="SendBook">
+                <MenuItem.IsEnabled>
+                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                        <Binding/>
+                        <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                    </MultiBinding>
+                </MenuItem.IsEnabled>
+            </MenuItem>
+            <MenuItem Header="Copy To Library" Click="ReceiveBook">
+                <MenuItem.IsEnabled>
+                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                        <Binding/>
+                        <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                    </MultiBinding>
+                </MenuItem.IsEnabled>
+            </MenuItem>
+            <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
+            <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
+            <MenuItem Header="Delete" Click="RemoveBook"/>
+        </ContextMenu>
+
+        <Style x:Key="DataGridRowCtx" TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
+            <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}" />
+        </Style>
+    </Window.Resources>
+
+    <Controls:MetroWindow.Flyouts>
+        <Controls:FlyoutsControl>
+            <Controls:Flyout Header="Kindle" Position="Right" Width="300" IsOpen="{Binding SideBarOpen}">
+                <StackPanel Orientation="Vertical" Margin="10">
+                    <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
+                    <Border BorderThickness="1" BorderBrush="{DynamicResource GrayBrush5}"/>
+                    <Grid Margin="0,4" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Button Grid.Row="0" Style="{StaticResource AccentedSquareButtonStyle}">
+                            <StackPanel Orientation="Vertical">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}"/>
+                                    <TextBlock Text="{Binding SelectedDevice.Name}" Margin="16,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedDevice.Description}"/>
+                            </StackPanel>
+                        </Button>
+                        <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                                <icons:PackIconModern Kind="PageDuplicate" Height="16" Width="16"/>
+                            </Button>
+                            <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                                <icons:PackIconMaterial Kind="Settings" Height="16" Width="16"/>
+                            </Button>
+                            <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                                <icons:PackIconMaterial Kind="FolderOpen" Height="16" Width="16" />
+                            </Button>
+                            <Button x:Name="DeviceExtraMenu" Click="OpenContextMenu" ToolTip="Open Library Folder" Grid.Column="3" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                                <Button.ContextMenu>
+                                    <ContextMenu x:Name="DeviceContextMenu">
+                                        <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeLibrary}"/>
+                                        <MenuItem Header="Recreate Library" Command="{Binding RecreateLibrary}"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                                <icons:PackIconMaterial Kind="DotsVertical" Height="16" Width="16" />
+                            </Button>
+                        </Grid>
+                    </Grid>
+
+                    <TextBlock FontSize="14" FontWeight="Bold" Margin="0,8,0,0">Devices</TextBlock>
+                    <Border BorderThickness="1" BorderBrush="{DynamicResource GrayBrush5}"/>
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding DevManager.DeviceList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="0,4" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}" Style="{DynamicResource SquareButtonStyle}">
+                                        <StackPanel Orientation="Vertical">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DriveLetter}"/>
+                                                <TextBlock Text="{Binding Name}" Margin="16,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Description}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Controls:Flyout>
+        </Controls:FlyoutsControl>
+    </Controls:MetroWindow.Flyouts>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Height="48" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Margin="16,0" Style="{StaticResource ToolbarButton}" Grid.Column="0">
+                <icons:PackIconMaterial Kind="BookPlus" Height="16" Width="16"/>
+            </Button>
+            <Border BorderBrush="{DynamicResource GrayBrush5}" Margin="0,8,16,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
+            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
+                <icons:PackIconMaterial Kind="ContentDuplicate" Height="16" Width="16"/>
+            </Button>
+            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}" Grid.Column="3">
+                <icons:PackIconMaterial Kind="TableEdit" Height="16" Width="16"/>
+            </Button>
+            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}" Grid.Column="4">
+                <icons:PackIconMaterial Kind="DeleteForever" Height="16" Width="16"/>
+            </Button>
+            <Button ToolTip="Open Devices" Command="{Binding OpenSideBar}" Grid.Column="6" Height="16" Width="16" Margin="0,0,8,0" Style="{StaticResource ToolbarButton}">
+                <icons:PackIconMaterial Kind="Backburger"/>
+            </Button>
+        </Grid>
+
+        <DataGrid Name="LibraryTable"
+                  BorderBrush="{DynamicResource GrayBrush5}"
+                  BorderThickness="0,1,0,0"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectedItem="{Binding SelectedTableRow}"
+                  Grid.Row="1"
+                  AllowDrop="True"
+                  Background="{DynamicResource WhiteColorBrush}"
+                  Grid.ZIndex="1"
+                  Sorting="SortLibraryTable">
+            <DataGrid.ItemsSource>
+                <MultiBinding Converter="{StaticResource MergeLibraries}">
+                    <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                    <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
+                    <!-- These next two lines are critical but don't look like it.
+                    MultiBinds only listen for PropertyChanged notifications on objects.
+                    Adding/removing items from an ObservableCollection raises CollectionChanged.
+                    Binding to the Count of each collection will cause the MultiBinding to
+                        update when items are added/removed                    
+                    -->
+                    <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
+                    <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
+                </MultiBinding>
+            </DataGrid.ItemsSource>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource DataGridRowCtx}"/>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <icons:PackIconMaterial Kind="Monitor" Height="16" Width="16"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <icons:PackIconMaterial>
+                                <icons:PackIconMaterial.Style>
+                                    <Style TargetType="icons:PackIconMaterial">
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Setter Property="Width" Value="12"/>
+                                        <Setter Property="Kind" Value="None"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                                        <Binding Path="."/>
+                                                        <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Kind" Value="Check"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </icons:PackIconMaterial.Style>
+                            </icons:PackIconMaterial>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <icons:PackIconMaterial Kind="TabletAndroid" Height="16" Width="16"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <icons:PackIconMaterial>
+                                <icons:PackIconMaterial.Style>
+                                    <Style TargetType="icons:PackIconMaterial">
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Setter Property="Width" Value="12"/>
+                                        <Setter Property="Kind" Value="None"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                                        <Binding Path="."/>
+                                                        <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Kind" Value="Check" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </icons:PackIconMaterial.Style>
+                            </icons:PackIconMaterial>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn MinWidth="150" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
+                <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Language" Binding="{Binding Path=Language}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="ISBN" Binding="{Binding Path=ISBN}" />
+                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource LabelTextBrush}">
+            <icons:PackIconMaterial Kind="PlusBox" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+
+        <StatusBar Grid.Row="2" Height="32">
+            <StatusBar.Style>
+                <Style TargetType="{x:Type StatusBar}" BasedOn="{StaticResource MetroStatusBar}">
+                    <Setter Property="Background" Value="{DynamicResource WindowTitleColorBrush}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsActive}" Value="False">
+                            <Setter Property="Background" Value="{Binding Path=NonActiveWindowTitleBrush, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Controls:MetroWindow}}}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StatusBar.Style>
+            <StatusBarItem HorizontalContentAlignment="Stretch">
+                <Grid Margin="8,0" Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
+                    <icons:PackIconMaterial Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Foreground="{DynamicResource TextBrush}"/>
+
+                    <TextBlock Text="{Binding TaskbarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
+                    <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2" Width="32" Padding="0">
+                        <icons:PackIconMaterial Kind="Settings" Height="16" Width="16"/>
+                    </Button>
+
+                </Grid>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+
+
+</Controls:MetroWindow>
