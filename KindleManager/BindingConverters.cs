@@ -59,6 +59,31 @@ namespace KindleManager.BindingConverters
     }
 
 
+    public class GridColumnFilter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            var v = (IEnumerable<System.Windows.Controls.DataGridColumn>)value;
+
+            if (v == null) return value;
+            List<System.Windows.Controls.DataGridColumn> output = new List<System.Windows.Controls.DataGridColumn>();
+
+            foreach (var col in v)
+            {
+                if (col.Header != null)
+                {
+                    output.Add(col);
+                }
+            }
+            return output;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     /// <summary>
     /// Returns unicode checkmark if Book ID is in IEnumerable<Databse.BookEntry>
     /// 
@@ -88,8 +113,8 @@ namespace KindleManager.BindingConverters
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
 
-            var local = values[0] as IEnumerable<Database.BookEntry>;
-            var remote = values[1] as IEnumerable<Database.BookEntry>;
+            var local = values[0] as IEnumerable<KindleManager.Database.BookEntry>;
+            var remote = values[1] as IEnumerable<KindleManager.Database.BookEntry>;
             if (local == null || remote == null) return local;
             var l = local.ToList();
             l.AddRange(remote.Where(x => !local.Any(y => y.Id == x.Id)));

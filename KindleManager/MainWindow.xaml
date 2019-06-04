@@ -18,6 +18,8 @@
         <converters:BookInLibrary x:Key="BookInLibrary" />
         <converters:MergeLibraries x:Key="MergeLibraries" />
         <converters:FloatToString x:Key="FloatToString" />
+        <converters:VisibilityToBool x:Key="VisibilityToBool" />
+        <converters:GridColumnFilter x:Key="GridColumnFilter" />
 
         <CollectionViewSource x:Key="localBooks" Source="{Binding LocalLibrary}"/>
         <CollectionViewSource x:Key="remoteBooks" Source="{Binding RemoteLibrary}"/>
@@ -33,32 +35,6 @@
             <Setter Property="Background" Value="Transparent"/>
         </Style>
 
-        <!-- Set context menu on datagridrow without overriding metro style for grid row -->
-        <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-            <MenuItem Header="Copy To Kindle" Click="SendBook">
-                <MenuItem.IsEnabled>
-                    <MultiBinding Converter="{StaticResource BookInLibrary}">
-                        <Binding/>
-                        <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
-                    </MultiBinding>
-                </MenuItem.IsEnabled>
-            </MenuItem>
-            <MenuItem Header="Copy To Library" Click="ReceiveBook">
-                <MenuItem.IsEnabled>
-                    <MultiBinding Converter="{StaticResource BookInLibrary}">
-                        <Binding/>
-                        <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
-                    </MultiBinding>
-                </MenuItem.IsEnabled>
-            </MenuItem>
-            <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
-            <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
-            <MenuItem Header="Delete" Click="RemoveBook"/>
-        </ContextMenu>
-
-        <Style x:Key="DataGridRowCtx" TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
-            <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}" />
-        </Style>
     </Window.Resources>
 
     <Controls:MetroWindow.Flyouts>
@@ -178,7 +154,8 @@
                   AllowDrop="True"
                   Background="{DynamicResource WhiteColorBrush}"
                   Grid.ZIndex="1"
-                  Sorting="SortLibraryTable">
+                  Sorting="SortLibraryTable"
+                  Tag="{Binding DataContext}">
             <DataGrid.ItemsSource>
                 <MultiBinding Converter="{StaticResource MergeLibraries}">
                     <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
@@ -194,8 +171,56 @@
                 </MultiBinding>
             </DataGrid.ItemsSource>
 
+            <DataGrid.Resources>
+                <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="Copy To Kindle" Click="SendBook">
+                        <MenuItem.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                <Binding/>
+                                <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                            </MultiBinding>
+                        </MenuItem.IsEnabled>
+                    </MenuItem>
+                    <MenuItem Header="Copy To Library" Click="ReceiveBook">
+                        <MenuItem.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                <Binding/>
+                                <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
+                            </MultiBinding>
+                        </MenuItem.IsEnabled>
+                    </MenuItem>
+                    <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
+                    <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
+                    <MenuItem Header="Delete" Click="RemoveBook"/>
+                </ContextMenu>
+
+                <ContextMenu x:Key="GridHeaderContextMenu" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                    <ItemsControl ItemsSource="{Binding Columns, Converter={StaticResource GridColumnFilter}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <CheckBox IsChecked="{Binding Visibility, Converter={StaticResource VisibilityToBool}}"/>
+                                    <TextBlock Text="{Binding Header}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </ContextMenu>
+
+            </DataGrid.Resources>
+            
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource MetroDataGridColumnHeader}">
+                    <Setter Property="Tag" Value="{Binding ElementName=LibraryTable}"/>
+                    <Setter Property="ContextMenu" Value="{StaticResource GridHeaderContextMenu}"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+            
             <DataGrid.RowStyle>
-                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource DataGridRowCtx}"/>
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
+                    <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}"/>
+                </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
