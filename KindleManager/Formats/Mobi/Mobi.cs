@@ -136,7 +136,7 @@ namespace Formats.Mobi
                         decompress = (byte[] buffer, int compressedLen) => buffer.SubArray(0, compressedLen);
                         break;
                     case 2: // PalmDoc
-                        decompress = Utils.PalmDoc.decompress;
+                        decompress = Utils.PalmDoc.Decompress;
                         break;
                     case 17480: // HUFF/CDIC
                         throw new NotImplementedException("HUFF/CDIC compression not implemented");

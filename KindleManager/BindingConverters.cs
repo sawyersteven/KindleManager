@@ -69,8 +69,8 @@ namespace KindleManager.BindingConverters
     {
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            Database.BookEntry book = values[0] as Database.BookEntry;
-            return book == null ? false : ((IEnumerable<Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
+            KindleManager.Database.BookEntry book = values[0] as KindleManager.Database.BookEntry;
+            return book == null ? false : ((IEnumerable<KindleManager.Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
