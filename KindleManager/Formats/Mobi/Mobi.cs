@@ -105,9 +105,6 @@ namespace Formats.Mobi
         public Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
         public Headers.EXTHHeader EXTHHeader = new Headers.EXTHHeader();
 
-        private delegate byte[] Decompressor(byte[] buffer, int compressedLen);
-        private readonly Decompressor decompress;
-
         public uint contentOffset;
 
         public Book(string filepath)
@@ -130,17 +127,6 @@ namespace Formats.Mobi
                 // PalmDOCHeader
                 this.PalmDOCHeader.offset = PDBHeader.records[0];
                 this.PalmDOCHeader.Parse(reader);
-                switch (PalmDOCHeader.compression)
-                {
-                    case 1: // None
-                        decompress = (byte[] buffer, int compressedLen) => buffer.SubArray(0, compressedLen);
-                        break;
-                    case 2: // PalmDoc
-                        decompress = Utils.PalmDoc.Decompress;
-                        break;
-                    case 17480: // HUFF/CDIC
-                        throw new NotImplementedException("HUFF/CDIC compression not implemented");
-                }
 
                 // MobiHeader
                 this.MobiHeader.offset = (uint)reader.BaseStream.Position;
@@ -261,24 +247,6 @@ namespace Formats.Mobi
             return search - 1;
         }
 
-        /// <summary>
-        /// Calculate length of extra record bytes at end of text record
-        /// </summary>
-        /// Crawls backward through buffer to find length of all extra records
-        private int CalcExtraBytes(byte[] record)
-        {
-            int pos = record.Length;
-            for (int _ = 0; _ < MobiHeader.flagTrailingEntries; _++)
-            {
-                pos -= Utils.Mobi.VarLengthInt(record.SubArray(pos - 4, 0x4));
-            }
-            if (MobiHeader.flagMultiByte)
-            {
-                pos -= (record[pos] & 0x3) + 1;
-            }
-            return pos;
-        }
-
         #region IBook overrides
 
         private string _Title;
@@ -348,15 +316,33 @@ namespace Formats.Mobi
         /// <returns></returns>
         public override string TextContent()
         {
+            Utils.Decompressors.IDecompressor Decompressor = null;
             List<byte> bytes = new List<byte>();
+
             using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
             {
+                switch (PalmDOCHeader.compression)
+                {
+                    case 1: // None
+                        Decompressor = new Utils.Decompressors.None();
+                        break;
+                    case 2: // PalmDoc
+                        Decompressor = new Utils.Decompressors.PalmDoc(MobiHeader.flagTrailingEntries, MobiHeader.flagMultiByte);
+                        break;
+                    case 17480: // HUFF/CDIC
+                        reader.BaseStream.Seek(PDBHeader.records[MobiHeader.huffRecordNum], SeekOrigin.Begin);
+                        byte[] huffRec = reader.ReadBytes((int)PDBHeader.recordLength(MobiHeader.huffRecordNum));
+                        Decompressor = new Utils.Decompressors.HuffCdic(huffRec);
+                        break;
+                    default:
+                        throw new InvalidDataException($"Unknown compression type: {PalmDOCHeader.compression}");
+                }
+
                 for (int i = 1; i <= PalmDOCHeader.textRecordCount; i++)
                 {
                     reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
                     byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
-                    int compressedLen = CalcExtraBytes(compressedText);
-                    byte[] x = decompress(compressedText, compressedLen);
+                    byte[] x = Decompressor.Decompress(compressedText);
                     bytes.AddRange(x);
                 }
             }

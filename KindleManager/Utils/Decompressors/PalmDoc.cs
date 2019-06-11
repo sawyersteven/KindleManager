@@ -1,14 +1,28 @@
-﻿using System;
+﻿using ExtensionMethods;
+using System;
 
-namespace Utils
+namespace Utils.Decompressors
 {
-    static class PalmDoc
+    class PalmDoc : IDecompressor
     {
+        private readonly uint flagTrailingEntries;
+        private readonly bool flagMultiByte;
+
+        public PalmDoc(uint flagTrailingEntries, bool flagMultiByte)
+        {
+            this.flagTrailingEntries = flagTrailingEntries;
+            this.flagMultiByte = flagMultiByte;
+        }
+
+
+
         /// <summary>
         /// Decompress PalmDoc Compressed byte array
         /// </summary>
-        public static byte[] Decompress(byte[] buffer, int compressedLen)
+        public byte[] Decompress(byte[] buffer)
         {
+            int compressedLen = CalcCompressedLen(buffer);
+
             byte[] output = new byte[DecompressedLength(buffer, compressedLen)];
             int i = 0;
             int j = 0;
@@ -53,6 +67,25 @@ namespace Utils
                 }
             }
             return output;
+        }
+
+        /// <summary>
+        /// Calculate total length of compressed data by subtracing
+        ///     extra record bytes from end of text record
+        /// </summary>
+        /// Crawls backward through buffer to find length of all extra records
+        private int CalcCompressedLen(byte[] record)
+        {
+            int pos = record.Length;
+            for (int _ = 0; _ < flagTrailingEntries; _++)
+            {
+                pos -= Mobi.VarLengthInt(record.SubArray(pos - 4, 0x4));
+            }
+            if (flagMultiByte)
+            {
+                pos -= (record[pos] & 0x3) + 1;
+            }
+            return pos;
         }
 
         /// <summary>

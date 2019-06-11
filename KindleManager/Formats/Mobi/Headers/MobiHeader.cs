@@ -28,7 +28,7 @@ namespace Formats.Mobi.Headers
         public uint outputLanguage;
         public uint minVersion;
         public uint firstImageRecord;
-        public uint huffRecordOffset;
+        public uint huffRecordNum;
         public uint huffRecordCount;
         public uint huffTableOffset;
         public uint huffTableLength;
@@ -110,7 +110,7 @@ namespace Formats.Mobi.Headers
             minVersion = 6;
             firstImageRecord = 0xFFFFFFFF;
 
-            huffRecordOffset = 0;
+            huffRecordNum = 0;
             huffRecordCount = 0;
             huffTableOffset = 0;
             huffTableLength = 0;
@@ -176,7 +176,7 @@ namespace Formats.Mobi.Headers
             outputLanguage = Utils.BigEndian.ToUInt32(buffer, 0x54);
             minVersion = Utils.BigEndian.ToUInt32(buffer, 0x58);
             firstImageRecord = Utils.BigEndian.ToUInt32(buffer, 0x5C);
-            huffRecordOffset = Utils.BigEndian.ToUInt32(buffer, 0x60);
+            huffRecordNum = Utils.BigEndian.ToUInt32(buffer, 0x60);
             huffRecordCount = Utils.BigEndian.ToUInt32(buffer, 0x64);
             huffTableOffset = Utils.BigEndian.ToUInt32(buffer, 0x68);
             huffTableLength = Utils.BigEndian.ToUInt32(buffer, 0x6C);
@@ -258,7 +258,7 @@ namespace Formats.Mobi.Headers
             output.AddRange(Utils.BigEndian.GetBytes(minVersion));
             output.AddRange(Utils.BigEndian.GetBytes(firstImageRecord));
 
-            output.AddRange(Utils.BigEndian.GetBytes(huffRecordOffset));
+            output.AddRange(Utils.BigEndian.GetBytes(huffRecordNum));
             output.AddRange(Utils.BigEndian.GetBytes(huffRecordCount));
             output.AddRange(Utils.BigEndian.GetBytes(huffTableOffset));
             output.AddRange(Utils.BigEndian.GetBytes(huffTableLength));
@@ -330,7 +330,7 @@ MOBI:
     outputLanguage: {outputLanguage}
     minVersion: {minVersion}
     firstImageRecord: {firstImageRecord}
-    huffRecordOffset: {huffRecordOffset}
+    huffRecordNum: {huffRecordNum}
     huffRecordCount: {huffRecordCount}
     huffTableOffset: {huffTableOffset}
     huffTableLength: {huffTableLength}
