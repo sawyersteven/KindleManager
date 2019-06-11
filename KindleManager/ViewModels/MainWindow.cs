@@ -551,5 +551,13 @@ namespace KindleManager.ViewModels
                 return;
             }
         }
+
+        public void SaveLibraryColumns(List<string> hiddenColumns)
+        {
+            if (hiddenColumns.SequenceEqual(App.ConfigManager.config.HiddenColumns)) return;
+
+            App.ConfigManager.config.HiddenColumns = hiddenColumns.ToList();
+            App.ConfigManager.Write();
+        }
     }
 }

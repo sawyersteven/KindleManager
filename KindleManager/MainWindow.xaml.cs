@@ -1,5 +1,6 @@
 ﻿using MahApps.Metro.Controls;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -102,13 +103,12 @@ namespace KindleManager
                 //apply the sort
                 books.CustomSort = new Sorter(library, direction);
             }
-
         }
 
         private class Sorter : IComparer
         {
-            private ListSortDirection direction;
-            private ObservableCollection<Database.BookEntry> library;
+            private readonly ListSortDirection direction;
+            private readonly ObservableCollection<Database.BookEntry> library;
 
             public Sorter(ObservableCollection<Database.BookEntry> l, ListSortDirection d)
             {
@@ -158,6 +158,23 @@ namespace KindleManager
         private void RemoveBook(object sender, RoutedEventArgs e)
         {
             GetDataContext()._RemoveBook();
+        }
+
+        // When header column context menu is closed...
+        private void SaveLibraryColumns(object sender, RoutedEventArgs e)
+        {
+            ContextMenu menu = sender as ContextMenu;
+            if (menu == null) return;
+            DataGrid grid = menu.DataContext as DataGrid;
+
+            List<string> hiddenColumns = new List<string>();
+            foreach (var a in grid.Columns)
+            {
+                if (a.Header == null || a.Visibility == Visibility.Visible) continue;
+                hiddenColumns.Add((string)a.Header);
+            }
+
+            GetDataContext().SaveLibraryColumns(hiddenColumns);
         }
         #endregion
     }

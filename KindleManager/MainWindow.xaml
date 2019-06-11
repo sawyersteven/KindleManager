@@ -194,12 +194,12 @@
                     <MenuItem Header="Delete" Click="RemoveBook"/>
                 </ContextMenu>
 
-                <ContextMenu x:Key="GridHeaderContextMenu" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                <ContextMenu x:Key="GridHeaderContextMenu" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Closed="SaveLibraryColumns">
                     <ItemsControl ItemsSource="{Binding Columns, Converter={StaticResource GridColumnFilter}}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                                    <CheckBox IsChecked="{Binding Visibility, Converter={StaticResource VisibilityToBool}}"/>
+                                    <CheckBox IsChecked="{Binding Visibility, Converter={StaticResource VisibilityToBool}}" Tag="{Binding Header}"/>
                                     <TextBlock Text="{Binding Header}"/>
                                 </StackPanel>
                             </DataTemplate>
