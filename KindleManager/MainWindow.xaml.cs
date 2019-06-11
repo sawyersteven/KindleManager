@@ -32,6 +32,11 @@ namespace KindleManager
             }
         }
 
+        private ViewModels.MainWindow GetDataContext()
+        {
+            return (ViewModels.MainWindow)DataContext;
+        }
+
         #region Library Drag/Drop
 
         private void Library_Drop(object sender, DragEventArgs e)
@@ -133,26 +138,26 @@ namespace KindleManager
 
         private void SendBook(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._SendBook(LibraryTable.SelectedItems);
+            GetDataContext()._SendBook(LibraryTable.SelectedItems);
         }
 
         private void ReceiveBook(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._ReceiveBook();
+            GetDataContext()._ReceiveBook();
         }
 
         private void EditMetadata(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._EditMetadata();
+            GetDataContext()._EditMetadata();
         }
 
         private void OpenBookFolder(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._OpenBookFolder();
+            GetDataContext()._OpenBookFolder();
         }
         private void RemoveBook(object sender, RoutedEventArgs e)
         {
-            ((ViewModels.MainWindow)DataContext)._RemoveBook();
+            GetDataContext()._RemoveBook();
         }
         #endregion
     }
