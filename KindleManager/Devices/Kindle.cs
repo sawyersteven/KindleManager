@@ -16,7 +16,7 @@ namespace Devices
             this.Description = Description;
             ConfigFile = Path.Combine(DriveLetter, "KindleManager.conf");
             DatabaseFile = Path.Combine(DriveLetter, "KindleManager.db");
-            CompatibleFiletypes = new string[] { ".mobi" };
+            CompatibleFiletypes = new string[] { ".mobi", ".azw", ".azw3" };
         }
 
         public override void SendBook(BookBase localBook)

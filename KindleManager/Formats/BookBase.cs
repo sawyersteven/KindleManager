@@ -56,6 +56,8 @@ namespace Formats
             switch (Path.GetExtension(filepath))
             {
                 case ".mobi":
+                case ".azw":
+                case ".azw3":
                     b = new Formats.Mobi.Book(filepath);
                     break;
                 case ".epub":
