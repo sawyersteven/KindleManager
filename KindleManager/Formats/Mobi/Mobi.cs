@@ -330,9 +330,17 @@ namespace Formats.Mobi
                         Decompressor = new Utils.Decompressors.PalmDoc(MobiHeader.flagTrailingEntries, MobiHeader.flagMultiByte);
                         break;
                     case 17480: // HUFF/CDIC
-                        reader.BaseStream.Seek(PDBHeader.records[MobiHeader.huffRecordNum], SeekOrigin.Begin);
-                        byte[] huffRec = reader.ReadBytes((int)PDBHeader.recordLength(MobiHeader.huffRecordNum));
-                        Decompressor = new Utils.Decompressors.HuffCdic(huffRec);
+                        byte[][] huffRecords = new byte[MobiHeader.huffRecordCount][];
+
+                        for (uint i = 0; i < MobiHeader.huffRecordCount; i++)
+                        {
+                            var current = MobiHeader.huffRecordNum + i;
+                            reader.BaseStream.Seek(PDBHeader.records[current], SeekOrigin.Begin);
+                            huffRecords[i] = reader.ReadBytes((int)PDBHeader.recordLength(current));
+
+                        }
+
+                        Decompressor = new Utils.Decompressors.HuffCdic(huffRecords);
                         break;
                     default:
                         throw new InvalidDataException($"Unknown compression type: {PalmDOCHeader.compression}");
