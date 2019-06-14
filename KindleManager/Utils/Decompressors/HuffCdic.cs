@@ -5,14 +5,20 @@ using System.Linq;
 
 namespace Utils.Decompressors
 {
+    /// <summary>
+    /// I'll be completely honest -- I have no idea what any of this does.
+    /// I ported the algorithm from MobiUnpack and optimized it however I
+    /// could without breaking it. There seems to be no  official docs
+    /// for this, which should not be surprising for anything related
+    /// to MOBIs.
+    /// https://github.com/siebert/mobiunpack/blob/master/mobiunpack.py
+    /// </summary>
     class HuffCdic : IDecompressor
     {
-        private List<uint> mincode = new List<uint>();
-        private List<uint> maxcode = new List<uint>();
-
+        private List<uint> mincodes = new List<uint>() { 0 };
+        private List<uint> maxcodes = new List<uint>() { uint.MaxValue };
         private List<(byte[], int)> dict = new List<(byte[], int)>();
-
-        (uint, uint, uint)[] dict1 = new (uint, uint, uint)[256];
+        private (uint, uint, uint)[] dict1 = new (uint, uint, uint)[256];
 
         public HuffCdic(byte[][] huffRecords)
         {
@@ -29,34 +35,32 @@ namespace Utils.Decompressors
             {
                 throw new ArgumentException("HUFF record header invalid");
             }
-            uint offs1 = BigEndian.ToUInt32(huffRecord, 0x8);
-            uint offs2 = BigEndian.ToUInt32(huffRecord, 0xC);
+            int offs1 = (int)BigEndian.ToUInt32(huffRecord, 0x8);
+            int offs2 = (int)BigEndian.ToUInt32(huffRecord, 0xC);
 
             for (int i = 0; i < 256; i++)
             {
-                dict1[i] = DictUnpack(BigEndian.ToUInt32(huffRecord, (int)offs1 + (4 * i)));
+                dict1[i] = DictUnpack(BigEndian.ToUInt32(huffRecord, offs1 + (4 * i)));
             }
 
-            uint[] dict2 = new uint[64];
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 64; i += 2)
             {
-                dict2[i] = BigEndian.ToUInt32(huffRecord, (int)offs2 + (4 * i));
-            }
+                uint min = BigEndian.ToUInt32(huffRecord, offs2 + (4 * i));
+                uint max = BigEndian.ToUInt32(huffRecord, offs2 + (4 * (i + 1)));
 
-            mincode.Add(0);
-            maxcode.Add(uint.MaxValue);
-
-            for (int i = 0; i < dict2.Length; i += 2)
-            {
-                mincode.Add(dict2[i] << (32 - ((i / 2) + 1)));
+                mincodes.Add(min << (0x20 - ((i / 2) + 1)));
                 int j = (i / 2) + 1;
-                maxcode.Add(((dict2[i + 1] + 1) << (32 - j)) - 1);
+                maxcodes.Add(((max + 1) << (0x20 - j)) - 1);
             }
-
         }
+
 
         private void ReadCdicRecord(byte[] cdicRecord)
         {
+            if (!cdicRecord.SubArray(0, 0x8).SequenceEqual(new byte[] { 0x43, 0x44, 0x49, 0x43, 0x00, 0x00, 0x00, 0x10 }))
+            {
+                throw new ArgumentException("CDIC record header invalid");
+            }
             int phrases = (int)BigEndian.ToUInt32(cdicRecord, 0x8);
             int bits = (int)BigEndian.ToUInt32(cdicRecord, 0xc);
 
@@ -65,12 +69,10 @@ namespace Utils.Decompressors
             {
                 ushort offs = BigEndian.ToUInt16(cdicRecord, 0x10 + (i * 2));
                 ushort blen = BigEndian.ToUInt16(cdicRecord, 0x10 + offs);
-                var slice = cdicRecord.SubArray(18 + offs, blen & 0x7fff);
+                var slice = cdicRecord.SubArray(0x12 + offs, blen & 0x7fff);
                 dict.Add((slice, blen & 0x8000));
             }
         }
-
-        // TODO first cdic for Miniatures is ok, second is not
 
         private (uint, uint, uint) DictUnpack(uint v)
         {
@@ -86,16 +88,16 @@ namespace Utils.Decompressors
             return (len, term, ((max + 1) << (int)(32 - len)) - 1);
         }
 
-        public byte[] Decompress(byte[] buffer)
+        public byte[] Decompress(byte[] data)
         {
             List<byte> output = new List<byte>();
 
-            int remaining = buffer.Length * 8;
+            int remaining = data.Length * 8;
 
-            buffer = buffer.Append(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 });
+            data = data.Append(new byte[8]);
             int pos = 0;
 
-            ulong x = BigEndian.ToUInt64(buffer, pos);
+            ulong x = BigEndian.ToUInt64(data, pos);
             int n = 32;
 
             while (true)
@@ -103,28 +105,28 @@ namespace Utils.Decompressors
                 if (n <= 0)
                 {
                     pos += 4;
-                    x = BigEndian.ToUInt64(buffer, pos);
+                    x = BigEndian.ToUInt64(data, pos);
                     n += 32;
                 }
-                var code = (x >> n) & ((1 << 32) - 1);
 
-                (uint len, uint term, uint max) = dict1[code >> 24];
+                ulong code = (x >> n) & uint.MaxValue;
+
+                (uint codelen, uint term, uint maxcode) = dict1[code >> 24];
 
                 if (term == 0)
                 {
-                    while (code < mincode[(int)len])
+                    while (code < mincodes[(int)codelen])
                     {
-                        len += 1;
+                        codelen += 1;
                     }
-                    max = maxcode[(int)len];
+                    maxcode = maxcodes[(int)codelen];
                 }
 
-                n -= (int)len;
-                remaining -= (int)len;
+                n -= (int)codelen;
+                remaining -= (int)codelen;
                 if (remaining < 0) break;
 
-                int r = (int)((max - code) >> (int)(32 - len));
-
+                int r = (int)((maxcode - code) >> (int)(32 - codelen));
                 (byte[] slice, int flag) = dict[r];
                 if (flag == 0)
                 {
