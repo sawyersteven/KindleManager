@@ -8,7 +8,7 @@ namespace KindleManager
     class Library
     {
         /// <summary>
-        /// Adds book to library directory and database
+        /// Adds book to library directory and database, converting if neccesary
         /// </summary>
         public static void ImportBook(string filePath)
         {
@@ -24,7 +24,7 @@ namespace KindleManager
             }
 
             Directory.CreateDirectory(Directory.GetParent(destinationFile).FullName);
-            if (Path.GetExtension(book.FilePath) != ".mobi")
+            if (!Resources.CompatibleFileTypes.Contains(Path.GetExtension(book.FilePath)))
             {
                 book = Converters.ToMobi(book, destinationFile);
             }

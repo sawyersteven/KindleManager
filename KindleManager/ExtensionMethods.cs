@@ -79,13 +79,14 @@ namespace ExtensionMethods
         }
 
         /// <summary>
-        /// Appends array onto end of this
+        /// Appends array onto end of this.
         /// Returns an array of length (this.Length + appendable.Length)
-        /// Example:
+        /// </summary>
+        /// <example>
         ///     int[] arr = new int[] { 0, 1, 2, 3, 4, 5 };
         ///     arr = arr.Append(3, new int[] { 100, 101, 102 });
         ///     arr == [0, 1, 2, 3, 4, 5, 100, 101, 102};
-        /// </summary>
+        /// </example>
         /// <returns></returns>
         public static T[] Append<T>(this T[] array, T[] appendable)
         {
@@ -98,10 +99,9 @@ namespace ExtensionMethods
             return output;
         }
 
-
         /// <summary>
         /// Returns a sub-array of length starting at index
-        /// Pass length of -1 to extend subarray to length of parent
+        /// Pass length of -1 to extend subarray to end of parent
         /// </summary>
         /// <returns> Array<T></returns>
         public static T[] SubArray<T>(this T[] data, int index, int length)
