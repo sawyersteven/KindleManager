@@ -58,8 +58,6 @@ namespace Formats.Epub
             }
 
             ImageNames = imageNames.ToArray();
-
-
         }
 
         /// <summary>
@@ -211,7 +209,7 @@ namespace Formats.Epub
 
                 HtmlDocument doc = new HtmlDocument();
                 using (Stream s = html.Open()) { doc.Load(s, System.Text.Encoding.UTF8); }
-                documents.Add(html.Name, doc);
+                documents.Add(docname, doc);
             }
 
             return documents;
