@@ -86,6 +86,7 @@
     <Compile Include="Formats\Mobi\Headers\PDBHeader.cs" />
     <Compile Include="Formats\Resources.cs" />
     <Compile Include="Library.cs" />
+    <Compile Include="Utils\Base32Int.cs" />
     <Compile Include="Utils\BigEndian.cs" />
     <Compile Include="Utils\Decompressors\IDecompressor.cs" />
     <Compile Include="Utils\Decompressors\None.cs" />
