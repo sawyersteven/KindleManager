@@ -200,7 +200,8 @@ namespace Formats.Mobi
             if (anchors == null) return new (string, int)[0];
             foreach (HtmlNode a in anchors)
             {
-                if (a.Attributes["href"] != null)
+                string href = a.GetAttributeValue("href", null);
+                if (href != null && href[0] == '#')
                 {
                     a.SetAttributeValue("filepos", 0.ToString("D10"));
                 }

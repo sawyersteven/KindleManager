@@ -194,12 +194,11 @@ namespace Formats.Mobi
             {
                 foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
                 {
-                    string filePos = a.GetAttributeValue("filepos", "");
+                    string filePos = a.GetAttributeValue("filepos", null);
                     if (int.TryParse(filePos, out int i))
                     {
                         filePositions.Add(i);
                     }
-
                 }
             }
             else
