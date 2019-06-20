@@ -13,6 +13,7 @@ namespace ExtensionMethods
         /// </summary>
         public static int BytePosition(this HtmlNode node)
         {
+            // todo: this is a bit slow
             return node.OwnerDocument.DocumentNode.OuterHtml.Substring(0, node.StreamPosition).Encode().Length;
         }
     }

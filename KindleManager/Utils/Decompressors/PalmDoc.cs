@@ -14,8 +14,6 @@ namespace Utils.Decompressors
             this.flagMultiByte = flagMultiByte;
         }
 
-
-
         /// <summary>
         /// Decompress PalmDoc Compressed byte array
         /// </summary>

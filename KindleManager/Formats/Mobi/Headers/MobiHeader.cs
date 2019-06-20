@@ -73,7 +73,6 @@ namespace Formats.Mobi.Headers
             }
         }
 
-
         /// <summary>
         /// Data contained in MobiHeader portion of mobi.
         /// All offsets are relative to 0x0
@@ -145,8 +144,17 @@ namespace Formats.Mobi.Headers
 
         public void Parse(BinaryReader reader)
         {
-            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            byte[] buffer = reader.ReadBytes(0x8);
+            byte[] buffer;
+
+            try
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                buffer = reader.ReadBytes(0x8);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read Mobi header [0]: {e.Message}");
+            }
 
             identifier = buffer.SubArray(0x0, 0x4); // MOBI
             if (identifier.Decode() != "MOBI")
@@ -156,8 +164,15 @@ namespace Formats.Mobi.Headers
 
             length = Utils.BigEndian.ToUInt32(buffer, 0x4);
 
-            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            buffer = reader.ReadBytes((int)length);
+            try
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                buffer = reader.ReadBytes((int)length);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read Mobi header [1]: {e.Message}");
+            }
 
             mobiType = Utils.BigEndian.ToUInt32(buffer, 0x8);
             textEncoding = Utils.BigEndian.ToUInt32(buffer, 0xC);
@@ -218,9 +233,15 @@ namespace Formats.Mobi.Headers
                 indxRecord = Utils.BigEndian.ToUInt32(buffer, 0xe4);
             }
 
-
-            reader.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
-            fullTitle = reader.ReadBytes((int)fullTitleLength).Decode();
+            try
+            {
+                reader.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
+                fullTitle = reader.ReadBytes((int)fullTitleLength).Decode();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read full title from Mobi header: {e.Message}");
+            }
 
             hasDRM = drmOffset != 0xFFFFFFFF;
             hasEXTH = (exthFlags & 0x40) != 0;
@@ -293,19 +314,30 @@ namespace Formats.Mobi.Headers
             return output.ToArray();
         }
 
-        public void Write(BinaryWriter writer, bool seekToOffset = true)
+        public void Write(BinaryWriter writer)
         {
-            if (seekToOffset)
+            try
             {
                 writer.BaseStream.Seek(offset, SeekOrigin.Begin);
+                writer.Write(Dump());
             }
-            writer.Write(Dump());
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to write Mobi header to file: {e.Message}");
+            }
         }
 
         public void WriteTitle(BinaryWriter writer)
         {
-            writer.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
-            writer.Write(fullTitle.Encode());
+            try
+            {
+                writer.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
+                writer.Write(fullTitle.Encode());
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to write title after headers: {e.Message}");
+            }
         }
 
         public void Print()

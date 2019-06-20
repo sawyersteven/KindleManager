@@ -37,8 +37,16 @@ namespace Formats.Mobi.Headers
 
         public void Parse(BinaryReader reader)
         {
-            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            byte[] buffer = reader.ReadBytes(length);
+            byte[] buffer;
+            try
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                buffer = reader.ReadBytes(length);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read PalmDoc header: {e.Message}");
+            }
 
             compression = Utils.BigEndian.ToUInt16(buffer, 0x0);
             // Skip 0x2 unused bytes
@@ -62,13 +70,17 @@ namespace Formats.Mobi.Headers
             return output.ToArray();
         }
 
-        public void Write(BinaryWriter writer, bool seekToOffset = true)
+        public void Write(BinaryWriter writer)
         {
-            if (seekToOffset)
+            try
             {
                 writer.BaseStream.Seek(this.offset, SeekOrigin.Begin);
+                writer.Write(Dump());
             }
-            writer.Write(Dump());
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to write PalmDOC header to file: ${e.Message}");
+            }
         }
 
         public void Print()

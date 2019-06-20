@@ -31,8 +31,7 @@ namespace KindleManager
                 throw new LiteException($"{book.FilePath} [{book.Id}] already exists in library"); ;
             }
 
-            BookEntry entry = new BookEntry(); // todo use copy constructor?
-            entry.CopyFrom(book);
+            BookEntry entry = new BookEntry(book);
             entry.DateAdded = DateTime.Now.ToString("yyyy-MM-dd"); // 1950-01-01
 
             if (book.Id != 0)

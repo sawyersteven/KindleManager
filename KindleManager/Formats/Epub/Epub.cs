@@ -66,7 +66,6 @@ namespace Formats.Epub
         private string ReadNode(XmlNode node, string xpath, XmlNamespaceManager nsmgr)
         {
             XmlNode target = node.SelectSingleNode(xpath, nsmgr);
-
             return (target == null) ? "" : target.InnerText;
         }
 
@@ -75,7 +74,8 @@ namespace Formats.Epub
         #region IBook overrides
         public override string TextContent()
         {
-            // todo add option to remove nodes with no innerhtml
+            // todo add option to remove nodes with no innerhtml?
+            // But what if an element exists just to have a border as a divider?
             HtmlDocument combinedText = new HtmlDocument();
             combinedText.LoadHtml(Resources.HtmlTemplate);
 
@@ -197,6 +197,9 @@ namespace Formats.Epub
             return docNames.ToArray();
         }
 
+        /// <summary>
+        /// Reads documents' contents as string into dict {filename: contents}
+        /// </summary>
         private Dictionary<string, HtmlDocument> LoadDocuments(ZipArchive zip, string[] docNames)
         {
             Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
@@ -215,6 +218,9 @@ namespace Formats.Epub
             return documents;
         }
 
+        /// <summary>
+        /// Combines documents' <body> contents into one document
+        /// </summary>
         private static string MergeDocuments(string[] orderedDocumentNames, Dictionary<string, HtmlDocument> documents)
         {
             string[] docTexts = new string[orderedDocumentNames.Length];
@@ -291,15 +297,10 @@ namespace Formats.Epub
                     string href = a.Attributes["href"].Value;
                     parts = href.Split(split, 2);
 
-                    if (parts.Length == 1)
-                    {
-                        continue;
-                    }
+                    if (parts.Length == 1) continue;
 
-                    if (parts[1] == targetOldId)
-                    {
-                        a.SetAttributeValue("href", "#" + newId);
-                    }
+                    if (parts[1] == targetOldId) a.SetAttributeValue("href", "#" + newId);
+
                 }
             }
         }

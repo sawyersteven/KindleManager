@@ -36,8 +36,10 @@ namespace Formats.Mobi
 
         public BookBase Convert()
         {
-            (byte[] textBytes, (string, int)[] c) = ProcessHtml(Donor.TextContent());
-            Chapters = c;
+            string text = Donor.TextContent();
+
+            byte[] textBytes;
+            (textBytes, Chapters) = ProcessHtml(text);
 
             // Make logical toc
             GenerateLogicalTOC();
@@ -92,9 +94,12 @@ namespace Formats.Mobi
             using (BinaryWriter writer = new BinaryWriter(file))
             {
                 PDB.Write(writer);
-                PDH.Write(writer, false);
-                MobiHeader.Write(writer, false);
-                EXTH.Write(writer, false);
+                PDH.offset = (uint)writer.BaseStream.Position;
+                PDH.Write(writer);
+                MobiHeader.offset = (uint)writer.BaseStream.Position;
+                MobiHeader.Write(writer);
+                EXTH.offset = (uint)writer.BaseStream.Position;
+                EXTH.Write(writer);
                 writer.Write(Donor.Title.Encode());
                 writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length, SeekOrigin.Current);
                 foreach (byte[] record in records)
@@ -103,16 +108,12 @@ namespace Formats.Mobi
                 }
             }
 
-            try
-            {
-                return new Mobi.Book(OutputPath);
-            }
+            try { return new Mobi.Book(OutputPath); }
             catch (Exception e)
             {
                 File.Delete(OutputPath);
                 throw e;
             }
-
         }
 
         #region Headers
@@ -160,11 +161,13 @@ namespace Formats.Mobi
         private (byte[], (string, int)[]) ProcessHtml(string html)
         {
             HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
+            try { doc.LoadHtml(html); }
+            catch { throw new Exception("Unable to load text content as html"); }
+
             StripStyle(doc);
             FixImageRecIndexes(doc);
 
-            (string, int)[] tocData = FixLinks(doc);
+            (string, int)[] tocData = PrepTOC(doc);
 
             string decodedText = doc.DocumentNode.OuterHtml;
 
@@ -183,17 +186,14 @@ namespace Formats.Mobi
             foreach (HtmlNode img in imgs)
             {
                 string src = img.Attributes["src"].Value;
-                if (src != null)
-                {
-                    img.SetAttributeValue("recindex", src);
-                }
+                if (src != null) img.SetAttributeValue("recindex", src);
             }
         }
 
         /// <summary>
-        /// Changes a href to filepos and generates toc information
+        /// Changes a href to filepos and generates toc chapter names and offsets
         /// </summary>
-        private (string, int)[] FixLinks(HtmlDocument html)
+        private (string, int)[] PrepTOC(HtmlDocument html)
         {
             // Give all anchors filepos property then reload html to get correct streampositions
             HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
@@ -239,9 +239,7 @@ namespace Formats.Mobi
         private void StripStyle(HtmlDocument html)
         {
             HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
-            if (style == null) return;
-            style.Remove();
-
+            if (style != null) style.Remove();
         }
 
         #endregion

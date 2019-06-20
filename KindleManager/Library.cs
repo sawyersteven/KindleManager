@@ -34,6 +34,8 @@ namespace KindleManager
                 book.FilePath = destinationFile;
             }
 
+            var m = book.TextContent();
+
             App.Database.AddBook(book);
         }
     }

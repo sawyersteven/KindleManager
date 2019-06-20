@@ -7,6 +7,7 @@ namespace Formats.Mobi.Headers
 {
     public class PDBHeader
     {
+        private long fileLen;
         private static readonly byte[] nullTwo = new byte[2];
 
         public int offset = 0x0;
@@ -68,8 +69,17 @@ namespace Formats.Mobi.Headers
 
         public void Parse(BinaryReader reader)
         {
-            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            byte[] buffer = reader.ReadBytes(baseLength);
+            fileLen = reader.BaseStream.Length;
+            byte[] buffer;
+            try
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                buffer = reader.ReadBytes(baseLength);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read PDB Header: {e.Message}");
+            }
 
             title = buffer.SubArray(0x0, 0x20).Decode();
             attributes = Utils.BigEndian.ToUInt16(buffer, 0x20);
@@ -86,19 +96,25 @@ namespace Formats.Mobi.Headers
             nextRecordListID = Utils.BigEndian.ToUInt32(buffer, 0x48);
             recordCount = Utils.BigEndian.ToUInt16(buffer, 0x4C);
 
-            records = new uint[recordCount];
-
-            reader.BaseStream.Seek(0x4E, SeekOrigin.Begin);
-            byte[] rawBuffer = reader.ReadBytes(0x8 * recordCount);
+            try
+            {
+                reader.BaseStream.Seek(0x4E, SeekOrigin.Begin);
+                buffer = reader.ReadBytes(0x8 * recordCount);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read PDB records: {e.Message}");
+            }
 
             if (recordCount < 2)
             {
-                throw new FileFormatException("Invalid PDBHeader record count.");
+                throw new FileFormatException("Invalid PDB record count.");
             }
 
+            records = new uint[recordCount];
             for (var i = 0; i < recordCount; i++)
             {
-                records[i] = Utils.BigEndian.ToUInt32(rawBuffer, i * 0x8);
+                records[i] = Utils.BigEndian.ToUInt32(buffer, i * 0x8);
             }
         }
 
@@ -136,13 +152,31 @@ namespace Formats.Mobi.Headers
 
         public void Write(BinaryWriter writer)
         {
-            writer.BaseStream.Seek(this.offset, SeekOrigin.Begin);
-            writer.Write(Dump());
+            try
+            {
+                writer.BaseStream.Seek(this.offset, SeekOrigin.Begin);
+                writer.Write(Dump());
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to write PDB header to file: {e.Message}");
+            }
         }
 
-        public uint recordLength(uint recordNum)
+        public uint RecordLength(uint recordNum)
         {
-            return records[recordNum + 1] - records[recordNum];
+            if (recordNum < recordCount) return records[recordNum + 1] - records[recordNum];
+
+            if (fileLen == 0)
+            {
+                throw new Exception("Cannot calculate length of last record -- file length is unknown");
+            }
+
+            if (records[recordNum] > fileLen)
+            {
+                throw new Exception("Record length extends past end of file");
+            }
+            return (uint)fileLen - records[recordNum];
         }
 
         public void Print()

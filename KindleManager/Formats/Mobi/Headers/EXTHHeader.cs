@@ -77,13 +77,22 @@ namespace Formats.Mobi.Headers
         public byte[] Get(uint rec)
         {
             TryGetValue(rec, out byte[] val);
-            return val;
+            return val ?? new byte[0];
         }
 
         public void Parse(BinaryReader reader)
         {
-            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-            byte[] buffer = reader.ReadBytes(0xC);
+            byte[] buffer;
+
+            try
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                buffer = reader.ReadBytes(0xC);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to read EXTH header: {e.Message}");
+            }
 
             identifier = buffer.SubArray(0x0, 0x4);
             if (identifier.Decode() != "EXTH")
@@ -94,13 +103,17 @@ namespace Formats.Mobi.Headers
 
             for (int i = 0; i < _recordCount; i++)
             {
-                buffer = reader.ReadBytes(0x8);
-                var recType = Utils.BigEndian.ToUInt32(buffer, 0x0);
-                var recLen = Utils.BigEndian.ToUInt32(buffer, 0x4) - 0x8;
-                var recData = reader.ReadBytes((int)recLen);
-                if (!this.ContainsKey(recType))
+                try
                 {
-                    this.Add(recType, recData);
+                    buffer = reader.ReadBytes(0x8);
+                    uint recType = Utils.BigEndian.ToUInt32(buffer, 0x0);
+                    int recLen = Utils.BigEndian.ToInt32(buffer, 0x4) - 0x8;
+                    byte[] recData = reader.ReadBytes(recLen);
+                    if (!this.ContainsKey(recType)) this.Add(recType, recData);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Unable to read EXTH header record [{i}]: {e.Message}");
                 }
             }
         }
@@ -126,13 +139,17 @@ namespace Formats.Mobi.Headers
             return output.ToArray();
         }
 
-        public void Write(BinaryWriter writer, bool seekToOffset = true)
+        public void Write(BinaryWriter writer)
         {
-            if (seekToOffset)
+            try
             {
                 writer.BaseStream.Seek(offset, SeekOrigin.Begin);
+                writer.Write(Dump());
             }
-            writer.Write(Dump());
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to write EXTH header to file: {e.Message}");
+            }
         }
 
         public void Print()

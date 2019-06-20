@@ -135,7 +135,7 @@ namespace Formats.Mobi
                 textRecordLengths = new int[MobiHeader.lastContentRecord - MobiHeader.firstContentRecord];
                 for (uint i = 0; i < textRecordLengths.Length; i++)
                 {
-                    textRecordLengths[i] = (int)PDBHeader.recordLength(MobiHeader.firstContentRecord + i);
+                    textRecordLengths[i] = (int)PDBHeader.RecordLength(MobiHeader.firstContentRecord + i);
                 }
 
                 // EXTHHeader
@@ -155,7 +155,7 @@ namespace Formats.Mobi
                     Language = EXTHHeader.Get(EXTHRecordID.Language).Decode();
                     Contributor = EXTHHeader.Get(EXTHRecordID.Contributor).Decode();
                     Publisher = EXTHHeader.Get(EXTHRecordID.Publisher).Decode();
-                    Subject = new string[] { EXTHHeader.Get(EXTHRecordID.Subject).Decode() };
+                    Subject = EXTHHeader.Get(EXTHRecordID.Subject).Decode().Split(',');
                     Description = EXTHHeader.Get(EXTHRecordID.Description).Decode();
                     PubDate = EXTHHeader.Get(EXTHRecordID.PublishDate).Decode();
                     Rights = EXTHHeader.Get(EXTHRecordID.Rights).Decode();
@@ -169,7 +169,19 @@ namespace Formats.Mobi
         /// Fixes image sources and anchor tags using "filepos" in html
         /// 
         /// Because everything in a mobi has to be much more complex than neccesary I'll explain this...
-        /// Anchor tags have a filepos attribute like this <a filepos=000012345>Chapter one</a>
+        /// 
+        /// There seems to be two different types of internal links in the book document
+        /// If the mobi version is < 8, anchor tags have a filepos attribute like this:
+        ///     <a filepos=000012345>Chapter one</a>
+        ///     filepos indicates the offset in *bytes* from the start of the document.
+        ///     This offset doesn't always point to the start of a tag so we will
+        ///         have to find the closest appropriate html element to this offset.
+        /// For version 8+ the anchor tags look like this:
+        ///     <a href="kindle:pos:fid:00A1:off:000123C">Chapter one</a>
+        ///     Two numbers, fid and off, are base-32 integers. fid indicates the text
+        ///         record in which to start counting, and off indicates how many bytes
+        ///         to count from the start of this record.
+        /// 
         /// The filepos indicates a position in the un-decoded bytes that is somewhere near the actual target for the link
         /// Because of this, the html has to be decoded (ie to utf-8) and parsed for anchors' filepos values.
         /// Then we go back to the un-decoded bytes and insert a new node with the target id to make things easier.
@@ -180,8 +192,7 @@ namespace Formats.Mobi
         /// </summary>
         private string FixLinks(string html)
         {
-
-            string targetNode = "<a id=\"filepos{0}\"/>";
+            //string targetNode = "<a id=\"filepos{0}\"/>";
             HtmlDocument doc = new HtmlDocument();
             List<int> filePositions = new List<int>();
             int bytesAdded = 0;
@@ -241,16 +252,43 @@ namespace Formats.Mobi
 
             filePositions.Sort();
 
+            // Find element closest to offset and apply id
+            int ind = 0;
+            HtmlNodeCollection children = doc.DocumentNode.ChildNodes;
             foreach (int offset in filePositions)
             {
-                byte[] tn = string.Format(targetNode, offset.ToString("D10")).Encode();
-                int insertPos = NearestElementPos(htmlBytes, offset + bytesAdded);
-                htmlBytes = htmlBytes.InsertRange(insertPos, tn);
-                bytesAdded += tn.Length;
+                HtmlNode child = null;
+                for (; ind < children.Count - 1; ind++)
+                {
+                    if (children[ind].BytePosition() > offset + bytesAdded)
+                    {
+                        child = children[ind == 0 ? ind : ind - 1];
+                        break;
+                    }
+                }
+                if (child == null)
+                {
+                    ind = 0;
+                    continue;
+                }
+                else
+                {
+                    int ol = child.OuterLength;
+                    child.SetAttributeValue("id", $"filepos{offset.ToString("D10")}");
+                    bytesAdded += child.OuterLength - ol;
+                }
             }
 
-            html = htmlBytes.Decode();
-            doc.LoadHtml(html);
+            // This was replaced by ^^ that. I don't want to delete it yet just in case.
+            //foreach (int offset in filePositions)
+            //{
+            //    byte[] tn = string.Format(targetNode, offset.ToString("D10")).Encode();
+            //    int insertPos = NearestElementPos(htmlBytes, offset + bytesAdded);
+            //    htmlBytes = htmlBytes.InsertRange(insertPos, tn);
+            //    bytesAdded += tn.Length;
+            //}
+            //html = htmlBytes.Decode();
+            //doc.LoadHtml(html);
 
             // Switch filepos to href
             HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
@@ -297,18 +335,18 @@ namespace Formats.Mobi
             return doc.DocumentNode.OuterHtml;
         }
 
-        private int NearestElementPos(byte[] html, int search)
-        {
-            if (search > html.Length) return -1;
-            if (html[search] == '<') return search - 1;
+        //private int NearestElementPos(byte[] html, int search)
+        //{
+        //    if (search > html.Length) return -1;
+        //    if (html[search] == '<') return search - 1;
 
-            while (html[search] != '<')
-            {
-                search--;
-            }
+        //    while (html[search] != '<')
+        //    {
+        //        search--;
+        //    }
 
-            return search - 1;
-        }
+        //    return search - 1;
+        //}
 
         #region IBook overrides
 
@@ -399,7 +437,7 @@ namespace Formats.Mobi
                         {
                             var current = MobiHeader.huffRecordNum + i;
                             reader.BaseStream.Seek(PDBHeader.records[current], SeekOrigin.Begin);
-                            huffRecords[i] = reader.ReadBytes((int)PDBHeader.recordLength(current));
+                            huffRecords[i] = reader.ReadBytes((int)PDBHeader.RecordLength(current));
 
                         }
 
@@ -431,7 +469,6 @@ namespace Formats.Mobi
                     throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
             };
             return FixLinks(text);
-
         }
 
         public override byte[][] Images()

@@ -39,7 +39,6 @@ namespace Formats
                 _SeriesNum = value == 0 ? "" : value.ToString();
             }
         }
-
         public virtual string DateAdded { get; set; } = "";
 
         public abstract string TextContent();
@@ -66,7 +65,7 @@ namespace Formats
             }
             if (b == null)
             {
-                throw new NotImplementedException($"File type {Path.GetExtension(filepath)} is not supported");
+                throw new NotImplementedException($"File type {Path.GetExtension(filepath)} is not yet supported.");
             }
             return b;
         }

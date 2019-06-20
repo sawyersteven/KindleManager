@@ -15,6 +15,9 @@ namespace Utils.Decompressors
     /// </summary>
     class HuffCdic : IDecompressor
     {
+        private static readonly byte[] HuffHeader = new byte[] { 0x48, 0x55, 0x46, 0x46, 0x00, 0x00, 0x00, 0x18 };
+        private static readonly byte[] CdicHeader = new byte[] { 0x43, 0x44, 0x49, 0x43, 0x00, 0x00, 0x00, 0x10 };
+
         private List<uint> mincodes = new List<uint>() { 0 };
         private List<uint> maxcodes = new List<uint>() { uint.MaxValue };
         private List<(byte[], int)> dict = new List<(byte[], int)>();
@@ -31,7 +34,7 @@ namespace Utils.Decompressors
 
         private void ReadHuffRecord(byte[] huffRecord)
         {
-            if (!huffRecord.SubArray(0, 0x8).SequenceEqual(new byte[] { 0x48, 0x55, 0x46, 0x46, 0x00, 0x00, 0x00, 0x18 }))
+            if (!huffRecord.SubArray(0, 0x8).SequenceEqual(HuffHeader))
             {
                 throw new ArgumentException("HUFF record header invalid");
             }
@@ -57,7 +60,7 @@ namespace Utils.Decompressors
 
         private void ReadCdicRecord(byte[] cdicRecord)
         {
-            if (!cdicRecord.SubArray(0, 0x8).SequenceEqual(new byte[] { 0x43, 0x44, 0x49, 0x43, 0x00, 0x00, 0x00, 0x10 }))
+            if (!cdicRecord.SubArray(0, 0x8).SequenceEqual(CdicHeader))
             {
                 throw new ArgumentException("CDIC record header invalid");
             }

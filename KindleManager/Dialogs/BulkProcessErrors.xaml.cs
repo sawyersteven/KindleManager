@@ -2,6 +2,8 @@
 using System;
 using System.Windows;
 
+using GridRow = System.ValueTuple<string, string>;
+
 namespace KindleManager.Dialogs
 {
     /// <summary>
@@ -17,7 +19,7 @@ namespace KindleManager.Dialogs
 
             for (int i = 0; i < errors.Length; i++)
             {
-                Errors[i] = new GridRow { File = (string)errors[i].Data["File"], Message = errors[i].Message };
+                Errors[i] = ((string)errors[i].Data["File"], errors[i].Message);
             }
 
             this.DataContext = this;
@@ -28,11 +30,11 @@ namespace KindleManager.Dialogs
             ErrorTable.ItemsSource = Errors;
         }
 
-        private struct GridRow //TODO can be tuple?
-        {
-            public string File { get; set; }
-            public string Message { get; set; }
-        }
+        //private struct GridRow //TODO can be tuple?
+        //{
+        //    public string File { get; set; }
+        //    public string Message { get; set; }
+        //}
 
         private void Close(object sender, RoutedEventArgs e)
         {

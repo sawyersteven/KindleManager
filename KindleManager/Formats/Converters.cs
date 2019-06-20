@@ -10,7 +10,7 @@ namespace Formats
     /// All methods write a new file to disk and return an instance of that
     ///     filetype's class.
     /// If filePath is passed the new file is created there, otherwise the new
-    ///     file will be the same as IBook's filePath with the new extension.
+    ///     file will be the same as BookBase input's filePath with the new extension.
     /// </summary>
     class Converters
     {
@@ -22,11 +22,10 @@ namespace Formats
             }
             if (filePath == "")
             {
-                throw new ArgumentException($"Output filepath not provided.");
+                throw new ArgumentException("Output filepath not provided.");
             }
 
             filePath = Path.ChangeExtension(filePath, ".mobi");
-
 
             Mobi.Builder mobibuilder = new Mobi.Builder(input, filePath);
 

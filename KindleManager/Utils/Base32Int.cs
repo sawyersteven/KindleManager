@@ -5,7 +5,16 @@ namespace Utils
 {
     class Base32Int
     {
-
+        /// <summary>
+        /// Converts base32 string into int
+        /// </summary>
+        /// <example>
+        /// TryParse("00123", out int i);
+        /// i == 1091;
+        /// </example>
+        /// <param name="s"></param>
+        /// <param name="n"></param>
+        /// <returns></returns>
         public static bool TryParse(string s, out int n)
         {
             n = 0;

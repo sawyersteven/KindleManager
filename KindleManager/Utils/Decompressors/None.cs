@@ -2,9 +2,6 @@
 {
     class None : IDecompressor
     {
-        public byte[] Decompress(byte[] buffer)
-        {
-            return buffer;
-        }
+        public byte[] Decompress(byte[] buffer) => buffer;
     }
 }
