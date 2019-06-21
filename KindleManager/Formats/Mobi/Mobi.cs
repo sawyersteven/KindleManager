@@ -194,6 +194,7 @@ namespace Formats.Mobi
         {
             //string targetNode = "<a id=\"filepos{0}\"/>";
             HtmlDocument doc = new HtmlDocument();
+            HtmlNodeCollection anchors;
             List<int> filePositions = new List<int>();
             int bytesAdded = 0;
 
@@ -203,12 +204,16 @@ namespace Formats.Mobi
             // Find all anchors and get/set their filepos attribute
             if (MobiHeader.minVersion < 8)
             {
-                foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
+                anchors = doc.DocumentNode.SelectNodes("//a");
+                if (anchors != null)
                 {
-                    string filePos = a.GetAttributeValue("filepos", null);
-                    if (int.TryParse(filePos, out int i))
+                    foreach (HtmlNode a in anchors)
                     {
-                        filePositions.Add(i);
+                        string filePos = a.GetAttributeValue("filepos", string.Empty);
+                        if (int.TryParse(filePos, out int i))
+                        {
+                            filePositions.Add(i);
+                        }
                     }
                 }
             }
@@ -219,35 +224,38 @@ namespace Formats.Mobi
                 0123456789 indicates the offset inside this record.
                 The total offset is calculated for filePositions.
                 */
-
-                foreach (HtmlNode a in doc.DocumentNode.SelectNodes("//a"))
+                anchors = doc.DocumentNode.SelectNodes("//a");
+                if (anchors != null)
                 {
-                    int ol = a.OuterHtml.Length;
-                    string href = a.GetAttributeValue("href", "");
-                    if (href == "") continue;
-                    string[] parts = href.Split(':');
-                    if (parts.Length != 6) continue;
-
-                    if (!Utils.Base32Int.TryParse(parts[3], out int textRec)) continue;
-                    if (!Utils.Base32Int.TryParse(parts[3], out int offs)) continue;
-
-                    int filePos = 0;
-                    if (textRec == 1)
+                    foreach (HtmlNode a in anchors)
                     {
-                        filePos = offs;
-                    }
-                    else
-                    {
-                        for (uint i = 0; i < textRec - 1; i++)
+                        int ol = a.OuterHtml.Length;
+                        string href = a.GetAttributeValue("href", "");
+                        if (href == "") continue;
+                        string[] parts = href.Split(':');
+                        if (parts.Length != 6) continue;
+
+                        if (!Utils.Base32Int.TryParse(parts[3], out int textRec)) continue;
+                        if (!Utils.Base32Int.TryParse(parts[3], out int offs)) continue;
+
+                        int filePos = 0;
+                        if (textRec == 1)
                         {
-                            filePos += textRecordLengths[i];
+                            filePos = offs;
                         }
-                        filePos += offs;
+                        else
+                        {
+                            for (uint i = 0; i < textRec - 1; i++)
+                            {
+                                filePos += textRecordLengths[i];
+                            }
+                            filePos += offs;
+                        }
+                        a.SetAttributeValue("href", filePos.ToString($"D10").PadRight(href.Length));
+                        filePositions.Add(filePos);
                     }
-                    a.SetAttributeValue("href", filePos.ToString($"D10").PadRight(href.Length));
-                    filePositions.Add(filePos);
+                    htmlBytes = doc.DocumentNode.OuterHtml.Encode();
                 }
-                htmlBytes = doc.DocumentNode.OuterHtml.Encode();
             }
 
             filePositions.Sort();
@@ -291,7 +299,7 @@ namespace Formats.Mobi
             //doc.LoadHtml(html);
 
             // Switch filepos to href
-            HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
+            anchors = doc.DocumentNode.SelectNodes("//a");
             if (anchors != null)
             {
                 foreach (HtmlNode a in anchors)

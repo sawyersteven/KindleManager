@@ -72,7 +72,6 @@ namespace Formats.Mobi
             FillEXTHHeader();
 
             MobiHeader.FillDefault();
-            MobiHeader.fullTitleOffset = MobiHeader.length + (uint)EXTH.length; //mobi + exth
             MobiHeader.firstNonBookRecord = firstNonBookRecord;
             MobiHeader.firstImageRecord = firstImageRecord;
             MobiHeader.lastContentRecord = lastContentRecord;
@@ -90,6 +89,8 @@ namespace Formats.Mobi
             PDB.recordCount = (ushort)records.Count;
             PDB.records = CalcRecordOffsets();
 
+            MobiHeader.fullTitleOffset = (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length;
+
             using (FileStream file = new FileStream(OutputPath, FileMode.CreateNew))
             using (BinaryWriter writer = new BinaryWriter(file))
             {
@@ -100,8 +101,8 @@ namespace Formats.Mobi
                 MobiHeader.Write(writer);
                 EXTH.offset = (uint)writer.BaseStream.Position;
                 EXTH.Write(writer);
-                writer.Write(Donor.Title.Encode());
-                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length, SeekOrigin.Current);
+                MobiHeader.WriteTitle(writer);
+                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length + 0x10, SeekOrigin.Current);
                 foreach (byte[] record in records)
                 {
                     writer.Write(record);
@@ -124,7 +125,7 @@ namespace Formats.Mobi
             uint currentPosition = (uint)PDB.TotalLength;
             offsets.Add(currentPosition); // start of PalmDoc
 
-            currentPosition += 0x10 + MobiHeader.length + (uint)EXTH.length + postHeaderPadding;
+            currentPosition += PDH.length + MobiHeader.length + (uint)EXTH.length + postHeaderPadding;
             for (int i = 0; i < records.Count; i++)
             {
                 offsets.Add(currentPosition);
@@ -197,13 +198,15 @@ namespace Formats.Mobi
         {
             // Give all anchors filepos property then reload html to get correct streampositions
             HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
-            if (anchors == null) return new (string, int)[0];
-            foreach (HtmlNode a in anchors)
+            if (anchors != null)
             {
-                string href = a.GetAttributeValue("href", null);
-                if (href != null && href[0] == '#')
+                foreach (HtmlNode a in anchors)
                 {
-                    a.SetAttributeValue("filepos", 0.ToString("D10"));
+                    string href = a.GetAttributeValue("href", null);
+                    if (href != null && href[0] == '#')
+                    {
+                        a.SetAttributeValue("filepos", 0.ToString("D10"));
+                    }
                 }
             }
             html.LoadHtml(html.DocumentNode.OuterHtml);
@@ -224,15 +227,15 @@ namespace Formats.Mobi
 
             List<(string, int)> tocData = new List<(string, int)>();
             HtmlNode[] tocNodes = html.DocumentNode.SelectNodes("//*").Where(x => x.Attributes["toclabel"] != null).ToArray();
-            if (tocNodes != null)
+            foreach (HtmlNode n in tocNodes)
             {
-                foreach (HtmlNode n in tocNodes)
-                {
-                    tocData.Add((n.Attributes["toclabel"].Value, n.BytePosition()));
-                }
-                tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
+                tocData.Add((n.Attributes["toclabel"].Value, n.BytePosition()));
             }
-
+            if (tocData.Count == 0) // if no chapters in book at one at start
+            {
+                tocData.Add(("Start", 0));
+            }
+            tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
             return tocData.ToArray();
         }
 
@@ -336,16 +339,17 @@ namespace Formats.Mobi
             }
 
             // Pad between tagx and idxt
+            int padding;
             byte[] Rec = logicalTOCEntries.Last();
             Rec = Rec.SubArray(0, Rec[0] + 1);
-            int Padding = (Rec.Length + 2) % 4;
+            padding = (Rec.Length + 2) % 4;
 
             // Make indx
             Records.INDX indx = new Records.INDX();
             indx.type = 2;                          // inflection
             indx.recordCount = 1;                   // num of indx data records
             indx.recordEntryCount = (uint)Chapters.Length;
-            indx.idxtOffset = (uint)(indx.length + tagx.Count + (Rec.Length + 2 + Padding));
+            indx.idxtOffset = (uint)(indx.length + tagx.Count + (Rec.Length + 2 + padding));
             indx.cncxRecordCount = 1;
             indx.tagxOffset = indx.length;
 
@@ -355,7 +359,7 @@ namespace Formats.Mobi
             record.AddRange(tagx);
             record.AddRange(Rec);
             record.AddRange(Utils.BigEndian.GetBytes((ushort)idxtOffsets.Count));
-            record.AddRange(new byte[Padding]);
+            record.AddRange(new byte[padding]);
             record.AddRange("IDXT".Encode());
             record.AddRange(Utils.BigEndian.GetBytes((ushort)(indx.length + tagx.Count)));
             record.AddRange(new byte[2]);

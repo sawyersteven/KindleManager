@@ -360,7 +360,7 @@ namespace KindleManager.ViewModels
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Multiselect = false;
 
-            string types = string.Join(";*", Formats.Resources.CompatibleFileTypes);
+            string types = string.Join(";*", Formats.Resources.AcceptedFileTypes);
             dlg.Filter = $"eBooks (*{types})|*{types}";
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
@@ -503,7 +503,7 @@ namespace KindleManager.ViewModels
         {
             if (File.Exists(path))
             {
-                if (!Formats.Resources.CompatibleFileTypes.Contains(Path.GetExtension(path)))
+                if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(path)))
                 {
                     new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(path)} format books has not yet been implemented.").ShowDialog();
                     return;

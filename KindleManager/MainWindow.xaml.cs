@@ -74,7 +74,7 @@ namespace KindleManager
             // Only allow single drops for now;
             if (paths.Length > 1) return false;
             if (System.IO.Directory.Exists(paths[0])) return true;
-            return Formats.Resources.CompatibleFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
+            return Formats.Resources.AcceptedFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
         }
         #endregion
 

@@ -24,7 +24,7 @@ namespace KindleManager
             }
 
             Directory.CreateDirectory(Directory.GetParent(destinationFile).FullName);
-            if (!Resources.CompatibleFileTypes.Contains(Path.GetExtension(book.FilePath)))
+            if (!Resources.CompatibleFiletypes.Contains(Path.GetExtension(book.FilePath)))
             {
                 book = Converters.ToMobi(book, destinationFile);
             }
@@ -34,8 +34,14 @@ namespace KindleManager
                 book.FilePath = destinationFile;
             }
 
-            var m = book.TextContent();
-
+            try
+            {
+                Formats.Mobi.Book m = (Formats.Mobi.Book)book;
+            }
+            catch (System.Exception e)
+            {
+                throw new System.Exception($"Conversion to Mobi failed: {e.Message}");
+            }
             App.Database.AddBook(book);
         }
     }

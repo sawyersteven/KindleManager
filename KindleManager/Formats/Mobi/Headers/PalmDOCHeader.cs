@@ -8,7 +8,7 @@ namespace Formats.Mobi.Headers
     public class PalmDOCHeader
     {
         public uint offset;
-        public readonly int length = 0x10;
+        public readonly uint length = 0x10;
 
         public ushort compression;
         public uint textLength;
@@ -41,7 +41,7 @@ namespace Formats.Mobi.Headers
             try
             {
                 reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                buffer = reader.ReadBytes(length);
+                buffer = reader.ReadBytes((int)length);
             }
             catch (Exception e)
             {

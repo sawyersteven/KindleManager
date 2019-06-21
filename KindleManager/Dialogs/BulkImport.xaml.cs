@@ -31,7 +31,7 @@ namespace KindleManager.Dialogs
         {
             foreach (string filepath in Directory.GetFiles(dir))
             {
-                if (Formats.Resources.CompatibleFileTypes.Contains(Path.GetExtension(filepath)))
+                if (Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(filepath)))
                 {
                     node.Children.Add(new TreeNode { Name = Path.GetFileName(filepath), Fullname = filepath });
                 }
