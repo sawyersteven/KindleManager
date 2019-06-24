@@ -380,23 +380,45 @@ namespace KindleManager.ViewModels
         {
             if (SelectedTableRow == null) { return; }
 
-            // TODO new dialog asking to remove from kindle or pc or both.
+            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.Library.Any(x => x.Id == SelectedTableRow.Id);
+            bool onPC = LocalLibrary.Any(x => x.Id == SelectedTableRow.Id);
 
-            string msg = $"Are you sure you want to remove {SelectedTableRow.Title} from your library?";
-            var dlg = new Dialogs.YesNo("Confirm Remove", msg, "Remove");
+            var dlg = new Dialogs.DeleteConfirm(SelectedTableRow.Title, onDevice, onPC);
 
             if (dlg.ShowDialog() == false) { return; }
-
-            try
+            if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 1) // device
             {
-                App.Database.RemoveBook(SelectedTableRow);
+                Database.BookEntry remoteBook = SelectedDevice.Database.Library.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+                try
+                {
+                    SelectedDevice.DeleteBook(SelectedTableRow.Id);
+                }
+                catch (Exception e)
+                {
+                    var err = new Dialogs.Error($"Unable to delete book from {SelectedDevice.Name}", e.Message);
+                    err.ShowDialog();
+                    return;
+                }
             }
-            catch (Exception e)
+            if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 2) // pc
             {
-                var err = new Dialogs.Error("Unable to save metadata", e.Message);
-                err.ShowDialog();
+                Database.BookEntry localBook = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+                try
+                {
+                    if (localBook != null)
+                    {
+                        File.Delete(localBook.FilePath);
+                        Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
+                    }
+                    App.Database.RemoveBook(SelectedTableRow);
+                }
+                catch (Exception e)
+                {
+                    var err = new Dialogs.Error("Unable to delete book from library", e.Message);
+                    err.ShowDialog();
+                    return;
+                }
             }
-            return;
         }
 
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }

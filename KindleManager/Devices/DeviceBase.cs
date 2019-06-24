@@ -27,6 +27,11 @@ namespace Devices
         }
         public virtual KindleManager.Database Database { get; set; }
 
+        public virtual string AbsoluteFilePath(BookBase book)
+        {
+            return Path.Combine(DriveLetter, book.FilePath);
+        }
+
         public void WriteConfig(DeviceConfig c)
         {
             File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(c));
@@ -179,6 +184,20 @@ namespace Devices
             }
         }
 
-        public abstract void SendBook(Formats.BookBase localbook);
+        public virtual void DeleteBook(int id)
+        {
+            KindleManager.Database.BookEntry b = Database.Library.FirstOrDefault(x => x.Id == id);
+            if (b == null)
+            {
+                throw new ArgumentException($"Book with Id [{id}] not found in library");
+            }
+            string file = AbsoluteFilePath(b);
+            File.Delete(file);
+            Database.RemoveBook(b);
+
+            Utils.Files.CleanBackward(Path.GetDirectoryName(file), Path.Combine(DriveLetter, Config.LibraryRoot));
+        }
+
+        public abstract void SendBook(BookBase localbook);
     }
 }

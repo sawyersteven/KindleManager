@@ -8,7 +8,7 @@ namespace KindleManager
     public partial class App : Application
     {
         public static Database Database;
-        public string LibraryDirectory;
+        public static string LibraryDirectory;
         public static ConfigManager ConfigManager;
 
         public void StartApp(object sender, StartupEventArgs e)

@@ -59,6 +59,9 @@
     <Compile Include="Dialogs\SyncConfirm.xaml.cs">
       <DependentUpon>SyncConfirm.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\DeleteConfirm.xaml.cs">
+      <DependentUpon>DeleteConfirm.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\YesNo.xaml.cs">
       <DependentUpon>YesNo.xaml</DependentUpon>
     </Compile>
@@ -106,6 +109,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Dialogs\SyncConfirm.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Dialogs\DeleteConfirm.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -169,12 +176,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <Resource Include="Formats\Readme.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="FodyWeavers.xml" />
+    <Resource Include="Formats\Readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MahApps.Metro.IconPacks, Version=2.3.0.4, Culture=neutral, processorArchitecture=MSIL">

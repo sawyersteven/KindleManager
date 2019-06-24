@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExtensionMethods;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -28,6 +29,23 @@ namespace Utils
             }
             catch { }
             return files.ToArray();
+        }
+
+        /// <summary>
+        /// Removes empty dirs starting at 'start' moving upward to 'stop'.
+        /// Stops are first directory that is not empty.
+        /// </summary>
+        /// <param name="dir"></param>
+        public static void CleanBackward(string start, string stop)
+        {
+            start = start.NormPath();
+            stop = stop.NormPath();
+            while (Directory.GetFiles(start).Length == 0)
+            {
+                if (start == stop) break;
+                Directory.Delete(start);
+                start = Directory.GetParent(start).FullName;
+            }
         }
     }
 }
