@@ -243,6 +243,10 @@ namespace Formats.Mobi
         {
             HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
             if (style != null) style.Remove();
+            foreach (HtmlNode child in html.DocumentNode.ChildNodes)
+            {
+                child.Attributes.Remove("class");
+            }
         }
 
         #endregion
