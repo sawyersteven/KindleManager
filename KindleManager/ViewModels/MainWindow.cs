@@ -430,23 +430,56 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
         public void _EditMetadata()
         {
+            // TODO rename/move books after metadata changes
             if (SelectedTableRow == null) return;
-            BookBase book;
-            try
-            {
-                book = Formats.BookBase.Auto(SelectedTableRow.FilePath);
-            }
-            catch (Exception e)
-            {
-                new Dialogs.Error("Unable to open book for editing", e.Message).ShowDialog();
-                return;
-            }
 
             var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow));
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
-            BookBase.Merge(dlg.ModBook, book);
-            App.Database.UpdateBook(dlg.ModBook);
+
+            List<Exception> errs = new List<Exception>();
+
+            BookBase dbBook;
+            Formats.Mobi.Book recip;
+            dbBook = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (dbBook != null)
+            {
+                App.Database.UpdateBook(dlg.ModBook);
+                try
+                {
+                    recip = new Formats.Mobi.Book(dbBook.FilePath);
+                    BookBase.Merge(dlg.ModBook, recip);
+                    recip.WriteMetadata();
+                }
+                catch (Exception e)
+                {
+                    errs.Add(e);
+                }
+            }
+
+            dbBook = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (dbBook != null)
+            {
+                SelectedDevice.Database.UpdateBook(dlg.ModBook);
+                try
+                {
+                    recip = new Formats.Mobi.Book(SelectedDevice.AbsoluteFilePath(dbBook));
+                    BookBase.Merge(dlg.ModBook, recip);
+                    recip.WriteMetadata();
+                }
+                catch (Exception e)
+                {
+                    errs.Add(e);
+                }
+            }
+
+            if (errs.Count != 0)
+            {
+                string msg = $"Metadata could not be updated.<LineBreak /> {string.Join("; ", errs.Select(x => x.Message).ToList())}";
+
+                new Dialogs.Error("Error updating metadata", msg).ShowDialog();
+            }
+
         }
         #endregion
 
