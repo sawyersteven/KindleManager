@@ -19,7 +19,7 @@
 
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconMaterial Kind="AlertDecagram" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
             <TextBlock Margin="5" x:Name="Message" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center"/>
         </DockPanel>
 

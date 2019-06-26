@@ -19,7 +19,7 @@
 
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconMaterial Kind="BookOpenPageVariant" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <icons:PackIconOcticons Kind="RepoTemplate" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
             <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
                 The following books have been found and may be imported.
                 <LineBreak/>

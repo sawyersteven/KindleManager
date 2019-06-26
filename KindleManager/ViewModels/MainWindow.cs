@@ -14,6 +14,13 @@ using System.Windows.Forms;
 
 namespace KindleManager.ViewModels
 {
+    static class Icons
+    {
+        public static string None = "None";
+        public static string Check = "Check";
+        public static string Alert = "Alert";
+    }
+
     class MainWindow : ReactiveObject
     {
         private readonly Unit UnitNull = new Unit();
@@ -29,7 +36,7 @@ namespace KindleManager.ViewModels
             EditSettings = ReactiveCommand.Create(_EditSettings);
             ReceiveBook = ReactiveCommand.Create(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
-            #region device buttonss
+            #region device buttons
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
             EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
@@ -42,7 +49,7 @@ namespace KindleManager.ViewModels
             DevManager = new DevManager();
             DevManager.FindKindles();
 
-            TaskbarIcon = "None";
+            TaskbarIcon = Icons.None;
             TaskbarText = "";
             SideBarOpen = true;
             BackgroundWork = false;
@@ -87,7 +94,7 @@ namespace KindleManager.ViewModels
             Task.Run(() =>
             {
                 BackgroundWork = true;
-                TaskbarIcon = "None";
+                TaskbarIcon = Icons.None;
                 try
                 {
                     foreach (string title in SelectedDevice.ReorganizeLibrary())
@@ -116,7 +123,7 @@ namespace KindleManager.ViewModels
                     {
                         BackgroundWork = false;
                         TaskbarText = "Kindle library reorganization complete.";
-                        TaskbarIcon = "CheckCircle";
+                        TaskbarIcon = Icons.Check;
                     });
                 }
             });
@@ -130,7 +137,7 @@ namespace KindleManager.ViewModels
             if (dlg.DialogResult == false) return;
 
             BackgroundWork = true;
-            TaskbarIcon = "None";
+            TaskbarIcon = Icons.None;
             Task.Run(() =>
             {
                 try
@@ -163,7 +170,7 @@ namespace KindleManager.ViewModels
                     {
                         BackgroundWork = false;
                         TaskbarText = "Kindle library recreation complete.";
-                        TaskbarIcon = "CheckCircle";
+                        TaskbarIcon = Icons.Check;
                     });
                 }
             });
@@ -188,7 +195,7 @@ namespace KindleManager.ViewModels
                 }
             }
 
-            var dlg = new Dialogs.SyncConfirm(toTransfer, SelectedDevice);
+            var dlg = new Dialogs.SyncConfirm(toTransfer, SelectedDevice.Name);
             if (dlg.ShowDialog() == false)
             {
                 return;
@@ -208,7 +215,7 @@ namespace KindleManager.ViewModels
             Task.Run(() =>
             {
                 List<Exception> errors = new List<Exception>();
-                TaskbarIcon = "";
+                TaskbarIcon = Icons.None;
                 BackgroundWork = true;
                 foreach (Database.BookEntry book in toTransfer)
                 {
@@ -223,7 +230,7 @@ namespace KindleManager.ViewModels
                     }
                 }
                 TaskbarText = $"Sync Complete";
-                TaskbarIcon = "CheckCircle";
+                TaskbarIcon = Icons.Check;
                 BackgroundWork = false;
 
                 if (errors.Count > 0)
@@ -315,7 +322,7 @@ namespace KindleManager.ViewModels
                 return UnitNull;
             }
 
-            TaskbarIcon = "";
+            TaskbarIcon = Icons.None;
             BackgroundWork = true;
             Task.Run(() =>
             {
@@ -323,14 +330,14 @@ namespace KindleManager.ViewModels
                 try
                 {
                     SelectedDevice.SendBook(r);
-                    TaskbarIcon = "CheckCircle";
+                    TaskbarIcon = Icons.Check;
                     TaskbarText = $"{r.Title} sent to {SelectedDevice.Name}.";
                 }
                 catch (Exception e)
                 {
                     App.Current.Dispatcher.Invoke(() =>
                     {
-                        TaskbarIcon = "AlertCircle";
+                        TaskbarIcon = Icons.Alert;
                         TaskbarText = e.Message;
                     });
                 }
@@ -606,7 +613,7 @@ namespace KindleManager.ViewModels
                     }
 
                     TaskbarText = "Import Complete";
-                    TaskbarIcon = "CheckCircle";
+                    TaskbarIcon = Icons.Check;
 
                 });
                 return;

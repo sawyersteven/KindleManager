@@ -12,7 +12,7 @@
 
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconMaterial Kind="DeleteForever" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
+            <icons:PackIconOcticons Kind="Trashcan" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
 
             <Grid Margin="5" DockPanel.Dock="Top" Height="32">
                 <Grid.ColumnDefinitions>
@@ -23,22 +23,13 @@
                 <TextBlock VerticalAlignment="Center" Grid.Column="0" FontSize="14">Delete <TextBlock Text="{Binding BookTitle}"/> from</TextBlock>
                 <ComboBox Name="cbDeleteFrom" SelectedIndex="0" Grid.Column="2" FontSize="14" VerticalAlignment="Center">
                     <ComboBoxItem Foreground="Black" Visibility="{Binding OnBoth}">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:PackIconMaterial Kind="MonitorCellphone" Margin="0,0,4,0" Height="14" Width="14" VerticalAlignment="Center"/>
-                            <TextBlock VerticalAlignment="Center">Both Kindle &amp; PC</TextBlock>
-                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center">Both Kindle &amp; PC</TextBlock>
                     </ComboBoxItem>
                     <ComboBoxItem Foreground="Black" Visibility="{Binding OnDevice}">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:PackIconMaterial Kind="TabletAndroid" Height="14" Width="14" VerticalAlignment="Center"/>
-                            <TextBlock VerticalAlignment="Center">Kindle</TextBlock>
-                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center">Kindle</TextBlock>
                     </ComboBoxItem>
                     <ComboBoxItem Foreground="Black" Visibility="{Binding OnPC}">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:PackIconMaterial Kind="TabletAndroid" Height="14" Width="14" VerticalAlignment="Center"/>
-                            <TextBlock VerticalAlignment="Center">PC</TextBlock>
-                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center">PC</TextBlock>
                     </ComboBoxItem>
                 </ComboBox>
             </Grid>

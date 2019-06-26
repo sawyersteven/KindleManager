@@ -18,7 +18,7 @@
 
             </ResourceDictionary.MergedDictionaries>
 
-            <Style TargetType="{x:Type icons:PackIconMaterial}">
+            <Style TargetType="{x:Type icons:PackIconOcticons}">
                 <Setter Property="Foreground" Value="#424242"/>
             </Style>
             

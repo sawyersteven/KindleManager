@@ -13,9 +13,8 @@
         Width="350">
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconMaterial Kind="BookOpenPageVariant" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
-            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">
-                
+            <icons:PackIconOcticons Kind="RepoForcePush" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top">           
                 The following books are prepared to be transferred to <TextBlock Text="{Binding KindleName}"/>.
                 <LineBreak/>
                 Other operations may be disabled while transfers are in progress.
@@ -48,7 +47,7 @@
                 Cancel
             </Button>
             <Button Click="Confirm" Grid.Column="2">
-                SYNC
+                Sync
             </Button>
         </Grid>
     </StackPanel>

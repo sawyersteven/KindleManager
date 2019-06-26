@@ -57,30 +57,43 @@
                                 <TextBlock Text="{Binding SelectedDevice.Description}"/>
                             </StackPanel>
                         </Button>
-                        <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,4,0,0">
+                        <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,12,0,0">
+                            <Grid.Resources>
+                                <Style TargetType="{x:Type icons:PackIconOcticons}">
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Height" Value="24"/>
+                                    <Setter Property="Width" Value="24"/>
+                                </Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Height" Value="32"/>
+                                    <Setter Property="Width" Value="32"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                </Style>
+                            </Grid.Resources>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition/>
                                 <ColumnDefinition/>
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
-                            <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
-                                <icons:PackIconModern Kind="PageDuplicate" Height="16" Width="16"/>
+                            <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0">
+                                <icons:PackIconOcticons Kind="RepoForcePush"/>
                             </Button>
-                            <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
-                                <icons:PackIconMaterial Kind="Settings" Height="16" Width="16"/>
+                            <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1">
+                                <icons:PackIconOcticons Kind="Gear"/>
                             </Button>
-                            <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
-                                <icons:PackIconMaterial Kind="FolderOpen" Height="16" Width="16" />
+                            <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2">
+                                <icons:PackIconOcticons Kind="FileSymlinkDirectory"/>
                             </Button>
-                            <Button x:Name="DeviceExtraMenu" Click="OpenContextMenu" ToolTip="Open Library Folder" Grid.Column="3" Height="24" Width="24" Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}" BorderBrush="Transparent">
+                            <Button x:Name="DeviceExtraMenu" Click="OpenContextMenu" ToolTip="Open Library Folder" Grid.Column="3">
                                 <Button.ContextMenu>
                                     <ContextMenu x:Name="DeviceContextMenu">
                                         <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeLibrary}"/>
                                         <MenuItem Header="Recreate Library" Command="{Binding RecreateLibrary}"/>
                                     </ContextMenu>
                                 </Button.ContextMenu>
-                                <icons:PackIconMaterial Kind="DotsVertical" Height="16" Width="16" />
+                                <icons:PackIconOcticons Kind="KebabVertical"/>
                             </Button>
                         </Grid>
                     </Grid>
@@ -110,6 +123,20 @@
     </Controls:MetroWindow.Flyouts>
 
     <Grid>
+        <Grid.Resources>
+            <Style TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="Padding" Value="4,0,4,0"/>
+                <Setter Property="Height" Value="32"/>
+            </Style>
+            <Style TargetType="{x:Type icons:PackIconOcticons}">
+                <Setter Property="Foreground" Value="#424242"/>
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Margin" Value="4,0,4,0"/>
+            </Style>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -126,21 +153,30 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
 
-            <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Margin="16,0" Style="{StaticResource ToolbarButton}" Grid.Column="0">
-                <icons:PackIconMaterial Kind="BookPlus" Height="16" Width="16"/>
+            <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Margin="16,0" Grid.Column="0">
+                <icons:PackIconOcticons Kind="RepoTemplate"/>
             </Button>
             <Border BorderBrush="{DynamicResource GrayBrush5}" Margin="0,8,16,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
-            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Style="{StaticResource ToolbarButton}" Grid.Column="2">
-                <icons:PackIconMaterial Kind="ContentDuplicate" Height="16" Width="16"/>
+            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Grid.Column="2">
+                <StackPanel Orientation="Horizontal">
+                    <icons:PackIconOcticons Kind="RepoPush"/>
+                    <TextBlock VerticalAlignment="Center">Transfer to Kindle</TextBlock>
+                </StackPanel>
             </Button>
-            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Style="{StaticResource ToolbarButton}" Grid.Column="3">
-                <icons:PackIconMaterial Kind="TableEdit" Height="16" Width="16"/>
+            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Grid.Column="3">
+                <StackPanel Orientation="Horizontal">
+                    <icons:PackIconOcticons Kind="Tag"/>
+                    <TextBlock VerticalAlignment="Center">Edit metadata</TextBlock>
+                </StackPanel>
             </Button>
-            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Style="{StaticResource ToolbarButton}" Grid.Column="4">
-                <icons:PackIconMaterial Kind="DeleteForever" Height="16" Width="16"/>
+            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Grid.Column="4">
+                <StackPanel Orientation="Horizontal">
+                    <icons:PackIconOcticons Kind="Trashcan"/>
+                    <TextBlock VerticalAlignment="Center">Delete</TextBlock>
+                </StackPanel>
             </Button>
-            <Button ToolTip="Open Devices" Command="{Binding OpenSideBar}" Grid.Column="6" Height="16" Width="16" Margin="0,0,8,0" Style="{StaticResource ToolbarButton}">
-                <icons:PackIconMaterial Kind="Backburger"/>
+            <Button ToolTip="Open Devices" Command="{Binding OpenSideBar}" Grid.Column="6" Margin="0,0,8,0">
+                <icons:PackIconOcticons Kind="ChevronLeft"/>
             </Button>
         </Grid>
 
@@ -226,14 +262,14 @@
                 <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
-                            <icons:PackIconMaterial Kind="Monitor" Height="16" Width="16"/>
+                            <icons:PackIconOcticons Kind="DeviceDesktop" Height="16" Width="16"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.HeaderTemplate>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <icons:PackIconMaterial>
-                                <icons:PackIconMaterial.Style>
-                                    <Style TargetType="icons:PackIconMaterial">
+                            <icons:PackIconOcticons>
+                                <icons:PackIconOcticons.Style>
+                                    <Style TargetType="icons:PackIconOcticons">
                                         <Setter Property="HorizontalAlignment" Value="Center"/>
                                         <Setter Property="Width" Value="12"/>
                                         <Setter Property="Kind" Value="None"/>
@@ -249,8 +285,8 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </icons:PackIconMaterial.Style>
-                            </icons:PackIconMaterial>
+                                </icons:PackIconOcticons.Style>
+                            </icons:PackIconOcticons>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -258,14 +294,14 @@
                 <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
-                            <icons:PackIconMaterial Kind="TabletAndroid" Height="16" Width="16"/>
+                            <icons:PackIconOcticons Kind="DeviceMobile" Height="16" Width="16"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.HeaderTemplate>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <icons:PackIconMaterial>
-                                <icons:PackIconMaterial.Style>
-                                    <Style TargetType="icons:PackIconMaterial">
+                            <icons:PackIconOcticons>
+                                <icons:PackIconOcticons.Style>
+                                    <Style TargetType="icons:PackIconOcticons">
                                         <Setter Property="HorizontalAlignment" Value="Center"/>
                                         <Setter Property="Width" Value="12"/>
                                         <Setter Property="Kind" Value="None"/>
@@ -281,8 +317,8 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </icons:PackIconMaterial.Style>
-                            </icons:PackIconMaterial>
+                                </icons:PackIconOcticons.Style>
+                            </icons:PackIconOcticons>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -300,7 +336,7 @@
         </DataGrid>
 
         <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource LabelTextBrush}">
-            <icons:PackIconMaterial Kind="PlusBox" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <icons:PackIconOcticons Kind="DiffAdded" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
 
         <StatusBar Grid.Row="2" Height="32">
@@ -322,11 +358,11 @@
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
                     <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
-                    <icons:PackIconMaterial Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Foreground="{DynamicResource TextBrush}"/>
+                    <icons:PackIconOcticons Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Foreground="{DynamicResource TextBrush}"/>
 
                     <TextBlock Text="{Binding TaskbarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
                     <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2" Width="32" Padding="0">
-                        <icons:PackIconMaterial Kind="Settings" Height="16" Width="16"/>
+                        <icons:PackIconOcticons Kind="Gear" Height="16" Width="16"/>
                     </Button>
 
                 </Grid>

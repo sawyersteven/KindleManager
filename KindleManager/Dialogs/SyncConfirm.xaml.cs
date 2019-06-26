@@ -1,5 +1,4 @@
-﻿using Devices;
-using MahApps.Metro.Controls;
+﻿using MahApps.Metro.Controls;
 using ReactiveUI.Fody.Helpers;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +25,7 @@ namespace KindleManager.Dialogs
         [Reactive] public string KindleName { get; set; }
         #endregion
 
-        public SyncConfirm(List<Database.BookEntry> toTransfer, Device kindle)
+        public SyncConfirm(List<Database.BookEntry> toTransfer, string kindleName)
         {
             UserSelectedBooks = new UserSelectBook[toTransfer.Count];
             for (int i = 0; i < toTransfer.Count; i++)
@@ -38,8 +37,9 @@ namespace KindleManager.Dialogs
 
             this.DataContext = this;
             this.Owner = App.Current.MainWindow;
+            this.KindleName = kindleName;
             InitializeComponent();
-            this.KindleName = kindle.Name;
+
 
             this.BooksListItemsControl.ItemsSource = UserSelectedBooks;
         }

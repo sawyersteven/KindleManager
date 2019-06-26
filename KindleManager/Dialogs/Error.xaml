@@ -12,7 +12,7 @@
         Width="350">
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconMaterial Kind="AlertDecagram" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+            <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
             <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top" Text="{Binding MessageText}">
             </TextBlock>
         </DockPanel>
