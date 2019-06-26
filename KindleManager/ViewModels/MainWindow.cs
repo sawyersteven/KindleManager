@@ -407,7 +407,13 @@ namespace KindleManager.ViewModels
                 {
                     if (localBook != null)
                     {
-                        File.Delete(localBook.FilePath);
+                        try
+                        {
+                            File.Delete(localBook.FilePath);
+                        }
+                        catch (FileNotFoundException _) { }
+                        catch (DirectoryNotFoundException _) { }
+
                         Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
                     }
                     App.Database.RemoveBook(SelectedTableRow);

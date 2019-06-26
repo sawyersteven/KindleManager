@@ -33,19 +33,27 @@ namespace Utils
 
         /// <summary>
         /// Removes empty dirs starting at 'start' moving upward to 'stop'.
-        /// Stops are first directory that is not empty.
+        /// Stops are first directory that is not empty or when something goes wrong.
         /// </summary>
         /// <param name="dir"></param>
         public static void CleanBackward(string start, string stop)
         {
             start = start.NormPath();
             stop = stop.NormPath();
-            while (Directory.GetFiles(start).Length == 0)
+            try
             {
-                if (start == stop) break;
-                Directory.Delete(start);
-                start = Directory.GetParent(start).FullName;
+                while (Directory.GetFiles(start).Length == 0)
+                {
+                    if (start == stop) break;
+                    try
+                    {
+                        Directory.Delete(start);
+                    }
+                    catch (DirectoryNotFoundException _) { }
+                    start = Path.GetFullPath(Path.Combine(start, ".."));
+                }
             }
+            catch (Exception _) { }
         }
     }
 }

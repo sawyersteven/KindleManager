@@ -192,7 +192,13 @@ namespace Devices
                 throw new ArgumentException($"Book with Id [{id}] not found in library");
             }
             string file = AbsoluteFilePath(b);
-            File.Delete(file);
+            try
+            {
+                File.Delete(file);
+            }
+            catch (FileNotFoundException _) { }
+            catch (DirectoryNotFoundException _) { }
+
             Database.RemoveBook(b);
 
             Utils.Files.CleanBackward(Path.GetDirectoryName(file), Path.Combine(DriveLetter, Config.LibraryRoot));
