@@ -7,6 +7,16 @@ namespace Utils
 {
     static class Files
     {
+
+        static char[] InvalidFileChars;
+        static char[] InvalidDirChars;
+
+        static Files()
+        {
+            InvalidFileChars = Path.GetInvalidFileNameChars();
+            InvalidDirChars = Path.GetInvalidPathChars();
+        }
+
         /// <summary>
         /// Creates string[] of absolute paths to all files and folders in dir
         /// Ignores dirs that throw any errors (typically access denied)
@@ -29,6 +39,23 @@ namespace Utils
             }
             catch { }
             return files.ToArray();
+        }
+
+        /// <summary>
+        /// Removes invalid chars from path.
+        /// Path can be dir or file.
+        /// </summary>
+        public static string MakeFilesystemSafe(string path)
+        {
+            string file = Path.GetFileName(path);
+            file = string.Join("", file.Split(InvalidFileChars));
+
+            string drive = Path.GetPathRoot(path);
+
+            string dir = Path.GetDirectoryName(path).Substring(drive.Length);
+            dir = string.Join("-", dir.Split(':'));
+            dir = string.Join("", dir.Split(InvalidDirChars));
+            return Path.Combine(drive, dir, file);
         }
 
         /// <summary>

@@ -1,8 +1,7 @@
 ﻿using MahApps.Metro.Controls;
+using ReactiveUI.Fody.Helpers;
 using System;
 using System.Windows;
-
-using GridRow = System.ValueTuple<string, string>;
 
 namespace KindleManager.Dialogs
 {
@@ -11,7 +10,8 @@ namespace KindleManager.Dialogs
     /// </summary>
     public partial class BulkProcessErrors : MetroWindow
     {
-        private GridRow[] Errors { get; set; }
+        [Reactive]
+        public GridRow[] Errors { get; set; }
 
         public BulkProcessErrors(string message, Exception[] errors)
         {
@@ -19,7 +19,7 @@ namespace KindleManager.Dialogs
 
             for (int i = 0; i < errors.Length; i++)
             {
-                Errors[i] = ((string)errors[i].Data["File"], errors[i].Message);
+                Errors[i] = new GridRow((string)errors[i].Data["item"], errors[i].Message);
             }
 
             this.DataContext = this;
@@ -27,14 +27,18 @@ namespace KindleManager.Dialogs
 
             InitializeComponent();
             Message.Text = message;
-            ErrorTable.ItemsSource = Errors;
         }
 
-        //private struct GridRow //TODO can be tuple?
-        //{
-        //    public string File { get; set; }
-        //    public string Message { get; set; }
-        //}
+        public class GridRow
+        {
+            public string Item { get; set; }
+            public string Error { get; set; }
+            public GridRow(string f, string e)
+            {
+                Item = f;
+                Error = e;
+            }
+        }
 
         private void Close(object sender, RoutedEventArgs e)
         {

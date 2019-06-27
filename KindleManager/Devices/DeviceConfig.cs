@@ -12,7 +12,7 @@
             }
         }
 
-        public string _DirectoryFormat = "{Author}/{Title}/";
+        public string _DirectoryFormat = "{Author}/";
         public string DirectoryFormat
         {
             get => _DirectoryFormat;

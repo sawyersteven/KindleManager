@@ -88,7 +88,7 @@ namespace Devices
                 }
                 catch (Exception e)
                 {
-                    e.Data["File"] = book.Title;
+                    e.Data["item"] = book.Title;
                     errs.Add(e);
                 }
             }
@@ -113,6 +113,7 @@ namespace Devices
 
             var a = books.ToArray();
             BookBase book;
+            string dest;
             foreach (string filepath in books)
             {
                 yield return filepath;
@@ -124,10 +125,18 @@ namespace Devices
                         book.Title = Config.TitleFormat.DictFormat(book.Props());
                         book.WriteMetadata();
                     }
-                    string dest = destTemplate.DictFormat(book.Props()) + Path.GetExtension(filepath);
+                    dest = destTemplate.DictFormat(book.Props()) + Path.GetExtension(filepath);
+                    dest = Utils.Files.MakeFilesystemSafe(dest);
                     book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                    File.Move(filepath, dest);
+                    if (File.Exists(dest))
+                    {
+                        string dups = Path.Combine(DriveLetter, "duplicates");
+                        Directory.CreateDirectory(dups);
+                        string dst = Path.Combine(dups, Path.GetFileName(dest));
+                        File.Move(filepath, dst);
+                        throw new Exception($"File already exists. Original has been copied to {dups}");
+                    }
 
                     if (book.ISBN != 0)
                     {
@@ -144,6 +153,7 @@ namespace Devices
                 }
                 catch (Exception e)
                 {
+                    e.Data.Add("item", Path.GetFileName(filepath));
                     errors.Add(e);
                 }
             }

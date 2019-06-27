@@ -28,11 +28,11 @@ namespace KindleManager.ViewModels
         public MainWindow()
         {
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
-            RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
-            EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable));
+            RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, (b, n) => b && n != null));
+            EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, (b, n) => b && n != null));
             OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
             OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
-            SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable));
+            SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, vm => vm.SelectedDevice, (b, n, m) => b && n != null && m != null));
             EditSettings = ReactiveCommand.Create(_EditSettings);
             ReceiveBook = ReactiveCommand.Create(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
@@ -226,6 +226,7 @@ namespace KindleManager.ViewModels
                     }
                     catch (Exception e)
                     {
+                        e.Data.Add("item", book.Title);
                         errors.Add(e);
                     }
                 }
@@ -540,7 +541,7 @@ namespace KindleManager.ViewModels
                 return false;
             }
 
-            // TODO ask to scan
+            _RecreateLibrary();
             return true;
         }
 
@@ -599,7 +600,7 @@ namespace KindleManager.ViewModels
                         }
                         catch (Exception e)
                         {
-                            e.Data["File"] = file;
+                            e.Data["item"] = file;
                             errors.Add(e);
                         }
                     }
