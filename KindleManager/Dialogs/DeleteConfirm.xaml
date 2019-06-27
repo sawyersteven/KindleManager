@@ -8,8 +8,10 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         Title="Confirm Delete Book"
-        SizeToContent="WidthAndHeight">
-
+        SizeToContent="WidthAndHeight"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
+    
     <StackPanel Margin="10">
         <DockPanel>
             <icons:PackIconOcticons Kind="Trashcan" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>

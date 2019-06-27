@@ -9,10 +9,11 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Title="Import Directory"
+        Title="Processing Errors"
         SizeToContent="Height"
-        Width="600">
-
+        Width="600"
+        ShowMinButton="False">
+    
     <Window.Resources>
         <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
     </Window.Resources>
@@ -22,14 +23,16 @@
             <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
             <TextBlock Margin="5" x:Name="Message" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center"/>
         </DockPanel>
-
+        <ScrollViewer MaxHeight="400">
         <DataGrid Name="ErrorTable"
                   BorderBrush="{DynamicResource GrayBrush5}"
                   BorderThickness="1"
-                  AutoGenerateColumns="True"
                   IsReadOnly="True"
-                  Background="{DynamicResource WhiteColorBrush}">
+                  AutoGenerateColumns="True"
+                  Background="{DynamicResource WhiteColorBrush}"
+                  ItemsSource="{Binding Errors}">
         </DataGrid>
+        </ScrollViewer>
 
         <Button Click="Close" Margin="0,8,0,0">
             Close

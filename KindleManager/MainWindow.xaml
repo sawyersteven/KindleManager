@@ -129,6 +129,7 @@
                 <Setter Property="BorderBrush" Value="Transparent"/>
                 <Setter Property="Padding" Value="4,0,4,0"/>
                 <Setter Property="Height" Value="32"/>
+                <Setter Property="Margin" Value="4,0,4,0"/>
             </Style>
             <Style TargetType="{x:Type icons:PackIconOcticons}">
                 <Setter Property="Foreground" Value="#424242"/>
@@ -357,14 +358,13 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
-                    <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
-                    <icons:PackIconOcticons Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Foreground="{DynamicResource TextBrush}"/>
+                    <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="#424242" Margin="0,0,8,0"/>
+                    <icons:PackIconOcticons Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Height="16"/>
 
                     <TextBlock Text="{Binding TaskbarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
-                    <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2" Width="32" Padding="0">
-                        <icons:PackIconOcticons Kind="Gear" Height="16" Width="16"/>
+                    <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2">
+                        <icons:PackIconOcticons Kind="Gear" Height="24" Width="24" Padding="0,0,0,4"/>
                     </Button>
-
                 </Grid>
             </StatusBarItem>
         </StatusBar>

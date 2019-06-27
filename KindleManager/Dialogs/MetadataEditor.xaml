@@ -12,8 +12,10 @@
         SizeToContent="Height"
         MinWidth="500"
         Width="500"
-        Loaded="WindowLoaded">
-
+        Loaded="WindowLoaded"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">                     
+                      
     <StackPanel Margin="10">
         <Grid>
             <Grid.ColumnDefinitions>

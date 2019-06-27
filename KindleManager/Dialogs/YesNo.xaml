@@ -7,14 +7,14 @@
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
-        Title="Conversion Required"
         SizeToContent="Height"
-        Width="375">
-
+        Width="375"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
+                      
     <StackPanel Margin="10">
         <DockPanel>
-            <icons:PackIconModern Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
-
+            <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
             <TextBlock Margin="5" TextWrapping="Wrap" DockPanel.Dock="Top" Name="BodyText">
             </TextBlock>
         </DockPanel>

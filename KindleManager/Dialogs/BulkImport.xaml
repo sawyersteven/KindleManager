@@ -11,7 +11,9 @@
         ResizeMode="NoResize"
         Title="Import Directory"
         SizeToContent="Height"
-        Width="600">
+        Width="600"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
 
     <Window.Resources>
         <converters:CollapseIfFalse x:Key="CollapseIfFalse" />

@@ -10,7 +10,10 @@
         WindowStyle="ThreeDBorderWindow"
         Title="Sync Library"
         SizeToContent="Height"
-        Width="350">
+        Width="350"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
+
     <StackPanel Margin="10">
         <DockPanel>
             <icons:PackIconOcticons Kind="RepoForcePush" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>

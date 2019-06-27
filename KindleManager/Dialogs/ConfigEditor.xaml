@@ -9,12 +9,14 @@
         WindowStartupLocation="CenterOwner"
         Title="Kindle Manager Settings"
         SizeToContent="Height"
-        Width="400">
-
+        Width="400"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
+                      
     <Controls:MetroWindow.LeftWindowCommands>
         <Controls:WindowCommands >
             <Button Name="HelpButton" Click="ToggleHelpOpen">
-                <icons:PackIconModern Kind="Question" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <icons:PackIconOcticons Kind="Question" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button.ToolTip>
                     <ToolTip>
                         <StackPanel>
@@ -48,7 +50,7 @@
             </Grid.ColumnDefinitions>
             <TextBox Text="{Binding Config.LibraryDir}" IsReadOnly="True" Grid.Column="0" BorderThickness="1,1,0,1"/>
             <Button Click="SelectLibraryDir" Width="24" Height="24" Padding="0" Grid.Column="1" BorderThickness="1" VerticalAlignment="Top">
-                <icons:PackIconModern Kind="FolderOpen" Height="14" Width="14"/>
+                <icons:PackIconOcticons Kind="FileDirectory" Height="14" Width="14"/>
             </Button>
         </Grid>
 

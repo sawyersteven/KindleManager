@@ -9,12 +9,14 @@
         WindowStartupLocation="CenterOwner"
         Title="Kindle Settings"
         SizeToContent="Height"
-        Width="400">
+        Width="400"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False">
 
     <Controls:MetroWindow.LeftWindowCommands>
-        <Controls:WindowCommands >
+        <Controls:WindowCommands>
             <Button Name="HelpButton" Click="ToggleHelpOpen">
-                <icons:PackIconModern Kind="Question" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <icons:PackIconOcticons Kind="Question" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button.ToolTip>
                     <ToolTip>
                         <StackPanel>
