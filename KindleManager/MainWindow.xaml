@@ -51,8 +51,8 @@
                         <Button Grid.Row="0" Style="{StaticResource AccentedSquareButtonStyle}">
                             <StackPanel Orientation="Vertical">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}"/>
-                                    <TextBlock Text="{Binding SelectedDevice.Name}" Margin="16,0,0,0"/>
+                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}" FontWeight="Bold" FontSize="16"/>
+                                    <TextBlock Text="{Binding SelectedDevice.Name}" FontWeight="Bold" FontSize="16"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding SelectedDevice.Description}"/>
                             </StackPanel>
@@ -107,8 +107,8 @@
                                     <Button Margin="0,4" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}" Style="{DynamicResource SquareButtonStyle}">
                                         <StackPanel Orientation="Vertical">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding DriveLetter}"/>
-                                                <TextBlock Text="{Binding Name}" Margin="16,0,0,0"/>
+                                                <TextBlock Grid.Column="0" Text="{Binding DriveLetter}" Margin="0,0,8,0" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
                                             </StackPanel>
                                             <TextBlock Text="{Binding Description}"/>
                                         </StackPanel>
