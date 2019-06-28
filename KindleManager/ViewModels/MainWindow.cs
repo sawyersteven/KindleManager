@@ -272,7 +272,21 @@ namespace KindleManager.ViewModels
         public void _OpenBookFolder()
         {
             if (SelectedTableRow == null) return;
-            System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
+            try
+            {
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
+            }
+            catch (System.ComponentModel.Win32Exception _)
+            {
+                if (SelectedDevice != null)
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedDevice.AbsoluteFilePath(SelectedTableRow)));
+                    }
+                    catch { }
+                }
+            }
         }
 
         public ReactiveCommand<Unit, Unit> OpenDeviceFolder { get; set; }
