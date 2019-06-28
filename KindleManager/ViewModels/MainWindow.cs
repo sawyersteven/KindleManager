@@ -81,7 +81,19 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
         public void _ReceiveBook()
         {
+            if (SelectedTableRow == null) return;
+            BookBase remoteBook = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (remoteBook == null) return;
 
+            try
+            {
+                string m = SelectedDevice.AbsoluteFilePath(remoteBook);
+                ImportBook(SelectedDevice.AbsoluteFilePath(remoteBook));
+            }
+            catch (Exception e)
+            {
+                new Dialogs.Error("Error copying book to library", e.Message);
+            }
         }
 
         public ReactiveCommand<Unit, Unit> ReorganizeLibrary { get; set; }
