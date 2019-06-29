@@ -44,15 +44,21 @@ namespace ExtensionMethods
 
     public static class ArrayExtensions
     {
+        // Because I'm lazy, that's why.
+        public static T Last<T>(this T[] array)
+        {
+            return array[array.Length - 1];
+        }
+
         /// <summary>
         /// Inserts data into array after specified index
         /// Returns an array of length (this.Length + insertable.Length)
-        /// Example:
+        /// </summary>
+        /// <example>
         ///     int[] arr = new int[] { 0, 1, 2, 3, 4, 5 };
         ///     arr = arr.InsertRange(3, new int[] { 100, 101, 102 });
         ///     arr == [0, 1, 2, 3, 100, 101, 102, 4, 5};
-        /// </summary>
-        /// <returns></returns>
+        /// </example>
         public static T[] InsertRange<T>(this T[] array, int index, T[] insertable)
         {
             T[] output = new T[array.Length + insertable.Length];
@@ -132,8 +138,13 @@ namespace ExtensionMethods
             return Encoding.UTF8.GetString(data);
         }
 
+        public static string Decode(this char[] data)
+        {
+            return Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(data));
+        }
+
         /// <summary>
-        /// Converts byte array into UTF-8 string
+        /// Converts byte array into string with specified encoding
         /// </summary>
         public static string Decode(this byte[] data, string encoding)
         {
@@ -158,11 +169,6 @@ namespace ExtensionMethods
 
     public static class StringExtensions
     {
-        public static string NormPath(this string s)
-        {
-            return Path.Combine(Path.GetDirectoryName(s), Path.GetFileName(s));
-        }
-
         /// <summary>
         /// Converts strings into byte array
         /// </summary>

@@ -43,17 +43,25 @@ namespace Utils
 
         /// <summary>
         /// Removes invalid chars from path.
-        /// Path can be dir or file.
+        /// Path can be dir or file but should be absolute.
         /// </summary>
         public static string MakeFilesystemSafe(string path)
         {
-            string file = Path.GetFileName(path);
-            file = string.Join("", file.Split(InvalidFileChars));
+            path = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar); ;
 
             string drive = Path.GetPathRoot(path);
+            char[] pchars = string.Join(";", path.Split(':')).ToCharArray();
+            for (int i = 0; i < drive.Length; i++)
+            {
+                pchars[i] = drive[i];
+            }
+            path = pchars.Decode();
+
+            string file = path.Split(Path.DirectorySeparatorChar).Last();
+            file = string.Join("", file.Split(InvalidFileChars));
 
             string dir = Path.GetDirectoryName(path).Substring(drive.Length);
-            dir = string.Join("-", dir.Split(':'));
+
             dir = string.Join("", dir.Split(InvalidDirChars));
             return Path.Combine(drive, dir, file);
         }

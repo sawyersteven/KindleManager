@@ -27,6 +27,12 @@ namespace Devices
         }
         public virtual KindleManager.Database Database { get; set; }
 
+
+        /// <summary>
+        /// Gets absolute path to book on device.
+        /// Since drive letters/mount points will change only a relative path
+        ///     is stored in the db.
+        /// </summary>
         public virtual string AbsoluteFilePath(BookBase book)
         {
             return Path.Combine(DriveLetter, book.FilePath);
@@ -79,7 +85,7 @@ namespace Devices
                     {
                         newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}") + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
                     }
-                    newPath = newPath.NormPath();
+                    newPath = Path.GetFullPath(newPath);
 
                     Directory.CreateDirectory(Path.GetDirectoryName(newPath));
                     File.Move(origPath, newPath);
@@ -111,7 +117,6 @@ namespace Devices
 
             IEnumerable<string> books = Utils.Files.DirSearch(DriveLetter).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
 
-            var a = books.ToArray();
             BookBase book;
             string dest;
             foreach (string filepath in books)
@@ -129,15 +134,10 @@ namespace Devices
                     dest = Utils.Files.MakeFilesystemSafe(dest);
                     book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                    if (File.Exists(dest))
+                    if (!File.Exists(dest))
                     {
-                        string dups = Path.Combine(DriveLetter, "duplicates");
-                        Directory.CreateDirectory(dups);
-                        string dst = Path.Combine(dups, Path.GetFileName(dest));
-                        File.Move(filepath, dst);
-                        throw new Exception($"File already exists. Original has been copied to {dups}");
+                        File.Move(filepath, dest);
                     }
-
                     if (book.ISBN != 0)
                     {
                         KindleManager.Database.BookEntry local = KindleManager.App.Database.Library.FirstOrDefault(x => x.ISBN == book.ISBN);
@@ -148,7 +148,6 @@ namespace Devices
                             book.SeriesNum = local.SeriesNum;
                         }
                     }
-
                     Database.AddBook(book);
                 }
                 catch (Exception e)
@@ -157,6 +156,8 @@ namespace Devices
                     errors.Add(e);
                 }
             }
+
+            Utils.Files.CleanForward(Path.Combine(DriveLetter, Config.LibraryRoot));
 
             if (errors.Count > 0)
             {
