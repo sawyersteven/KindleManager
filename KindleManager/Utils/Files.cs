@@ -43,17 +43,25 @@ namespace Utils
 
         /// <summary>
         /// Removes invalid chars from path.
-        /// Path can be dir or file.
+        /// Path can be dir or file but should be absolute.
         /// </summary>
         public static string MakeFilesystemSafe(string path)
         {
-            string file = Path.GetFileName(path);
-            file = string.Join("", file.Split(InvalidFileChars));
+            path = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar); ;
 
             string drive = Path.GetPathRoot(path);
+            char[] pchars = string.Join(";", path.Split(':')).ToCharArray();
+            for (int i = 0; i < drive.Length; i++)
+            {
+                pchars[i] = drive[i];
+            }
+            path = pchars.Decode();
+
+            string file = path.Split(Path.DirectorySeparatorChar).Last();
+            file = string.Join("", file.Split(InvalidFileChars));
 
             string dir = Path.GetDirectoryName(path).Substring(drive.Length);
-            dir = string.Join("-", dir.Split(':'));
+
             dir = string.Join("", dir.Split(InvalidDirChars));
             return Path.Combine(drive, dir, file);
         }
@@ -62,11 +70,10 @@ namespace Utils
         /// Removes empty dirs starting at 'start' moving upward to 'stop'.
         /// Stops are first directory that is not empty or when something goes wrong.
         /// </summary>
-        /// <param name="dir"></param>
         public static void CleanBackward(string start, string stop)
         {
-            start = start.NormPath();
-            stop = stop.NormPath();
+            start = Path.GetFullPath(start);
+            stop = Path.GetFullPath(stop);
             try
             {
                 while (Directory.GetFiles(start).Length == 0)
@@ -81,6 +88,27 @@ namespace Utils
                 }
             }
             catch (Exception _) { }
+        }
+
+        /// <summary>
+        /// Removes every child of 'current' that contains no files.
+        /// Will remove nested empty directories.
+        /// </summary>
+        public static void CleanForward(string current)
+        {
+            if (File.Exists(current)) return;
+
+            string[] childDirs = Directory.GetDirectories(current);
+            foreach (string child in childDirs)
+            {
+                CleanForward(child);
+            }
+
+            if (Directory.GetFileSystemEntries(current).Length == 0)
+            {
+                Directory.Delete(current);
+                return;
+            }
         }
     }
 }

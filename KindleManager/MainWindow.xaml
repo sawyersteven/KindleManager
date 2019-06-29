@@ -51,7 +51,7 @@
                         <Button Grid.Row="0" Style="{StaticResource AccentedSquareButtonStyle}">
                             <StackPanel Orientation="Vertical">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}" FontWeight="Bold" FontSize="16"/>
+                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
                                     <TextBlock Text="{Binding SelectedDevice.Name}" FontWeight="Bold" FontSize="16"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding SelectedDevice.Description}"/>
