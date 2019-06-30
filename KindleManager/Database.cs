@@ -126,10 +126,9 @@ namespace KindleManager
         /// </summary>
         public void ScorchedEarth()
         {
-            foreach (string collectionName in db.GetCollectionNames())
-            {
-                db.DropCollection(collectionName);
-            }
+            // Manually list all database tables because it throws weird errors
+            //  I can't figure out when calling getcollectionnames()
+            db.DropCollection("BOOKS");
             Library.Clear();
         }
         #endregion
