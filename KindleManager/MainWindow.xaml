@@ -72,6 +72,15 @@
                                         </Trigger>
                                     </Style.Triggers>
                                 </Style>
+                                <Style TargetType="{x:Type Menu}">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="FontSize" Value="14"/>
+                                    <Setter Property="Padding" Value="0,6,0,6"/>
+                                    <!-- TODO how to remove border on hover? -->
+                                </Style>
                             </Grid.Resources>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -88,15 +97,16 @@
                             <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2">
                                 <icons:PackIconOcticons Kind="FileSymlinkDirectory"/>
                             </Button>
-                            <Button x:Name="DeviceExtraMenu" PreviewMouseLeftButtonUp="OpenContextMenu" ToolTip="Open Library Folder" Grid.Column="3">
-                                <Button.ContextMenu>
-                                    <ContextMenu x:Name="DeviceContextMenu">
-                                        <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeLibrary}"/>
-                                        <MenuItem Header="Recreate Library" Command="{Binding RecreateLibrary}"/>
-                                    </ContextMenu>
-                                </Button.ContextMenu>
-                                <icons:PackIconOcticons Kind="KebabVertical"/>
-                            </Button>
+
+                            <Menu Grid.Column="3" HorizontalAlignment="Center">
+                                <MenuItem Background="Transparent" BorderThickness="0">
+                                    <MenuItem.Header>
+                                        <icons:PackIconOcticons Kind="KebabVertical"/>
+                                    </MenuItem.Header>
+                                    <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeLibrary}"/>
+                                    <MenuItem Header="Recreate Library" Command="{Binding RecreateLibrary}"/>
+                                </MenuItem>
+                            </Menu>
                         </Grid>
                     </Grid>
 
