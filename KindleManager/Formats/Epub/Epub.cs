@@ -74,8 +74,7 @@ namespace Formats.Epub
         #region IBook overrides
         public override string TextContent()
         {
-            // todo add option to remove nodes with no innerhtml?
-            // But what if an element exists just to have a border as a divider?
+            // todo add option to remove nodes with no innerhtml and style?
             HtmlDocument combinedText = new HtmlDocument();
             combinedText.LoadHtml(Resources.HtmlTemplate);
 

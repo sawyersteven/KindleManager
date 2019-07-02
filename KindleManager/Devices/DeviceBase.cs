@@ -122,9 +122,7 @@ namespace Devices
             string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
             Database.ScorchedEarth();
-
             IEnumerable<string> books = Utils.Files.DirSearch(DriveLetter).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
-
             BookBase book;
             string dest;
             foreach (string filepath in books)
@@ -132,14 +130,13 @@ namespace Devices
                 yield return filepath;
                 try
                 {
-                    book = Formats.BookBase.Auto(filepath);
+                    book = BookBase.Auto(filepath);
                     if (Config.ChangeTitleOnSync)
                     {
                         book.Title = Config.TitleFormat.DictFormat(book.Props());
                         book.WriteMetadata();
                     }
-                    dest = destTemplate.DictFormat(book.Props()) + Path.GetExtension(filepath);
-                    dest = Utils.Files.MakeFilesystemSafe(dest);
+                    dest = FormatFilePath(destTemplate, book);
                     book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     if (!File.Exists(dest))

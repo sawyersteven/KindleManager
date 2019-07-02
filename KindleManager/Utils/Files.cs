@@ -31,7 +31,6 @@ namespace Utils
                 {
                     if (!subdirsOnly)
                     {
-                        Console.WriteLine(string.Join(", ", Directory.GetFiles(subdir)));
                         files.AddRange(Directory.GetFiles(subdir));
                     }
                     files.AddRange(DirSearch(subdir));
