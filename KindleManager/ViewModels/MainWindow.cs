@@ -353,12 +353,12 @@ namespace KindleManager.ViewModels
             BackgroundWork = true;
             Task.Run(() =>
             {
-                var r = (Database.BookEntry)p[0];
+                Database.BookEntry book = (Database.BookEntry)p[0];
                 try
                 {
-                    SelectedDevice.SendBook(r);
+                    SelectedDevice.SendBook(book);
                     TaskbarIcon = Icons.Check;
-                    TaskbarText = $"{r.Title} sent to {SelectedDevice.Name}.";
+                    TaskbarText = $"{book.Title} sent to {SelectedDevice.Name}.";
                 }
                 catch (Exception e)
                 {
@@ -383,9 +383,24 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
         private void _EditDeviceSettings()
         {
+            // todo ask to move books after changing library format
             if (SelectedDevice == null) return;
-            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice);
-            dlg.ShowDialog();
+            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
+
+            if (dlg.ShowDialog() == false) return;
+
+            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.Config.DirectoryFormat);
+
+            SelectedDevice.WriteConfig(dlg.Config);
+
+            if (a)
+            {
+                var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
+                if (dlg2.ShowDialog() == true)
+                {
+                    _ReorganizeLibrary();
+                }
+            }
         }
 
         public ReactiveCommand<Unit, Unit> BrowseForImport { get; set; }
