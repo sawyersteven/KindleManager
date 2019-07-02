@@ -106,6 +106,14 @@ namespace ExtensionMethods
             return output;
         }
 
+        public static T[] Append<T>(this T[] array, T appendable)
+        {
+            T[] output = new T[array.Length + 1];
+            Array.Copy(array, output, array.Length);
+            output[array.Length] = appendable;
+            return output;
+        }
+
         /// <summary>
         /// Returns a sub-array of length starting at index
         /// Pass length of -1 to extend subarray to end of parent
