@@ -65,6 +65,14 @@ namespace Devices
         }
 
         /// <summary>
+        /// Formats a new filepath string based on template. Removes illegal filesystem chars.
+        /// </summary>
+        public string FormatFilePath(string template, BookBase book)
+        {
+            return Utils.Files.MakeFilesystemSafe(template.DictFormat(book.Props()) + Path.GetExtension(book.FilePath));
+        }
+
+        /// <summary>
         /// Moves and names books based on config settings
         /// </summary>
         public virtual IEnumerable<string> ReorganizeLibrary()
