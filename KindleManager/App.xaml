@@ -51,20 +51,6 @@
                 <Setter Property="FontSize" Value="14"/>
             </Style>
 
-            <Style TargetType="{x:Type Button}">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Style.Triggers>
-                    <Trigger Property="IsEnabled" Value="False" >
-                        <Setter Property="Opacity" Value="0.5" />
-                        <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="BorderBrush" Value="Transparent"/>
-                    </Trigger>
-                    <Trigger Property="IsMouseOver" Value="True" >
-                        <Setter Property="Cursor" Value="Hand" />
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

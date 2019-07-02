@@ -27,8 +27,21 @@
             <CollectionContainer Collection="{Binding Source={StaticResource localBooks}}"/>
             <CollectionContainer Collection="{Binding Source={StaticResource remoteBooks}}"/>
         </CompositeCollection>
-       
-
+        
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False" >
+                    <Setter Property="Opacity" Value="0.5" />
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True" >
+                    <Setter Property="Cursor" Value="Hand" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Controls:MetroWindow.Flyouts>
