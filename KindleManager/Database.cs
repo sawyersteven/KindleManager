@@ -98,7 +98,7 @@ namespace KindleManager
             BookEntry dbEntry = col.FindOne(x => x.Id == update.Id);
             if (dbEntry == null)
             {
-                throw new Exception($"{update.FilePath} not found in library");
+                throw new IDNotFoundException($"{update.FilePath} not found in library");
             }
 
             BookEntry tableRow = Library.First(x => x.Id == update.Id);
@@ -189,5 +189,18 @@ namespace KindleManager
                 this.DateAdded = b.DateAdded;
             }
         }
+    }
+
+    public class IDNotFoundException : Exception
+    {
+        public IDNotFoundException() { }
+
+        public IDNotFoundException(string message)
+        : base(message)
+        { }
+
+        public IDNotFoundException(int id)
+                : base($"ID {id} not found in database")
+        { }
     }
 }
