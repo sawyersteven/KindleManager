@@ -12,6 +12,7 @@
         Title="Processing Errors"
         SizeToContent="Height"
         Width="600"
+        ShowMaxRestoreButton="True"
         ShowMinButton="False">
     
     <Window.Resources>
