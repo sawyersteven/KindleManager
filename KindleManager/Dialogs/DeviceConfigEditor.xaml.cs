@@ -14,11 +14,10 @@ namespace KindleManager.Dialogs
             HelpOpen = !HelpOpen;
         }
 
-        public DeviceConfigEditor(Devices.Device kindle)
+        public DeviceConfigEditor(Devices.DeviceConfig config)
         {
             this.DataContext = this;
-            this.Kindle = kindle;
-            this.Config = new Devices.DeviceConfig(kindle.Config);
+            this.Config = new Devices.DeviceConfig(config);
             this.Owner = App.Current.MainWindow;
             InitializeComponent();
         }
@@ -31,7 +30,6 @@ namespace KindleManager.Dialogs
 
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
-            Kindle.WriteConfig(Config);
             DialogResult = true;
             this.Close();
         }
