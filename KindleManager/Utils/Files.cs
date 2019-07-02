@@ -14,7 +14,7 @@ namespace Utils
         static Files()
         {
             InvalidFileChars = Path.GetInvalidFileNameChars();
-            InvalidDirChars = Path.GetInvalidPathChars();
+            InvalidDirChars = Path.GetInvalidPathChars().Append('?');
         }
 
         /// <summary>
