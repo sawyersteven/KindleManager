@@ -81,25 +81,20 @@ namespace Devices
             foreach (Formats.BookBase book in this.Database.Library)
             {
                 yield return book.Title;
+                string origPath = AbsoluteFilePath(book);
+                string template = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, (Config.ChangeTitleOnSync ? Config.TitleFormat : "{Title}"));
+                string dest = FormatFilePath(template, book);
                 try
                 {
-                    string origPath = Path.Combine(DriveLetter, book.FilePath);
-                    string newPath = "";
-                    if (Config.ChangeTitleOnSync)
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    if (dest != book.FilePath)
                     {
-                        newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, Config.TitleFormat) + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
+                        File.Move(origPath, dest);
                     }
-                    else
-                    {
-                        newPath = (Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}") + Path.GetExtension(book.FilePath)).DictFormat(book.Props());
-                    }
-                    newPath = Path.GetFullPath(newPath);
-
-                    Directory.CreateDirectory(Path.GetDirectoryName(newPath));
-                    File.Move(origPath, newPath);
-                    book.FilePath = newPath.Substring(DriveLetter.Length);
-                    KindleManager.App.Database.UpdateBook(book);
+                    book.FilePath = dest.Substring(DriveLetter.Length);
+                    Database.UpdateBook(book);
                 }
+                catch (KindleManager.IDNotFoundException) { } // Don't care;
                 catch (Exception e)
                 {
                     e.Data["item"] = book.Title;
