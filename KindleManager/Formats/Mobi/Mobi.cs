@@ -165,6 +165,11 @@ namespace Formats.Mobi
             }
         }
 
+        public Book(BookBase book)
+        {
+            BookBase.Merge(book, this);
+        }
+
         /// <summary>
         /// Fixes image sources and anchor tags using "filepos" in html
         /// 
