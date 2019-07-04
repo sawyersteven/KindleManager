@@ -113,6 +113,9 @@ namespace Devices
         /// </summary>
         public virtual IEnumerable<string> RecreateLibraryAndDatabse()
         {
+
+            int nextId = KindleManager.App.Database.NextID();
+
             List<Exception> errors = new List<Exception>();
             string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
@@ -136,18 +139,24 @@ namespace Devices
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     if (!File.Exists(dest))
                     {
-                        File.Move(filepath, dest);
-                    }
-                    if (book.ISBN != 0)
-                    {
-                        KindleManager.Database.BookEntry local = KindleManager.App.Database.Library.FirstOrDefault(x => x.ISBN == book.ISBN);
-                        if (local != null && !Database.Library.Any(x => x.Id == local.Id))
                         {
-                            book.Id = local.Id;
-                            book.Series = local.Series;
-                            book.SeriesNum = local.SeriesNum;
+                            File.Move(filepath, dest);
                         }
                     }
+                    BookBase local = KindleManager.App.Database.FindMatch(book);
+
+                    if (local != null && !Database.Library.Any(x => x.Id == local.Id))
+                    {
+                        book.Id = local.Id;
+                        book.Series = local.Series;
+                        book.SeriesNum = local.SeriesNum;
+                    }
+                    else
+                    {
+                        book.Id = nextId;
+                        nextId++;
+                    }
+
                     Database.AddBook(book);
                 }
                 catch (Exception e)
