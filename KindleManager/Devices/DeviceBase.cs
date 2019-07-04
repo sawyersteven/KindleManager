@@ -156,6 +156,18 @@ namespace Devices
                         book.Id = nextId;
                         nextId++;
                     }
+                    // TODO Figure this out:
+                    /* How to handle multiple devices?
+                     * Databse has ids 1-100
+                     * Kindle1 recreates library and now has id 101
+                     * Kindle2 recreates library and has id 101 for a different book
+                     * Kindle1 sends 101 to local library
+                     * Kindle2 doesn't match local library with id 101
+                     * 
+                     * 
+                     * 
+                     */
+
 
                     Database.AddBook(book);
                 }
