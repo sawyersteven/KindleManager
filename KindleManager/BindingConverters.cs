@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -99,6 +100,47 @@ namespace KindleManager.BindingConverters
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Tests if metatada for id matches in both databases
+    /// 
+    /// values[0] : int
+    /// values[1] : Database
+    /// values[2] : Database
+    /// </summary>
+    public class MetadataMatch : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            int id;
+            try
+            {
+                id = (int)values[0];
+            }
+            catch (Exception _) { return false; }
+
+            ObservableCollection<Database.BookEntry> db1 = values[1] as ObservableCollection<Database.BookEntry>;
+            ObservableCollection<Database.BookEntry> db2 = values[2] as ObservableCollection<Database.BookEntry>;
+            if (db1 == null || db2 == null) { return true; }
+
+            Database.BookEntry bk1 = db1.FirstOrDefault(x => x.Id == id);
+            Database.BookEntry bk2 = db2.FirstOrDefault(x => x.Id == id);
+            if (bk1 == null || bk2 == null) { return true; }
+
+            Dictionary<string, string> props1 = bk1.Props();
+            foreach (KeyValuePair<string, string> kv in bk2.Props())
+            {
+                string v1 = props1[kv.Key];
+                if (props1[kv.Key] != kv.Value) { return false; }
+            }
+            return true;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
