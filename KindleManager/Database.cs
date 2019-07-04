@@ -53,6 +53,20 @@ namespace KindleManager
 
         #region Read
 
+        public int NextID()
+        {
+            return db.GetCollection("BOOKS").Max("_id").AsInt32 + 1;
+        }
+
+        /// <summary>
+        /// Finds the best match in library or null.
+        /// </summary>
+        public BookBase FindMatch(BookBase b)
+        {
+            // This can be expanded? There aren't a lot of good uuids for books
+            return b.ISBN == 0 ? null : Library.First(x => x.ISBN == b.ISBN);
+        }
+
         public string[] ListAuthors()
         {
             HashSet<string> authors = new HashSet<string>();
