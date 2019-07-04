@@ -87,8 +87,7 @@ namespace KindleManager.ViewModels
 
             try
             {
-                string m = SelectedDevice.AbsoluteFilePath(remoteBook);
-                ImportBook(SelectedDevice.AbsoluteFilePath(remoteBook));
+                ImportBook(remoteBook);
             }
             catch (Exception e)
             {
@@ -383,7 +382,6 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
         private void _EditDeviceSettings()
         {
-            // todo ask to move books after changing library format
             if (SelectedDevice == null) return;
             var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
 
@@ -584,6 +582,32 @@ namespace KindleManager.ViewModels
 
             _RecreateLibrary();
             return true;
+        }
+
+        private void ImportBook(BookBase book)
+        {
+            try
+            {
+                BackgroundWork = true;
+                BookBase cp = new Formats.Mobi.Book(book);
+                cp.FilePath = SelectedDevice.AbsoluteFilePath(book);
+                cp.Id = book.Id;
+                Library.ImportBook(cp);
+            }
+            catch (LiteDB.LiteException e)
+            {
+                new Dialogs.Error("Unable to write to database", e.Message).ShowDialog();
+                return;
+            }
+            catch (Exception e)
+            {
+                new Dialogs.Error("Import Error", e.Message).ShowDialog();
+                return;
+            }
+            finally
+            {
+                BackgroundWork = false;
+            }
         }
 
         private void ImportBook(string filePath)
