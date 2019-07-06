@@ -153,13 +153,14 @@ namespace KindleManager
             book.Id = Id;
             AddBook(book);
         }
+
         #endregion
 
         #region Delete
         public void RemoveBook(BookEntry book)
         {
             var c = db.GetCollection<BookEntry>("BOOKS");
-            c.Delete(x => x.FilePath == book.FilePath);
+            c.Delete(x => x.Id == book.Id);
             Library.Remove(book);
 
         }
