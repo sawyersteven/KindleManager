@@ -135,7 +135,11 @@ namespace KindleManager.BindingConverters
             foreach (KeyValuePair<string, string> kv in bk2.Props())
             {
                 string v1 = props1[kv.Key];
-                if (props1[kv.Key] != kv.Value) { return false; }
+                string v2 = kv.Value;
+                if ((props1[kv.Key] ?? "") != (kv.Value ?? ""))
+                {
+                    return false;
+                }
             }
             return true;
         }
