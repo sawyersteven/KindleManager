@@ -111,9 +111,7 @@ namespace Devices
         /// </summary>
         public virtual IEnumerable<string> RecreateLibraryAndDatabse()
         {
-
-            int nextId = KindleManager.App.Database.NextID();
-
+            // TODO keep database and check filepath against it to recycle ids
             List<Exception> errors = new List<Exception>();
             string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
@@ -148,11 +146,6 @@ namespace Devices
                         book.Id = local.Id;
                         book.Series = local.Series;
                         book.SeriesNum = local.SeriesNum;
-                    }
-                    else
-                    {
-                        book.Id = nextId;
-                        nextId++;
                     }
                     // TODO Figure this out:
                     /* How to handle multiple devices?
