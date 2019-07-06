@@ -11,9 +11,26 @@ namespace KindleManager
 {
     public class Database : IDisposable
     {
-        private LiteDatabase db;
+        private readonly LiteDatabase db;
         public readonly string DBFile;
         public ObservableCollection<BookEntry> Library { get; set; }
+
+        /// <summary>
+        /// Gets next usable ID for book entries table
+        /// </summary>
+        public static int NextID()
+        {
+            DatabaseMetadata m = App.Database.ReadMetadata();
+            if (m == null)
+            {
+                throw new IDNotFoundException("Metadata entry could not be found in database");
+            }
+            m.LastUsedID++;
+
+            App.Database.db.GetCollection<DatabaseMetadata>("METADATA").Update(m);
+
+            return m.LastUsedID;
+        }
 
         public Database(string DBFile)
         {
@@ -41,10 +58,7 @@ namespace KindleManager
             BookEntry entry = new BookEntry(book);
             entry.DateAdded = DateTime.Now.ToString("yyyy-MM-dd"); // 1950-01-01
 
-            if (book.Id != 0)
-            {
-                entry.Id = book.Id;
-            }
+            entry.Id = book.Id != 0 ? book.Id : NextID();
 
             db.GetCollection<BookEntry>("BOOKS").Insert(entry);
 
@@ -60,9 +74,14 @@ namespace KindleManager
 
         #region Read
 
-        public int NextID()
+        private DatabaseMetadata ReadMetadata()
         {
-            return db.GetCollection("BOOKS").Max("_id").AsInt32 + 1;
+            return db.GetCollection<DatabaseMetadata>("METADATA").FindById(1);
+        }
+
+        public BookEntry GetById(int id)
+        {
+            return Library.FirstOrDefault(x => x.Id == id);
         }
 
         /// <summary>
@@ -99,11 +118,6 @@ namespace KindleManager
         public BookEntry GetByFileName(string FileName)
         {
             return Library.FirstOrDefault(x => x.FilePath == FileName);
-        }
-
-        public BookEntry GetById(int id)
-        {
-            return Library.FirstOrDefault(x => x.Id == id);
         }
 
         #endregion
