@@ -90,6 +90,16 @@ namespace Formats
             recipient.DateAdded = donor.DateAdded;
         }
 
+        /// <summary>
+        /// Copies metadata and writes to disk
+        /// </summary>
+        public void UpdateMetadata(BookBase donor)
+        {
+            BookBase.Merge(donor, this);
+            WriteMetadata();
+        }
+
+
         public Dictionary<string, string> Props()
         {
             Dictionary<string, string> p = new Dictionary<string, string>
