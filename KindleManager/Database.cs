@@ -17,9 +17,16 @@ namespace KindleManager
 
         public Database(string DBFile)
         {
-            this.DBFile = DBFile;
             db = new LiteDatabase(DBFile);
             Library = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
+            if (!db.CollectionExists("METADATA"))
+            {
+                DatabaseMetadata m = new DatabaseMetadata();
+                m.Id = 1;
+                m.Version = 1;
+                m.LastUsedID = 0;
+                db.GetCollection<DatabaseMetadata>("METADATA").Insert(m);
+            }
         }
 
         #region Create
@@ -203,8 +210,13 @@ namespace KindleManager
                 this.DateAdded = b.DateAdded;
             }
         }
-    }
 
+        public class DatabaseMetadata
+        {
+            public int Id { get; set; }
+            public int Version { get; set; }
+            public int LastUsedID { get; set; }
+        }
 
         public class IDNotFoundException : Exception
         {
