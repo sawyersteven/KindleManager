@@ -8,6 +8,7 @@ namespace Devices
 {
     class Kindle : Device
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         public Kindle(string Letter, string Name, string Description)
         {
@@ -21,8 +22,10 @@ namespace Devices
 
         public override void SendBook(BookBase localBook)
         {
+            Logger.Info("Copying {} to Kindle", localBook.Title);
             if (Database.GetById(localBook.Id) != null)
             {
+                Logger.Info("{}[{}] already exists on Kindle, copying metadata from pc library.", localBook.Title, localBook.Id);
                 throw new Exception($"Book already exists on kindle. [{localBook.Id}]");
             }
 
