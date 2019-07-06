@@ -10,7 +10,6 @@ namespace Devices
 {
     public abstract class Device
     {
-
         public virtual string DriveLetter { get; set; }
         public virtual string Name { get; set; }
         public virtual string Description { get; set; }
@@ -26,7 +25,6 @@ namespace Devices
             }
         }
         public virtual KindleManager.Database Database { get; set; }
-
 
         /// <summary>
         /// Gets absolute path to book on device.
@@ -94,7 +92,7 @@ namespace Devices
                     book.FilePath = dest.Substring(DriveLetter.Length);
                     Database.UpdateBook(book);
                 }
-                catch (KindleManager.IDNotFoundException) { } // Don't care;
+                catch (KindleManager.Database.IDNotFoundException) { } // Don't care;
                 catch (Exception e)
                 {
                     e.Data["item"] = book.Title;

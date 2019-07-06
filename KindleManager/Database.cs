@@ -205,16 +205,18 @@ namespace KindleManager
         }
     }
 
-    public class IDNotFoundException : Exception
-    {
-        public IDNotFoundException() { }
 
-        public IDNotFoundException(string message)
-        : base(message)
-        { }
+        public class IDNotFoundException : Exception
+        {
+            public IDNotFoundException() { }
 
-        public IDNotFoundException(int id)
-                : base($"ID {id} not found in database")
-        { }
+            public IDNotFoundException(string message)
+            : base(message)
+            { }
+
+            public IDNotFoundException(int id)
+                    : base($"ID {id} not found in database")
+            { }
+        }
     }
 }
