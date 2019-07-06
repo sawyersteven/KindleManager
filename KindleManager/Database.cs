@@ -143,6 +143,16 @@ namespace KindleManager
 
             col.Update(dbEntry);
         }
+
+        /// <summary>
+        /// Changes id for entry by removing from db, updating id, then re-inserting
+        /// </summary>
+        public void ChangeBookId(BookEntry book, int Id)
+        {
+            RemoveBook(book);
+            book.Id = Id;
+            AddBook(book);
+        }
         #endregion
 
         #region Delete
