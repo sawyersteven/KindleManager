@@ -38,7 +38,7 @@ namespace KindleManager.ViewModels
 
             #region device buttons
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
-            EditDeviceSettings = ReactiveCommand.Create(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
+            EditDeviceSettings = ReactiveCommand.Create<bool, Unit>(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ReorganizeLibrary = ReactiveCommand.Create(_ReorganizeLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
@@ -379,19 +379,22 @@ namespace KindleManager.ViewModels
             return UnitNull;
         }
 
-        public ReactiveCommand<Unit, Unit> EditDeviceSettings { get; set; }
-        private void _EditDeviceSettings()
+        public ReactiveCommand<bool, Unit> EditDeviceSettings { get; set; }
+        /// <summary>
+        /// Pass prompt=false to disable asking to reorganize library
+        /// </summary>
+        private Unit _EditDeviceSettings(bool prompt = true)
         {
-            if (SelectedDevice == null) return;
+            if (SelectedDevice == null) return UnitNull;
             var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
 
-            if (dlg.ShowDialog() == false) return;
+            if (dlg.ShowDialog() == false) return UnitNull;
 
             bool a = (dlg.Config.DirectoryFormat != SelectedDevice.Config.DirectoryFormat);
 
             SelectedDevice.WriteConfig(dlg.Config);
 
-            if (a)
+            if (prompt && a)
             {
                 var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
                 if (dlg2.ShowDialog() == true)
@@ -399,6 +402,7 @@ namespace KindleManager.ViewModels
                     _ReorganizeLibrary();
                 }
             }
+            return UnitNull;
         }
 
         public ReactiveCommand<Unit, Unit> BrowseForImport { get; set; }
@@ -554,7 +558,7 @@ namespace KindleManager.ViewModels
             }
 
             kindle.Config = c;
-            _EditDeviceSettings();
+            _EditDeviceSettings(false);
 
             // Setup directories
             try
