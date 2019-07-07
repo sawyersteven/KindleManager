@@ -32,25 +32,25 @@ namespace Devices
 
             Dictionary<string, string> bookMetadata = localBook.Props();
 
-            string remoteFile = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath));
-            remoteFile = remoteFile.DictFormat(bookMetadata);
-            remoteFile = Path.GetFullPath(Path.Combine(this.DriveLetter, remoteFile));
+            string remoteFileAbs = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
+            remoteFileAbs = Utils.Files.MakeFilesystemSafe(Path.Combine(this.DriveLetter, remoteFileAbs));
+            string remoteFileRelative = remoteFileAbs.Substring(Path.GetPathRoot(remoteFileAbs).Length);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile));
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFileAbs));
 
 
-            if (File.Exists(remoteFile))
+            if (File.Exists(remoteFileAbs))
             {
-                KindleManager.Database.BookEntry remoteEntry = this.Database.Library.FirstOrDefault(x => x.FilePath == remoteFile);
+                KindleManager.Database.BookEntry remoteEntry = this.Database.Library.FirstOrDefault(x => x.FilePath == remoteFileRelative);
                 if (remoteEntry == null) // file exists but not in database
                 {
-                    Logger.Info("File {} exists but is not in Kindle's library. Overwriting...", remoteFile);
-                    File.Delete(remoteFile);
-                    File.Copy(localBook.FilePath, remoteFile);
+                    Logger.Info("File {} exists but is not in Kindle's library. Overwriting...", remoteFileAbs);
+                    File.Delete(remoteFileAbs);
+                    File.Copy(localBook.FilePath, remoteFileAbs);
                 }
                 else
                 {
-                    Logger.Info("{} exists on Kindle with ID {}. ID will be changed to {} to match local database and metadata will be copied from pc library.");
+                    Logger.Info("{} exists on Kindle with ID {}. ID will be changed to {} to match local database and metadata will be copied from pc library.", localBook.Title, remoteEntry.Id, localBook.Id);
                     Database.ChangeBookId(remoteEntry, localBook.Id);
                     remoteEntry.Id = localBook.Id;
                     Database.UpdateBook(remoteEntry);
@@ -59,11 +59,11 @@ namespace Devices
             }
             else
             {
-                Logger.Info("Copying {} to {}", localBook.FilePath, remoteFile);
-                File.Copy(localBook.FilePath, remoteFile);
+                Logger.Info("Copying {} to {}", localBook.FilePath, remoteFileAbs);
+                File.Copy(localBook.FilePath, remoteFileAbs);
             }
 
-            BookBase remoteBook = new Formats.Mobi.Book(remoteFile);
+            BookBase remoteBook = new Formats.Mobi.Book(remoteFileAbs);
             remoteBook.Id = localBook.Id;
 
             if (Config.ChangeTitleOnSync)
@@ -72,7 +72,7 @@ namespace Devices
                 Logger.Info("Changing title of {} to {}", localBook.Title, remoteBook.Title);
                 remoteBook.WriteMetadata();
             }
-            remoteBook.FilePath = remoteBook.FilePath.Substring(Path.GetPathRoot(remoteFile).Length);
+            remoteBook.FilePath = remoteFileRelative;
             this.Database.AddBook(remoteBook);
         }
     }

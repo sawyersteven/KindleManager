@@ -111,7 +111,6 @@ namespace Devices
         /// </summary>
         public virtual IEnumerable<string> RecreateLibraryAndDatabse()
         {
-            // TODO keep database and check filepath against it to recycle ids
             List<Exception> errors = new List<Exception>();
             string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
@@ -147,19 +146,6 @@ namespace Devices
                         book.Series = local.Series;
                         book.SeriesNum = local.SeriesNum;
                     }
-                    // TODO Figure this out:
-                    /* How to handle multiple devices?
-                     * Databse has ids 1-100
-                     * Kindle1 recreates library and now has id 101
-                     * Kindle2 recreates library and has id 101 for a different book
-                     * Kindle1 sends 101 to local library
-                     * Kindle2 doesn't match local library with id 101
-                     * 
-                     * 
-                     * 
-                     */
-
-
                     Database.AddBook(book);
                 }
                 catch (Exception e)

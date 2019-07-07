@@ -81,6 +81,7 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
         public void _ReceiveBook()
         {
+            // Todo, look at Kindle.cs and use same methods to update local metadata or change Ids (but only remote Ids).
             if (SelectedTableRow == null) return;
             BookBase remoteBook = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
             if (remoteBook == null) return;
@@ -481,7 +482,6 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
         public void _EditMetadata()
         {
-            // TODO rename/move books after metadata changes
             if (SelectedTableRow == null) return;
 
             var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow));
