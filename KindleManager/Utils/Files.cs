@@ -62,7 +62,7 @@ namespace Utils
             string dir = Path.GetDirectoryName(path).Substring(drive.Length);
 
             dir = string.Join("", dir.Split(InvalidDirChars));
-            return Path.Combine(drive, dir, file);
+            return Path.GetFullPath(Path.Combine(drive, dir, file));
         }
 
         /// <summary>
