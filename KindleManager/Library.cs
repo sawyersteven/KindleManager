@@ -15,7 +15,7 @@ namespace KindleManager
         {
             string template = Path.Combine(App.ConfigManager.config.LibraryFormat, "{Title}");
             string destinationFile = Path.Combine(App.ConfigManager.config.LibraryDir, template.DictFormat(book.Props())) + ".mobi";
-            destinationFile = Path.GetFullPath(destinationFile);
+            destinationFile = Utils.Files.MakeFilesystemSafe(destinationFile);
 
             if (App.Database.Library.Any(x => x.FilePath == destinationFile))
             {
