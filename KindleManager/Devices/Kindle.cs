@@ -1,6 +1,5 @@
 ﻿using ExtensionMethods;
 using Formats;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -43,10 +42,10 @@ namespace Devices
 
             if (File.Exists(remoteFileAbs))
             {
-                KindleManager.Database.BookEntry remoteEntry = this.Database.Library.FirstOrDefault(x => x.FilePath == remoteFileRelative);
+                KindleManager.Database.BookEntry remoteEntry = Database.Library.FirstOrDefault(x => x.FilePath == remoteFileRelative);
                 if (remoteEntry == null) // file exists but not in database
                 {
-                    Logger.Info("File {} exists but is not in Kindle's library. Overwriting...", remoteFileAbs);
+                    Logger.Info("File {} exists but is not in Kindle's database. Overwriting with local copy.", remoteFileAbs);
                     File.Delete(remoteFileAbs);
                     File.Copy(localBook.FilePath, remoteFileAbs);
                 }
@@ -54,8 +53,6 @@ namespace Devices
                 {
                     Logger.Info("{} exists on Kindle with ID {}. ID will be changed to {} to match local database and metadata will be copied from pc library.", localBook.Title, remoteEntry.Id, localBook.Id);
                     Database.ChangeBookId(remoteEntry, localBook.Id);
-                    remoteEntry.Id = localBook.Id;
-                    Database.UpdateBook(remoteEntry);
                     remoteEntry.UpdateMetadata(localBook);
                 }
             }
@@ -65,7 +62,7 @@ namespace Devices
                 File.Copy(localBook.FilePath, remoteFileAbs);
             }
 
-            BookBase remoteBook = new Formats.Mobi.Book(remoteFileAbs);
+            remoteBook = new Formats.Mobi.Book(remoteFileAbs);
             remoteBook.Id = localBook.Id;
 
             if (Config.ChangeTitleOnSync)
