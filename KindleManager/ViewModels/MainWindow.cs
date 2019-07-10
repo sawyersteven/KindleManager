@@ -566,7 +566,6 @@ namespace KindleManager.ViewModels
             return true;
         }
 
-        private void ImportBook(BookBase book)
         /// <summary>
         /// Sets Status Bar information
         /// </summary>
@@ -582,23 +581,159 @@ namespace KindleManager.ViewModels
                 if (icon != null) StatusBarIcon = icon;
             });
         }
-            }
-            catch (LiteDB.LiteException e)
+
+        /// <summary>
+        /// Used to import from another device's library
+        /// </summary>
+        private void ImportBook(Database.BookEntry remoteEntry)
+        {
+            Logger.Info("Importing {}.", remoteEntry.Title);
+            BookBase localBook = LocalLibrary.FirstOrDefault(x => x.Id == remoteEntry.Id);
+            if (localBook != null)
             {
-                new Dialogs.Error("Unable to write to database", e.Message).ShowDialog();
-                return;
+                Logger.Info("{}[{}] already exists in library, copying metadata from Kindle.", localBook.Title, localBook.Id);
+                try
+                {
+                    localBook.UpdateMetadata(remoteEntry);
+                }
+                catch (LiteDB.LiteException e)
+                {
+                    Logger.Error(e, "Unable to update metadata in database.");
+                    new Dialogs.Error("Unable to update metadata in database.", e.Message).ShowDialog();
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e, "Unable to write metadata to disk.");
+                    new Dialogs.Error("Unable to write metadata to disk.", e.Message);
+                    return;
+                }
+            }
+
+            Dictionary<string, string> remoteMetadata = remoteEntry.Props();
+
+            string localFile = Path.Combine(App.ConfigManager.config.LibraryDir, App.ConfigManager.config.LibraryFormat, "{Title}").DictFormat(remoteMetadata);
+            localFile = Utils.Files.MakeFilesystemSafe(localFile + Path.GetExtension(remoteEntry.FilePath));
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(localFile));
             }
             catch (Exception e)
             {
-                new Dialogs.Error("Import Error", e.Message).ShowDialog();
+                Logger.Error(e, "Unable to create directories.");
+                new Dialogs.Error("Unable to create directories.", e.Message).ShowDialog();
                 return;
             }
-            finally
+
+            Database.BookEntry localEntry;
+            if (File.Exists(localFile))
             {
-                BackgroundWork = false;
+                localEntry = LocalLibrary.FirstOrDefault(x => x.FilePath == localFile);
+                if (localEntry == null) // target file exists but is *not* in local db
+                {
+                    Logger.Info("{} exists but is not in local database. File will be overwritten with remote copy.", localFile);
+                    try
+                    {
+                        File.Delete(localFile);
+                        File.Copy(remoteEntry.FilePath, localFile);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e, "Unable to overwrite file.");
+                        new Dialogs.Error("Unable to overwrite file.", e.Message).ShowDialog();
+                        return;
+                    }
+                    try
+                    {
+                        Library.ImportBook(remoteEntry);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e, "Unable to update library database.");
+                        new Dialogs.Error("Unable to update library.", e.Message).ShowDialog();
+                        return;
+                    }
+                }
+                else // target file exists and *is* in local db
+                {
+                    string msg = $"{localEntry.Title} exists in local library. Metadata will be copied from Kindle";
+                    if (SelectedDevice != null && localEntry.Id != remoteEntry.Id)
+                    {
+                        Logger.Info(msg + " ID [{}] on {} will be changed from to [{}] to match local database.", remoteEntry.Id, SelectedDevice.Name, localEntry.Id);
+                        try
+                        {
+                            SelectedDevice.Database.ChangeBookId(remoteEntry, localEntry.Id);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Error(e, "Unable to write to database.");
+                            new Dialogs.Error("Unable to write to database.", e.Message);
+                            return;
+                        }
+                    }
+                    Logger.Info(msg, remoteEntry.Title);
+                    try
+                    {
+                        localEntry.UpdateMetadata(remoteEntry);
+                        App.Database.UpdateBook(localEntry);
+                    }
+                    catch (LiteDB.LiteException e)
+                    {
+                        Logger.Error(e, "Unable to write metadata to database.");
+                        new Dialogs.Error("Unable to write metadata database.", e.Message);
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e, "Unable to write metadata to disk.");
+                        new Dialogs.Error("Unable to write metadata disk.", e.Message);
+                        return;
+                    }
+                }
+            }
+            // vv THIS HALF IS DONE vv
+            else
+            {
+                localEntry = LocalLibrary.First(x => x.Id == remoteEntry.Id);
+                if (localEntry != null)
+                {
+
+                    Logger.Info("{} found in database but not on disk, removing database entry before importing.", localEntry.Title);
+                    try
+                    {
+                        App.Database.RemoveBook(localEntry);
+                    }
+                    catch (LiteDB.LiteException e)
+                    {
+                        Logger.Error(e, "Unable to write to database.");
+                        new Dialogs.Error("Unable to write to database.", e.Message).ShowDialog();
+                        return;
+                    }
+                }
+
+                try
+                {
+                    Library.ImportBook(remoteEntry);
+                }
+                catch (LiteDB.LiteException e)
+                {
+                    Logger.Error(e, "Unable to write to database.");
+                    new Dialogs.Error("Unable to write to database.", e.Message).ShowDialog();
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e, "Unable to import book.");
+                    new Dialogs.Error("Unable to import book.", e.Message).ShowDialog();
+                    return;
+                }
             }
         }
 
+        /// <summary>
+        /// Used for importing from disk
+        /// </summary>
         private void ImportBook(string filePath)
         {
             BackgroundWork = true;
