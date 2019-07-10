@@ -159,7 +159,15 @@ namespace KindleManager
             var c = db.GetCollection<BookEntry>("BOOKS");
             c.Delete(x => x.Id == book.Id);
             Library.Remove(book);
+        }
 
+        public void RemoveBook(int id)
+        {
+            Logger.Info("Removing ID [{}] from database.", id);
+            var c = db.GetCollection<BookEntry>("BOOKS");
+            c.Delete(x => x.Id == id);
+            BookEntry m = Library.FirstOrDefault(x => x.Id == id);
+            if (m != null) Library.Remove(m);
         }
 
         /// <summary>
