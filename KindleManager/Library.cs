@@ -7,15 +7,19 @@ namespace KindleManager
 {
     class Library
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Adds book to library directory and database, converting if neccesary. Preserves book.Id
         /// </summary>
-        /// <param name="book"></param>
-        public static void ImportBook(BookBase book)
+        /// <returns>Int Id assigned to book in database</returns>
+        public static int ImportBook(BookBase book)
         {
             string template = Path.Combine(App.ConfigManager.config.LibraryFormat, "{Title}");
             string destinationFile = Path.Combine(App.ConfigManager.config.LibraryDir, template.DictFormat(book.Props())) + ".mobi";
             destinationFile = Utils.Files.MakeFilesystemSafe(destinationFile);
+
+            Logger.Info("Importing {} from {} to {}", book.Title, book.FilePath, destinationFile);
 
             if (App.Database.Library.Any(x => x.FilePath == destinationFile))
             {
@@ -34,16 +38,8 @@ namespace KindleManager
                 File.Copy(book.FilePath, destinationFile);
                 book.FilePath = destinationFile;
             }
-
-            try
-            {
-                Formats.Mobi.Book m = (Formats.Mobi.Book)book;
-            }
-            catch (System.Exception e)
-            {
-                throw new System.Exception($"Conversion to Mobi failed: {e.Message}");
-            }
             App.Database.AddBook(book);
+            return book.Id;
         }
 
         /// <summary>
