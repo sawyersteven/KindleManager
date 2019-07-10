@@ -42,15 +42,15 @@ namespace KindleManager.ViewModels
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ReorganizeLibrary = ReactiveCommand.Create(_ReorganizeLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            RecreateLibrary = ReactiveCommand.Create(_RecreateLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ScanDevice = ReactiveCommand.Create(_ScanDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #endregion
 
             DevManager = new DevManager();
             DevManager.FindKindles();
 
-            TaskbarIcon = Icons.None;
-            TaskbarText = "";
+            StatusBarIcon = Icons.None;
+            StatusBarText = "";
             SideBarOpen = true;
             BackgroundWork = false;
         }
@@ -67,8 +67,8 @@ namespace KindleManager.ViewModels
             }
         }
         [Reactive] public bool ButtonEnable { get; set; }
-        [Reactive] public string TaskbarText { get; set; }
-        [Reactive] public string TaskbarIcon { get; set; }
+        [Reactive] public string StatusBarText { get; set; }
+        [Reactive] public string StatusBarIcon { get; set; }
         public DevManager DevManager { get; set; }
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
         [Reactive] public Device SelectedDevice { get; set; }
@@ -103,15 +103,15 @@ namespace KindleManager.ViewModels
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
 
+            StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
                 BackgroundWork = true;
-                TaskbarIcon = Icons.None;
                 try
                 {
                     foreach (string title in SelectedDevice.ReorganizeLibrary())
                     {
-                        TaskbarText = $"Processing {title}";
+                        StatusBarText = $"Processing {title}";
                     }
                     SelectedDevice.CleanLibrary();
                 }
@@ -134,32 +134,25 @@ namespace KindleManager.ViewModels
                     App.Current.Dispatcher.Invoke(() =>
                     {
                         BackgroundWork = false;
-                        TaskbarText = "Kindle library reorganization complete.";
-                        TaskbarIcon = Icons.Check;
                     });
                 }
             });
         }
 
-        public ReactiveCommand<Unit, Unit> RecreateLibrary { get; set; }
-        public void _RecreateLibrary()
+        public ReactiveCommand<Unit, Unit> ScanDevice { get; set; }
+        public void _ScanDevice()
         {
+            StatusBarIcon = Icons.None;
             var dlg = new Dialogs.YesNo("Recreate Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
 
-            BackgroundWork = true;
-            TaskbarIcon = Icons.None;
             Task.Run(() =>
             {
                 try
                 {
                     foreach (string title in SelectedDevice.RecreateLibraryAndDatabse())
                     {
-                        App.Current.Dispatcher.Invoke(() =>
-                        {
-                            TaskbarText = $"Processing {title}";
-                        });
                     }
                 }
                 catch (AggregateException e)
@@ -181,8 +174,6 @@ namespace KindleManager.ViewModels
                     App.Current.Dispatcher.Invoke(() =>
                     {
                         BackgroundWork = false;
-                        TaskbarText = "Kindle library recreation complete.";
-                        TaskbarIcon = Icons.Check;
                     });
                 }
             });
@@ -224,16 +215,16 @@ namespace KindleManager.ViewModels
                 }
             }
 
+            BackgroundWork = true;
+            StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
                 List<Exception> errors = new List<Exception>();
-                TaskbarIcon = Icons.None;
-                BackgroundWork = true;
                 foreach (Database.BookEntry book in toTransfer)
                 {
                     try
                     {
-                        TaskbarText = $"Copying {book.Title}";
+                        StatusBarText = $"Copying {book.Title}";
                         SelectedDevice.SendBook(book);
                     }
                     catch (Exception e)
@@ -242,8 +233,6 @@ namespace KindleManager.ViewModels
                         errors.Add(e);
                     }
                 }
-                TaskbarText = $"Sync Complete";
-                TaskbarIcon = Icons.Check;
                 BackgroundWork = false;
 
                 if (errors.Count > 0)
@@ -349,16 +338,16 @@ namespace KindleManager.ViewModels
                 return UnitNull;
             }
 
-            TaskbarIcon = Icons.None;
             BackgroundWork = true;
+            StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
                 Database.BookEntry book = (Database.BookEntry)p[0];
                 try
                 {
                     SelectedDevice.SendBook(book);
-                    TaskbarIcon = Icons.Check;
-                    TaskbarText = $"{book.Title} sent to {SelectedDevice.Name}.";
+                    StatusBarIcon = Icons.Check;
+                    StatusBarText = $"{book.Title} sent to {SelectedDevice.Name}.";
                 }
                 catch (Exception e)
                 {
@@ -584,7 +573,7 @@ namespace KindleManager.ViewModels
                 return false;
             }
 
-            _RecreateLibrary();
+            _ScanDevice();
             return true;
         }
 
@@ -662,7 +651,7 @@ namespace KindleManager.ViewModels
 
                     foreach (string file in files)
                     {
-                        TaskbarText = $"Importing {file}";
+                        StatusBarText = $"Importing {file}";
                         try
                         {
                             Library.ImportBook(file);
@@ -681,9 +670,6 @@ namespace KindleManager.ViewModels
                             new Dialogs.BulkProcessErrors("The following errors occurred while adding to your library.", errors.ToArray()).ShowDialog();
                         });
                     }
-
-                    TaskbarText = "Import Complete";
-                    TaskbarIcon = Icons.Check;
 
                 });
                 return;
