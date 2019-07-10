@@ -23,11 +23,13 @@ namespace Devices
 
         public override void SendBook(BookBase localBook)
         {
-            Logger.Info("Copying {} to Kindle", localBook.Title);
-            if (Database.GetById(localBook.Id) != null)
+            Logger.Info("Copying {} to Kindle.", localBook.Title);
+            BookBase remoteBook = Database.Library.FirstOrDefault(x => x.Id == localBook.Id);
+            if (remoteBook != null)
             {
                 Logger.Info("{}[{}] already exists on Kindle, copying metadata from pc library.", localBook.Title, localBook.Id);
-                throw new Exception($"Book already exists on kindle. [{localBook.Id}]");
+                remoteBook.UpdateMetadata(localBook);
+                return;
             }
 
             Dictionary<string, string> bookMetadata = localBook.Props();
