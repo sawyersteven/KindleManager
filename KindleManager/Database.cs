@@ -73,7 +73,6 @@ namespace KindleManager
             {
                 Library.Add(entry);
             });
-
         }
 
         #endregion
@@ -83,11 +82,6 @@ namespace KindleManager
         private DatabaseMetadata ReadMetadata()
         {
             return db.GetCollection<DatabaseMetadata>("METADATA").FindById(1);
-        }
-
-        public BookEntry GetById(int id)
-        {
-            return Library.FirstOrDefault(x => x.Id == id);
         }
 
         /// <summary>
@@ -119,11 +113,6 @@ namespace KindleManager
                 series.Add(book.Series);
             }
             return series.ToArray();
-        }
-
-        public BookEntry GetByFileName(string FileName)
-        {
-            return Library.FirstOrDefault(x => x.FilePath == FileName);
         }
 
         #endregion
@@ -257,11 +246,11 @@ namespace KindleManager
             public IDNotFoundException() { }
 
             public IDNotFoundException(string message)
-            : base(message)
+                : base(message)
             { }
 
             public IDNotFoundException(int id)
-                    : base($"ID {id} not found in database")
+                : base($"ID {id} not found in database")
             { }
         }
     }
