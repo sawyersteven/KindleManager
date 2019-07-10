@@ -1,4 +1,5 @@
 ﻿using Devices;
+using ExtensionMethods;
 using Formats;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -83,14 +84,16 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
         public void _ReceiveBook()
         {
-            // Todo, look at Kindle.cs and use same methods to update local metadata or change Ids (but only remote Ids).
             if (SelectedTableRow == null) return;
-            BookBase remoteBook = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-            if (remoteBook == null) return;
+            Database.BookEntry remoteEntry = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (remoteEntry == null) return;
+
+            Database.BookEntry copy = new Database.BookEntry(remoteEntry);
+            copy.FilePath = SelectedDevice.AbsoluteFilePath(remoteEntry);
 
             try
             {
-                ImportBook(remoteBook);
+                ImportBook(copy);
             }
             catch (Exception e)
             {
@@ -470,17 +473,16 @@ namespace KindleManager.ViewModels
 
             List<Exception> errs = new List<Exception>();
 
-            BookBase dbBook;
-            Formats.Mobi.Book recip;
-            dbBook = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-            if (dbBook != null)
+            Database.BookEntry bookEntry;
+            BookBase recip;
+            bookEntry = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (bookEntry != null)
             {
-                App.Database.UpdateBook(dlg.ModBook);
                 try
                 {
-                    recip = new Formats.Mobi.Book(dbBook.FilePath);
-                    BookBase.Merge(dlg.ModBook, recip);
-                    recip.WriteMetadata();
+                    recip = BookBase.Auto(bookEntry.FilePath);
+                    App.Database.UpdateBook(dlg.ModBook);
+                    recip.UpdateMetadata(dlg.ModBook);
                 }
                 catch (Exception e)
                 {
@@ -488,15 +490,14 @@ namespace KindleManager.ViewModels
                 }
             }
 
-            dbBook = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-            if (dbBook != null)
+            bookEntry = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+            if (bookEntry != null)
             {
-                SelectedDevice.Database.UpdateBook(dlg.ModBook);
                 try
                 {
-                    recip = new Formats.Mobi.Book(SelectedDevice.AbsoluteFilePath(dbBook));
-                    BookBase.Merge(dlg.ModBook, recip);
-                    recip.WriteMetadata();
+                    recip = BookBase.Auto(bookEntry.FilePath);
+                    SelectedDevice.Database.UpdateBook(dlg.ModBook);
+                    recip.UpdateMetadata(dlg.ModBook);
                 }
                 catch (Exception e)
                 {
