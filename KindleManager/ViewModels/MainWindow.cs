@@ -103,10 +103,10 @@ namespace KindleManager.ViewModels
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
 
+            BackgroundWork = true;
             StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
-                BackgroundWork = true;
                 try
                 {
                     foreach (string title in SelectedDevice.ReorganizeLibrary())
@@ -131,10 +131,7 @@ namespace KindleManager.ViewModels
                 }
                 finally
                 {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        BackgroundWork = false;
-                    });
+                    SetStatusBar(false, "Kindle library reorganization complete.", Icons.Check);
                 }
             });
         }
@@ -143,6 +140,7 @@ namespace KindleManager.ViewModels
         public void _ScanDevice()
         {
             StatusBarIcon = Icons.None;
+
             var dlg = new Dialogs.YesNo("Recreate Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
@@ -153,6 +151,7 @@ namespace KindleManager.ViewModels
                 {
                     foreach (string title in SelectedDevice.RecreateLibraryAndDatabse())
                     {
+                        SetStatusBar(true, $"Processing {title}", null);
                     }
                 }
                 catch (AggregateException e)
@@ -171,10 +170,7 @@ namespace KindleManager.ViewModels
                 }
                 finally
                 {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        BackgroundWork = false;
-                    });
+                    SetStatusBar(false, "Kindle scan complete.", Icons.Check);
                 }
             });
         }
@@ -220,6 +216,7 @@ namespace KindleManager.ViewModels
             Task.Run(() =>
             {
                 List<Exception> errors = new List<Exception>();
+
                 foreach (Database.BookEntry book in toTransfer)
                 {
                     try
@@ -233,7 +230,7 @@ namespace KindleManager.ViewModels
                         errors.Add(e);
                     }
                 }
-                BackgroundWork = false;
+                SetStatusBar(false, "Sync Complete.", Icons.Check);
 
                 if (errors.Count > 0)
                 {
@@ -249,11 +246,11 @@ namespace KindleManager.ViewModels
         public void _OpenSideBar()
         {
             SideBarOpen = true;
+            BackgroundWork = true;
             Task.Run(() =>
             {
-                BackgroundWork = true;
                 DevManager.FindKindles();
-                BackgroundWork = false;
+                SetStatusBar(false, null, null);
             });
         }
 
@@ -351,19 +348,11 @@ namespace KindleManager.ViewModels
                 }
                 catch (Exception e)
                 {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        TaskbarIcon = Icons.Alert;
-                        TaskbarText = e.Message;
-                    });
+                    SetStatusBar(false, e.Message, Icons.Alert);
                 }
                 finally
                 {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        BackgroundWork = false;
-                    });
-
+                    SetStatusBar(false, null, null);
                 }
             });
             return UnitNull;
@@ -578,14 +567,21 @@ namespace KindleManager.ViewModels
         }
 
         private void ImportBook(BookBase book)
+        /// <summary>
+        /// Sets Status Bar information
+        /// </summary>
+        /// <param name="spinner"></param>
+        /// <param name="message">null to keep current message</param>
+        /// <param name="icon">null to keep current</param>
+        private void SetStatusBar(bool spinner, string message, string icon)
         {
-            try
+            App.Current.Dispatcher.Invoke(() =>
             {
-                BackgroundWork = true;
-                BookBase cp = new Formats.Mobi.Book(book);
-                cp.FilePath = SelectedDevice.AbsoluteFilePath(book);
-                cp.Id = book.Id;
-                Library.ImportBook(cp);
+                BackgroundWork = spinner;
+                if (message != null) StatusBarText = message;
+                if (icon != null) StatusBarIcon = icon;
+            });
+        }
             }
             catch (LiteDB.LiteException e)
             {
@@ -605,9 +601,9 @@ namespace KindleManager.ViewModels
 
         private void ImportBook(string filePath)
         {
+            BackgroundWork = true;
             try
             {
-                BackgroundWork = true;
                 Library.ImportBook(filePath);
             }
             catch (LiteDB.LiteException e)
@@ -644,7 +640,7 @@ namespace KindleManager.ViewModels
                 if (dlg.DialogResult == false) return;
 
                 string[] files = dlg.SelectedFiles();
-
+                BackgroundWork = true;
                 Task.Run(() =>
                 {
                     List<Exception> errors = new List<Exception>();
@@ -670,7 +666,7 @@ namespace KindleManager.ViewModels
                             new Dialogs.BulkProcessErrors("The following errors occurred while adding to your library.", errors.ToArray()).ShowDialog();
                         });
                     }
-
+                    SetStatusBar(false, "Import complete.", Icons.Check);
                 });
                 return;
             }
