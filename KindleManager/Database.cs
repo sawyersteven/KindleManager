@@ -11,6 +11,8 @@ namespace KindleManager
 {
     public class Database : IDisposable
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         private readonly LiteDatabase db;
         public readonly string DBFile;
         public ObservableCollection<BookEntry> Library { get; set; }
@@ -23,6 +25,7 @@ namespace KindleManager
             DatabaseMetadata m = App.Database.ReadMetadata();
             if (m == null)
             {
+                Logger.Error("Database does not contain METADATA collection and may be corrupt");
                 throw new IDNotFoundException("Metadata entry could not be found in database");
             }
             m.LastUsedID++;
@@ -34,10 +37,12 @@ namespace KindleManager
 
         public Database(string DBFile)
         {
+            Logger.Info("Connecting to database {}", DBFile);
             db = new LiteDatabase(DBFile);
             Library = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
             if (!db.CollectionExists("METADATA"))
             {
+                Logger.Info("Creating new METADATA collection in database");
                 DatabaseMetadata m = new DatabaseMetadata();
                 m.Id = 1;
                 m.Version = 1;
@@ -50,6 +55,7 @@ namespace KindleManager
 
         public void AddBook(BookBase book)
         {
+            Logger.Info("Adding {} [{}] to database.", book.Title, book.Id);
             if (Library.Any(x => x.Id == book.Id))
             {
                 throw new LiteException($"{book.FilePath} [{book.Id}] already exists in library"); ;
@@ -149,6 +155,7 @@ namespace KindleManager
         /// </summary>
         public void ChangeBookId(BookEntry book, int Id)
         {
+            Logger.Info("Changing {} ID from [{}] to [{}]", book.Title, book.Id, Id);
             RemoveBook(book);
             book.Id = Id;
             AddBook(book);
@@ -159,6 +166,7 @@ namespace KindleManager
         #region Delete
         public void RemoveBook(BookEntry book)
         {
+            Logger.Info("Removing {} [{}] from database.", book.Title, book.Id);
             var c = db.GetCollection<BookEntry>("BOOKS");
             c.Delete(x => x.Id == book.Id);
             Library.Remove(book);
@@ -172,6 +180,7 @@ namespace KindleManager
         /// </summary>
         public void ScorchedEarth()
         {
+            Logger.Info("Dropping all collections from database");
             // Manually list all database tables because it throws weird errors
             //  I can't figure out when calling getcollectionnames()
             db.DropCollection("BOOKS");

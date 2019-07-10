@@ -7,6 +7,8 @@ namespace KindleManager
 {
     public class ConfigManager
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         private readonly string path = Path.Combine(Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\"), "Settings.conf");
 
         public Config config;
@@ -16,6 +18,7 @@ namespace KindleManager
             string json;
             if (!File.Exists(path))
             {
+                Logger.Info("Creating new config at {}.", path);
                 config = new Config();
                 json = JsonConvert.SerializeObject(config);
                 File.WriteAllText(path, json);
@@ -27,6 +30,7 @@ namespace KindleManager
 
         public void Write()
         {
+            Logger.Info("Writing config to {}.", path);
             File.WriteAllText(path, JsonConvert.SerializeObject(this));
         }
 
