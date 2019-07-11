@@ -56,15 +56,19 @@
                             <RowDefinition/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Grid.Row="0" Style="{StaticResource AccentedSquareButtonStyle}">
+                        <Border Grid.Row="0" BorderBrush="White" BorderThickness="2" Padding="4">
                             <StackPanel Orientation="Vertical">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding SelectedDevice.DriveLetter}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
-                                    <TextBlock Text="{Binding SelectedDevice.Name}" FontWeight="Bold" FontSize="16"/>
-                                </StackPanel>
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.DriveLetter}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.Name}" FontWeight="Bold" FontSize="16"/>
+                                    <Button DockPanel.Dock="Right" Command="{Binding CloseDevice}" Style="{StaticResource MetroCircleButtonStyle}" BorderThickness="0" Cursor="Hand">
+                                        <icons:PackIconOcticons Kind="X" Foreground="White" Height="12" Width="12"/>
+                                    </Button>
+                                </DockPanel>
                                 <TextBlock Text="{Binding SelectedDevice.Description}"/>
+                                
                             </StackPanel>
-                        </Button>
+                        </Border>
                         <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,12,0,0">
                             <Grid.Resources>
                                 <Style TargetType="{x:Type icons:PackIconOcticons}">
@@ -130,7 +134,10 @@
                         <ItemsControl ItemsSource="{Binding DevManager.DeviceList}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Margin="0,4" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}" Style="{DynamicResource SquareButtonStyle}">
+                                    <Border Padding="4" BorderBrush="White" BorderThickness="2" Margin="0,4" Cursor="Hand" Background="Transparent">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}"/>
+                                        </Border.InputBindings>
                                         <StackPanel Orientation="Vertical">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Grid.Column="0" Text="{Binding DriveLetter}" Margin="0,0,8,0" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -138,7 +145,7 @@
                                             </StackPanel>
                                             <TextBlock Text="{Binding Description}"/>
                                         </StackPanel>
-                                    </Button>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
