@@ -143,7 +143,7 @@ namespace KindleManager
 
         private void ReceiveBook(object sender, RoutedEventArgs e)
         {
-            GetDataContext()._ReceiveBook();
+            GetDataContext()._ReceiveBook(LibraryTable.SelectedItems);
         }
 
         private void EditMetadata(object sender, RoutedEventArgs e)

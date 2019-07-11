@@ -81,24 +81,46 @@ namespace KindleManager.ViewModels
         #endregion
 
         #region button commands
-        public ReactiveCommand<Unit, Unit> ReceiveBook { get; set; }
-        public void _ReceiveBook()
+        public ReactiveCommand<IList, Unit> ReceiveBook { get; set; }
+        public Unit _ReceiveBook(IList rows)
         {
-            if (SelectedTableRow == null) return;
-            Database.BookEntry remoteEntry = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-            if (remoteEntry == null) return;
+            if (rows.Count == 0) return UnitNull;
 
-            Database.BookEntry copy = new Database.BookEntry(remoteEntry);
-            copy.FilePath = SelectedDevice.AbsoluteFilePath(remoteEntry);
+            Database.BookEntry[] dbRows = new Database.BookEntry[rows.Count];
+            rows.CopyTo(dbRows, 0);
 
-            try
+            List<Exception> errs = new List<Exception>();
+
+            Task.Run(() =>
             {
-                ImportBook(copy);
-            }
-            catch (Exception e)
-            {
-                new Dialogs.Error("Error copying book to library", e.Message);
-            }
+                foreach (Database.BookEntry i in dbRows)
+                {
+                    Database.BookEntry copy = new Database.BookEntry(i);
+                    copy.FilePath = SelectedDevice.AbsoluteFilePath(i);
+
+                    SetStatusBar(true, $"Copying {copy.Title}.", null);
+                    try
+                    {
+                        ImportBook(copy);
+                    }
+                    catch (Exception e)
+                    {
+                        errs.Add(e);
+                    }
+                }
+                if (errs.Count != 0)
+                {
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        new Dialogs.BulkProcessErrors("Errors copying books to library.", errs.ToArray()).ShowDialog();
+                    });
+                }
+                SetStatusBar(false, "", Icons.Check);
+
+            });
+
+
+            return UnitNull;
         }
 
         public ReactiveCommand<Unit, Unit> ReorganizeLibrary { get; set; }
