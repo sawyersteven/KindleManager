@@ -8,13 +8,17 @@ using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
 
 namespace Formats.Mobi
 {
+    /// <summary>
+    /// As I ranted about in the parsing methods, the Mobi format is horrifying.
+    /// Forgive my (hopefully useful) abundance of comments.
+    /// </summary>
     public class Builder
     {
         private const int postHeaderPadding = 0x400;
 
         readonly BookBase Donor;
         readonly string OutputPath;
-        (string, int)[] Chapters; // (title, byteoffset) in encoded html
+        (string, int)[] Chapters; // (title, byteoffset in encoded html)
 
         private readonly Headers.PDBHeader PDB = new Headers.PDBHeader();
         private readonly Headers.PalmDOCHeader PDH = new Headers.PalmDOCHeader();
@@ -41,10 +45,8 @@ namespace Formats.Mobi
             byte[] textBytes;
             (textBytes, Chapters) = ProcessHtml(text);
 
-            // Make logical toc
             GenerateLogicalTOC();
 
-            // Split text records
             ushort textRecordCount = 0;
             for (int i = 0; i < textBytes.Length; i += 4096)
             {
@@ -68,7 +70,6 @@ namespace Formats.Mobi
             uint fcisRecord = (uint)records.Count;
             records.Add(EOFRecord);
 
-            // Build headers backward to know lengths
             FillEXTHHeader();
 
             MobiHeader.FillDefault();
@@ -118,12 +119,16 @@ namespace Formats.Mobi
         }
 
         #region Headers
+
+        /// <summary>
+        /// Calculates file/text record offsets for this.records
+        /// </summary>
         private uint[] CalcRecordOffsets()
         {
             List<uint> offsets = new List<uint>();
 
             uint currentPosition = (uint)PDB.TotalLength;
-            offsets.Add(currentPosition); // start of PalmDoc
+            offsets.Add(currentPosition);
 
             currentPosition += PDH.length + MobiHeader.length + (uint)EXTH.length + postHeaderPadding;
             for (int i = 0; i < records.Count; i++)
@@ -168,7 +173,7 @@ namespace Formats.Mobi
             StripStyle(doc);
             FixImageRecIndexes(doc);
 
-            (string, int)[] tocData = PrepTOC(doc);
+            (string, int)[] tocData = ParseToc(doc);
 
             string decodedText = doc.DocumentNode.OuterHtml;
 
@@ -192,9 +197,12 @@ namespace Formats.Mobi
         }
 
         /// <summary>
-        /// Changes a href to filepos and generates toc chapter names and offsets
+        /// Changes a.href to a.filepos and generates toc chapter names and offsets.
         /// </summary>
-        private (string, int)[] PrepTOC(HtmlDocument html)
+        /// <returns>
+        /// (string, int) of chapter title, byte offset in html
+        /// </returns>
+        private (string, int)[] ParseToc(HtmlDocument html)
         {
             // Give all anchors filepos property then reload html to get correct streampositions
             HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
@@ -231,7 +239,7 @@ namespace Formats.Mobi
             {
                 tocData.Add((n.Attributes["toclabel"].Value, n.BytePosition()));
             }
-            if (tocData.Count == 0) // if no chapters in book at one at start
+            if (tocData.Count == 0) // if no chapters in book create one at start
             {
                 tocData.Add(("Start", 0));
             }
@@ -293,7 +301,7 @@ namespace Formats.Mobi
 
         /// <summary>
         /// 
-        /// The tag table entries are multiple of 4 bytes. 
+        /// The tag table entries are 4 bytes each:
         /// [0] tag number, 
         /// [1] number of values,
         /// [2] bit mask

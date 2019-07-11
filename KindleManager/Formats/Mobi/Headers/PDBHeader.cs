@@ -141,7 +141,7 @@ namespace Formats.Mobi.Headers
 
             for (int i = 0; i < records.Length; i++)
             {
-                output.AddRange(Utils.BigEndian.GetBytes(records[i])); // offset
+                output.AddRange(Utils.BigEndian.GetBytes(records[i]));           // offset
                 output.AddRange(Utils.BigEndian.GetBytes((i * 2) & 0x00FFFFFF)); // attr + uid
             }
 

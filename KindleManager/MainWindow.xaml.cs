@@ -94,7 +94,6 @@ namespace KindleManager
 
                 ObservableCollection<Database.BookEntry> library = (column.DisplayIndex == 0) ? vm.LocalLibrary : vm.RemoteLibrary;
 
-                // column.SortDirection can be null, so default to Ascending
                 ListSortDirection direction = (column.SortDirection != ListSortDirection.Ascending) ? ListSortDirection.Ascending : ListSortDirection.Descending;
                 column.SortDirection = direction;
 
@@ -155,16 +154,15 @@ namespace KindleManager
         {
             GetDataContext()._OpenBookFolder();
         }
+
         private void RemoveBook(object sender, RoutedEventArgs e)
         {
             GetDataContext()._RemoveBook();
         }
 
-        // When header column context menu is closed...
         private void SaveLibraryColumns(object sender, RoutedEventArgs e)
         {
-            ContextMenu menu = sender as ContextMenu;
-            if (menu == null) return;
+            if (!(sender is ContextMenu menu)) return;
             DataGrid grid = menu.DataContext as DataGrid;
 
             List<string> hiddenColumns = new List<string>();

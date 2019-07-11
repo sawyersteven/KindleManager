@@ -102,7 +102,6 @@ namespace Formats.Epub
 
                 combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml = MergeDocuments(orderedDocumentNames, documents);
 
-                // Add css
                 ZipArchiveEntry css = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".css"));
                 if (css != null)
                 {
@@ -269,8 +268,8 @@ namespace Formats.Epub
 
                 parts = url.Split(split, 2);
                 HtmlDocument doc = documents[parts[0]];
-                if (parts.Length == 1)
-                {   // url points to document root, use first child node
+                if (parts.Length == 1) // url points to document root, use first child node
+                {
                     target = doc.DocumentNode.SelectSingleNode("//html/body/*");
                 }
                 else

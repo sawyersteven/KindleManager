@@ -123,9 +123,9 @@ namespace Formats.Mobi.Headers
             List<byte> records = new List<byte>();
             foreach (var kv in this)
             {
-                records.AddRange(Utils.BigEndian.GetBytes(kv.Key)); // recType
+                records.AddRange(Utils.BigEndian.GetBytes(kv.Key));                     // recType
                 records.AddRange(Utils.BigEndian.GetBytes((uint)kv.Value.Length + 0x8));
-                records.AddRange(kv.Value); // recData
+                records.AddRange(kv.Value);                                             // recData
             }
 
             List<byte> output = new List<byte>();

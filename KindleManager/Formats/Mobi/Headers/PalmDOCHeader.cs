@@ -25,13 +25,16 @@ namespace Formats.Mobi.Headers
         /// <summary>
         /// Fills fields with a set of default values
         /// </summary>
+        /// <remarks>
+        /// Set to no compression, no encryption
+        /// </remarks>
         public void FillDefault()
         {
-            compression = 1; // None
+            compression = 1;
             textLength = 0;
             textRecordCount = 0;
             recordSize = 4096;
-            encryptionType = 0; // None
+            encryptionType = 0;
             unknown = 0;
         }
 

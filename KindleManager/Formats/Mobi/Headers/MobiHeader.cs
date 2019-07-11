@@ -156,7 +156,7 @@ namespace Formats.Mobi.Headers
                 throw new Exception($"Unable to read Mobi header [0]: {e.Message}");
             }
 
-            identifier = buffer.SubArray(0x0, 0x4); // MOBI
+            identifier = buffer.SubArray(0x0, 0x4);
             if (identifier.Decode() != "MOBI")
             {
                 throw new FileFormatException($"Invalid Mobi header magic; Expected 'MOBI' found '{identifier.Decode()}'");
@@ -184,7 +184,7 @@ namespace Formats.Mobi.Headers
             indexKeys = Utils.BigEndian.ToUInt32(buffer, 0x24);
             extraIndexes = buffer.SubArray(0x28, 0x18);
             firstNonBookRecord = Utils.BigEndian.ToUInt32(buffer, 0x40);
-            fullTitleOffset = Utils.BigEndian.ToUInt32(buffer, 0x44) + offset - 0x10; // Offset is from PDBHeader table, or 0x10.
+            fullTitleOffset = Utils.BigEndian.ToUInt32(buffer, 0x44) + offset - 0x10;
             fullTitleLength = Utils.BigEndian.ToUInt32(buffer, 0x48);
             locale = Utils.BigEndian.ToUInt32(buffer, 0x4C);
             inputLanguage = Utils.BigEndian.ToUInt32(buffer, 0x50);

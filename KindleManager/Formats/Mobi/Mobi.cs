@@ -120,15 +120,12 @@ namespace Formats.Mobi
 
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
 
-                // Basic header metadata
                 PDBHeader.Parse(reader);
                 contentOffset = PDBHeader.records[1];
 
-                // PalmDOCHeader
                 this.PalmDOCHeader.offset = PDBHeader.records[0];
                 this.PalmDOCHeader.Parse(reader);
 
-                // MobiHeader
                 this.MobiHeader.offset = (uint)reader.BaseStream.Position;
                 this.MobiHeader.Parse(reader);
 
@@ -138,7 +135,6 @@ namespace Formats.Mobi
                     textRecordLengths[i] = (int)PDBHeader.RecordLength(MobiHeader.firstContentRecord + i);
                 }
 
-                // EXTHHeader
                 if (this.MobiHeader.hasEXTH)
                 {
                     EXTHHeader.offset = MobiHeader.offset + MobiHeader.length;
@@ -292,17 +288,6 @@ namespace Formats.Mobi
                 }
             }
 
-            // This was replaced by ^^ that. I don't want to delete it yet just in case.
-            //foreach (int offset in filePositions)
-            //{
-            //    byte[] tn = string.Format(targetNode, offset.ToString("D10")).Encode();
-            //    int insertPos = NearestElementPos(htmlBytes, offset + bytesAdded);
-            //    htmlBytes = htmlBytes.InsertRange(insertPos, tn);
-            //    bytesAdded += tn.Length;
-            //}
-            //html = htmlBytes.Decode();
-            //doc.LoadHtml(html);
-
             // Switch filepos to href
             anchors = doc.DocumentNode.SelectNodes("//a");
             if (anchors != null)
@@ -347,19 +332,6 @@ namespace Formats.Mobi
 
             return doc.DocumentNode.OuterHtml;
         }
-
-        //private int NearestElementPos(byte[] html, int search)
-        //{
-        //    if (search > html.Length) return -1;
-        //    if (html[search] == '<') return search - 1;
-
-        //    while (html[search] != '<')
-        //    {
-        //        search--;
-        //    }
-
-        //    return search - 1;
-        //}
 
         #region IBook overrides
 

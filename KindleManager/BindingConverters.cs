@@ -134,8 +134,6 @@ namespace KindleManager.BindingConverters
             Dictionary<string, string> props1 = bk1.Props();
             foreach (KeyValuePair<string, string> kv in bk2.Props())
             {
-                string v1 = props1[kv.Key];
-                string v2 = kv.Value;
                 if ((props1[kv.Key] ?? "") != (kv.Value ?? ""))
                 {
                     return false;
