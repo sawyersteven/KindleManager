@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ExtensionMethods;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,28 +16,35 @@ namespace KindleManager
 
         public ConfigManager()
         {
-            string json;
+            config = new Config();
             if (!File.Exists(path))
             {
                 Logger.Info("Creating new config at {}.", path);
-                config = new Config();
-                json = JsonConvert.SerializeObject(config);
-                File.WriteAllText(path, json);
+                config.SetDefaults();
+                File.WriteAllText(path, JsonConvert.SerializeObject(config));
             }
-
-            json = File.ReadAllText(path);
-            config = JsonConvert.DeserializeObject<Config>(json);
+            else
+            {
+                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            }
         }
 
         public void Write()
         {
             Logger.Info("Writing config to {}.", path);
-            File.WriteAllText(path, JsonConvert.SerializeObject(this));
+            File.WriteAllText(path, JsonConvert.SerializeObject(config));
         }
 
         public class Config
         {
             public Config() { }
+
+            public void SetDefaults()
+            {
+                LibraryDir = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\Library\");
+                LibraryFormat = "{Author}\\{Series}\\";
+                HiddenColumns = new string[] { "Id", "Language", "ISBN", "FilePath", "Contributor", "Subject", "Description", "Rights" };
+            }
 
             /// <summary>
             /// Copy constructor
@@ -45,27 +53,27 @@ namespace KindleManager
             {
                 LibraryDir = c.LibraryDir;
                 LibraryFormat = c.LibraryFormat;
+                HiddenColumns = c.HiddenColumns;
             }
 
-            private string _LibraryDir = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\Library\");
-            public string LibraryDir
-            {
-                get => _LibraryDir;
-                set { _LibraryDir = value; }
-            }
+            public string LibraryDir { get; set; }
+            public string LibraryFormat { get; set; }
 
-            private string _LibraryFormat = "{Author}\\{Series}\\";
-            public string LibraryFormat
-            {
-                get => _LibraryFormat;
-                set { _LibraryFormat = value; }
-            }
+            private readonly HashSet<string> alwaysHidden = new HashSet<string>() { "Contributor", "Id", "Description", "Rights" };
 
-            private List<string> _HiddenColumns = new List<string>() { "Id", "Language", "ISBN", "FilePath", "Contributor", "Subject", "Description", "Rights" };
-            public List<string> HiddenColumns
+            private string[] _HiddenColumns;
+            public string[] HiddenColumns
             {
                 get => _HiddenColumns;
-                set { _HiddenColumns = value; }
+                set
+                {
+                    HashSet<string> hc = new HashSet<string>(alwaysHidden);
+                    foreach (string i in value)
+                    {
+                        hc.Add(i);
+                    }
+                    _HiddenColumns = hc.ToArray();
+                }
             }
 
         }

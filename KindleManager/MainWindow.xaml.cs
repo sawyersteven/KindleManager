@@ -164,6 +164,7 @@ namespace KindleManager
         {
             if (!(sender is ContextMenu menu)) return;
             DataGrid grid = menu.DataContext as DataGrid;
+            if (grid.Columns == null) return;
 
             List<string> hiddenColumns = new List<string>();
             foreach (var a in grid.Columns)

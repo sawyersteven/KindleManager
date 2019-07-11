@@ -807,7 +807,7 @@ namespace KindleManager.ViewModels
         {
             if (hiddenColumns.SequenceEqual(App.ConfigManager.config.HiddenColumns)) return;
 
-            App.ConfigManager.config.HiddenColumns = hiddenColumns.ToList();
+            App.ConfigManager.config.HiddenColumns = hiddenColumns.ToArray();
             App.ConfigManager.Write();
         }
     }
