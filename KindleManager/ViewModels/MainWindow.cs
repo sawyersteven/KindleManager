@@ -46,11 +46,11 @@ namespace KindleManager.ViewModels
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+            CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #endregion
 
             DevManager = new DevManager();
-            DevManager.FindKindles();
 
             StatusBarIcon = Icons.None;
             StatusBarText = "";
@@ -276,7 +276,7 @@ namespace KindleManager.ViewModels
             BackgroundWork = true;
             Task.Run(() =>
             {
-                DevManager.FindKindles();
+                DevManager.FindDevices();
                 SetStatusBar(false, null, null);
             });
         }
@@ -317,6 +317,7 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<string, bool> SelectDevice { get; set; }
         public bool _SelectDevice(string driveLetter)
         {
+            if (BackgroundWork) return false;
             try
             {
                 SelectedDevice = DevManager.OpenDevice(driveLetter);
@@ -552,6 +553,14 @@ namespace KindleManager.ViewModels
             }
 
         }
+
+        public ReactiveCommand<Unit, Unit> CloseDevice { get; set; }
+        public void _CloseDevice()
+        {
+            SelectedDevice = null;
+            RemoteLibrary.Clear();
+        }
+
         #endregion
 
         /// <summary>
