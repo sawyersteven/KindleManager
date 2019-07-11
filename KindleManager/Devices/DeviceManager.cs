@@ -46,7 +46,7 @@ namespace Devices
 #if DEBUG
             string debugDir = System.Environment.ExpandEnvironmentVariables("%USERPROFILE%\\Desktop\\KindleManagerDebug");
             System.IO.Directory.CreateDirectory(debugDir);
-            devices.Add(new Kindle(debugDir, "Kindle", "Kindle Dir at Desktop"));
+            devices.Add(new Kindle("G:\\", "Kindle", "Kindle Dir DEBUG"));
 #endif
             return devices.ToArray();
         }

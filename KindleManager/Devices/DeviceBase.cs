@@ -42,12 +42,10 @@ namespace Devices
             Config = c;
         }
 
-        public void LoadDatabase()
-        {
-            Database = new KindleManager.Database(DatabaseFile);
-        }
-
-        public void Init()
+        /// <summary>
+        /// Opens device config, database, etc for read/write
+        /// </summary>
+        public virtual void Open()
         {
             if (File.Exists(ConfigFile))
             {
@@ -58,8 +56,42 @@ namespace Devices
                 Config = new DeviceConfig();
                 WriteConfig(Config);
             }
+            Database = new KindleManager.Database(DatabaseFile);
+        }
 
-            LoadDatabase();
+        /// <summary>
+        /// Creates new config and database on device
+        /// </summary>
+        /// <param name="newDevice">If device</param>
+        public virtual void Init(bool newDevice)
+        {
+            try
+            {
+                Config = new DeviceConfig();
+                WriteConfig(Config);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to create new config file. [{e.Message}]");
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(DriveLetter, Config.LibraryRoot));
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to create root library directory. [{e.Message}]");
+            }
+
+            try
+            {
+                Database = new KindleManager.Database(Path.Combine(DriveLetter, "KindleManager.db"));
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Unable to create new database file. [{e.Message}]");
+            }
         }
 
         /// <summary>
@@ -169,28 +201,7 @@ namespace Devices
         /// </summary>
         public virtual void CleanLibrary()
         {
-            List<Exception> errs = new List<Exception>();
-
-            string[] dirs = Utils.Files.DirSearch(Path.Combine(DriveLetter, Config.LibraryRoot), true);
-
-            foreach (string dir in dirs)
-            {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
-                {
-                    try
-                    {
-                        Directory.Delete(dir);
-                    }
-                    catch (Exception e)
-                    {
-                        errs.Add(e);
-                    }
-                }
-            }
-            if (errs.Count > 0)
-            {
-                throw new AggregateException(errs.ToArray());
-            }
+            Utils.Files.CleanForward(Path.Combine(DriveLetter, Config.LibraryRoot));
         }
 
         public virtual void DeleteBook(int id)

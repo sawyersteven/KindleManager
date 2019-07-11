@@ -37,7 +37,7 @@ namespace KindleManager.ViewModels
             OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
             SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, vm => vm.SelectedDevice, (b, n, m) => b && n != null && m != null));
             EditSettings = ReactiveCommand.Create(_EditSettings);
-            ReceiveBook = ReactiveCommand.Create(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ReceiveBook = ReactiveCommand.Create<IList, Unit>(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #region device buttons
             SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
@@ -330,13 +330,29 @@ namespace KindleManager.ViewModels
 
             if (SelectedDevice.FirstUse)
             {
-                if (!SetupDevice(SelectedDevice)) return false;
-            }
-            else
-            {
-                SelectedDevice.Init();
+                var dlg = new Dialogs.YesNo("Device Setup", "It appears this is the first time you've used this device with KindleManager. A new configuration and database will be created.");
+                if (dlg.ShowDialog() == false)
+                {
+                    SelectedDevice = null;
+                    return false;
+                }
+
+                try
+                {
+                    SelectedDevice.Init(true);
+                }
+                catch (Exception e)
+                {
+                    var errdlg = new Dialogs.Error("Error initializing device", e.Message);
+                    errdlg.ShowDialog();
+                    return false;
+                }
+
+                _EditDeviceSettings(false);
                 _ScanDeviceLibrary();
             }
+
+            SelectedDevice.Open();
             RemoteLibrary = SelectedDevice.Database.Library;
 
             return true;
@@ -518,7 +534,7 @@ namespace KindleManager.ViewModels
             {
                 try
                 {
-                    recip = BookBase.Auto(bookEntry.FilePath);
+                    recip = BookBase.Auto(SelectedDevice.AbsoluteFilePath(bookEntry));
                     SelectedDevice.Database.UpdateBook(dlg.ModBook);
                     recip.UpdateMetadata(dlg.ModBook);
                 }
@@ -530,67 +546,13 @@ namespace KindleManager.ViewModels
 
             if (errs.Count != 0)
             {
-                string msg = $"Metadata could not be updated.<LineBreak /> {string.Join("; ", errs.Select(x => x.Message).ToList())}";
+                string msg = $"Metadata could not be updated.&#x0a; {string.Join("; ", errs.Select(x => x.Message).ToList())}";
 
                 new Dialogs.Error("Error updating metadata", msg).ShowDialog();
             }
 
         }
         #endregion
-
-        private bool SetupDevice(Device kindle)
-        {
-            var dlg = new Dialogs.YesNo("Device Setup", "It appears this is the first time you've used this device with KindleManager. " +
-                "A new configuration will be created.");
-            if (dlg.ShowDialog() == false)
-            {
-                SelectedDevice = null;
-                return false;
-            }
-
-            DeviceConfig c;
-            try
-            {
-                c = new DeviceConfig();
-                kindle.WriteConfig(c);
-            }
-            catch (Exception e)
-            {
-                var errdlg = new Dialogs.Error("Error Creating Config File", e.Message);
-                errdlg.ShowDialog();
-                return false;
-            }
-
-            kindle.Config = c;
-            _EditDeviceSettings(false);
-
-            // Setup directories
-            try
-            {
-                Directory.CreateDirectory(Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot));
-            }
-            catch (Exception e)
-            {
-                var errdlg = new Dialogs.Error("Error Creating Library Structure", e.Message);
-                errdlg.ShowDialog();
-                return false;
-            }
-
-            // Device DB
-            try
-            {
-                SelectedDevice.Database = new Database(Path.Combine(SelectedDevice.DriveLetter, "KindleManager.db"));
-            }
-            catch (Exception e)
-            {
-                var errdlg = new Dialogs.Error("Error Creating Device Database", e.Message);
-                errdlg.ShowDialog();
-                return false;
-            }
-
-            _ScanDevice();
-            return true;
-        }
 
         /// <summary>
         /// Sets Status Bar information
@@ -720,7 +682,7 @@ namespace KindleManager.ViewModels
             }
             else
             {
-                localEntry = LocalLibrary.First(x => x.Id == remoteEntry.Id);
+                localEntry = LocalLibrary.FirstOrDefault(x => x.Id == remoteEntry.Id);
                 if (localEntry != null)
                 {
 
