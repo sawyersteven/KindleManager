@@ -402,9 +402,9 @@
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
                     <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="#424242" Margin="0,0,8,0"/>
-                    <icons:PackIconOcticons Kind="{Binding TaskbarIcon}" Margin="4,5,0,0" Height="16"/>
+                    <icons:PackIconOcticons Kind="{Binding StatusBarIcon}" Margin="4,5,0,0" Height="16"/>
 
-                    <TextBlock Text="{Binding TaskbarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
+                    <TextBlock Text="{Binding StatusBarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
                     <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2">
                         <icons:PackIconOcticons Kind="Gear" Height="24" Width="24" Padding="0,0,0,4"/>
                     </Button>
