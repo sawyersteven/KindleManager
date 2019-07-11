@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ReactiveUI.Fody.Helpers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 
@@ -6,12 +7,12 @@ namespace Devices
 {
     class DevManager
     {
-        public Device[] _DeviceList;
-        public Device[] DeviceList { get => _DeviceList; }
+        [Reactive]
+        public Device[] DeviceList { get; set; }
 
         public DevManager()
         {
-            _DeviceList = FindKindles();
+            FindDevices();
         }
 
         public Device OpenDevice(string driveLetter)
@@ -25,8 +26,14 @@ namespace Devices
             return SelectedDevice;
         }
 
+        public void FindDevices()
+        {
+            List<Device> d = new List<Device>();
+            d.AddRange(FindKindles());
+            DeviceList = d.ToArray();
+        }
 
-        public static Device[] FindKindles()
+        private Device[] FindKindles()
         {
             List<Device> devices = new List<Device>();
 
