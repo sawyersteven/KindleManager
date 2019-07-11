@@ -117,8 +117,8 @@
                                     <MenuItem.Header>
                                         <icons:PackIconOcticons Kind="KebabVertical"/>
                                     </MenuItem.Header>
-                                    <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeLibrary}"/>
-                                    <MenuItem Header="Recreate Library" Command="{Binding RecreateLibrary}"/>
+                                    <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeDeviceLibrary}"/>
+                                    <MenuItem Header="Rescan Library" Command="{Binding ScanDeviceLibrary}"/>
                                 </MenuItem>
                             </Menu>
                         </Grid>

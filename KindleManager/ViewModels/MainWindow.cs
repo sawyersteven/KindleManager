@@ -44,8 +44,8 @@ namespace KindleManager.ViewModels
             EditDeviceSettings = ReactiveCommand.Create<bool, Unit>(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            ReorganizeLibrary = ReactiveCommand.Create(_ReorganizeLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            ScanDevice = ReactiveCommand.Create(_ScanDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #endregion
 
@@ -123,8 +123,8 @@ namespace KindleManager.ViewModels
             return UnitNull;
         }
 
-        public ReactiveCommand<Unit, Unit> ReorganizeLibrary { get; set; }
-        public void _ReorganizeLibrary()
+        public ReactiveCommand<Unit, Unit> ReorganizeDeviceLibrary { get; set; }
+        public void _ReorganizeDeviceLibrary()
         {
             var dlg = new Dialogs.YesNo("Reorganize Library", "All books in your Kindle's library will be moved and renamed according to your Kindle's settings. This may take some time depending on the size of your library.");
             dlg.ShowDialog();
@@ -163,12 +163,12 @@ namespace KindleManager.ViewModels
             });
         }
 
-        public ReactiveCommand<Unit, Unit> ScanDevice { get; set; }
-        public void _ScanDevice()
+        public ReactiveCommand<Unit, Unit> ScanDeviceLibrary { get; set; }
+        public void _ScanDeviceLibrary()
         {
             StatusBarIcon = Icons.None;
 
-            var dlg = new Dialogs.YesNo("Recreate Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
+            var dlg = new Dialogs.YesNo("Rebuild Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
 
@@ -335,6 +335,7 @@ namespace KindleManager.ViewModels
             else
             {
                 SelectedDevice.Init();
+                _ScanDeviceLibrary();
             }
             RemoteLibrary = SelectedDevice.Database.Library;
 
@@ -405,7 +406,7 @@ namespace KindleManager.ViewModels
                 var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
                 if (dlg2.ShowDialog() == true)
                 {
-                    _ReorganizeLibrary();
+                    _ReorganizeDeviceLibrary();
                 }
             }
             return UnitNull;
@@ -717,7 +718,6 @@ namespace KindleManager.ViewModels
                     }
                 }
             }
-            // vv THIS HALF IS DONE vv
             else
             {
                 localEntry = LocalLibrary.First(x => x.Id == remoteEntry.Id);
