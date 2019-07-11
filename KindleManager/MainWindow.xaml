@@ -293,7 +293,7 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
+                <DataGridTemplateColumn MinWidth="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <icons:PackIconOcticons Kind="DeviceDesktop" Height="16" Width="16"/>
@@ -325,7 +325,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Width="48" SortMemberPath="Id" CanUserReorder="False">
+                <DataGridTemplateColumn MinWidth="48" SortMemberPath="Id" CanUserReorder="False">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <icons:PackIconOcticons Kind="DeviceMobile" Height="16" Width="16"/>
@@ -367,15 +367,15 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn MinWidth="150" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
+                <DataGridTextColumn MinWidth="100" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
-                <DataGridTextColumn MinWidth="16" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
+                <DataGridTextColumn MinWidth="70" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
+                <DataGridTextColumn MinWidth="105" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
+                <DataGridTextColumn MinWidth="95" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="Language" Binding="{Binding Path=Language}" />
                 <DataGridTextColumn MinWidth="100" Width="Auto" Header="ISBN" Binding="{Binding Path=ISBN}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
+                <DataGridTextColumn MinWidth="85" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
             </DataGrid.Columns>
         </DataGrid>
 
