@@ -25,7 +25,7 @@ namespace KindleManager.ViewModels
     class MainWindow : ReactiveObject
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-
+        public Devices.DevManager DevManager { get; set; } = new Devices.DevManager();
         private readonly Unit UnitNull = new Unit();
 
         public MainWindow()
@@ -47,15 +47,13 @@ namespace KindleManager.ViewModels
             ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
-
             #endregion
-
-            DevManager = new DevManager();
 
             StatusBarIcon = Icons.None;
             StatusBarText = "";
-            SideBarOpen = true;
             BackgroundWork = false;
+
+            _OpenSideBar();
         }
 
         #region properties
@@ -72,11 +70,10 @@ namespace KindleManager.ViewModels
         [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string StatusBarText { get; set; }
         [Reactive] public string StatusBarIcon { get; set; }
-        public DevManager DevManager { get; set; }
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
-        [Reactive] public Device SelectedDevice { get; set; }
+        [Reactive] public Devices.Device SelectedDevice { get; set; }
         [Reactive] public bool SideBarOpen { get; set; }
-        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.Database.Library;
+        [Reactive] public Devices.Device[] DeviceList { get; set; }
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
         #endregion
 
@@ -273,11 +270,10 @@ namespace KindleManager.ViewModels
         public void _OpenSideBar()
         {
             SideBarOpen = true;
-            BackgroundWork = true;
             Task.Run(() =>
             {
                 DevManager.FindDevices();
-                SetStatusBar(false, null, null);
+                DeviceList = DevManager.DeviceList;
             });
         }
 

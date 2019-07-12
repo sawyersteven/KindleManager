@@ -131,7 +131,7 @@
                     <TextBlock FontSize="14" FontWeight="Bold" Margin="0,8,0,0">Devices</TextBlock>
                     <Border BorderThickness="1" BorderBrush="{DynamicResource GrayBrush5}"/>
                     <ScrollViewer>
-                        <ItemsControl ItemsSource="{Binding DevManager.DeviceList}">
+                        <ItemsControl ItemsSource="{Binding DeviceList}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="4" BorderBrush="White" BorderThickness="2" Margin="0,4" Cursor="Hand" Background="Transparent">
