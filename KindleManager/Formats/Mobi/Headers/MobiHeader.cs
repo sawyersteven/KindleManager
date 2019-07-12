@@ -236,7 +236,7 @@ namespace Formats.Mobi.Headers
             try
             {
                 reader.BaseStream.Seek(fullTitleOffset, SeekOrigin.Begin);
-                fullTitle = reader.ReadBytes((int)fullTitleLength).Decode();
+                fullTitle = reader.ReadBytes((int)fullTitleLength).Decode().Trim();
             }
             catch (Exception e)
             {
