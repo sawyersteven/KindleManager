@@ -306,7 +306,7 @@ namespace KindleManager.ViewModels
         public void _OpenDeviceFolder()
         {
             if (SelectedDevice == null) return;
-            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot);
+            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.ConfigManager.config.LibraryRoot);
             while (!Directory.Exists(p))
             {
                 p = Directory.GetParent(p).FullName;
@@ -349,7 +349,7 @@ namespace KindleManager.ViewModels
                     return false;
                 }
 
-                _EditDeviceSettings(false);
+                _EditDeviceSettings(true);
                 _ScanDeviceLibrary();
             }
 
@@ -362,7 +362,7 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
         public void _EditSettings()
         {
-            var dlg = new Dialogs.ConfigEditor();
+            var dlg = new Dialogs.PCConfigEditor(App.ConfigManager);
             dlg.ShowDialog();
         }
 
@@ -405,20 +405,20 @@ namespace KindleManager.ViewModels
 
         public ReactiveCommand<bool, Unit> EditDeviceSettings { get; set; }
         /// <summary>
-        /// Pass prompt=false to disable asking to reorganize library
+        /// Edits config for device. Pass true to disable reorg prompt
         /// </summary>
-        private Unit _EditDeviceSettings(bool prompt = true)
+        private Unit _EditDeviceSettings(bool disablePrompt = false)
         {
             if (SelectedDevice == null) return UnitNull;
-            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
+            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.ConfigManager);
 
             if (dlg.ShowDialog() == false) return UnitNull;
 
-            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.Config.DirectoryFormat);
+            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.ConfigManager.config.DirectoryFormat);
 
-            SelectedDevice.WriteConfig(dlg.Config);
+            SelectedDevice.ConfigManager.Write(dlg.Config);
 
-            if (prompt && a)
+            if (!disablePrompt && a)
             {
                 var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
                 if (dlg2.ShowDialog() == true)
@@ -547,7 +547,7 @@ namespace KindleManager.ViewModels
 
             if (errs.Count != 0)
             {
-                string msg = $"Metadata could not be updated.&#x0a; {string.Join("; ", errs.Select(x => x.Message).ToList())}";
+                string msg = $"Metadata could not be updated. {string.Join("; ", errs.Select(x => x.Message).ToList())}";
 
                 new Dialogs.Error("Error updating metadata", msg).ShowDialog();
             }
@@ -609,7 +609,7 @@ namespace KindleManager.ViewModels
 
             Dictionary<string, string> remoteMetadata = remoteEntry.Props();
 
-            string localFile = Path.Combine(App.ConfigManager.config.LibraryDir, App.ConfigManager.config.LibraryFormat, "{Title}").DictFormat(remoteMetadata);
+            string localFile = Path.Combine(App.ConfigManager.config.LibraryRoot, App.ConfigManager.config.DirectoryFormat, "{Title}").DictFormat(remoteMetadata);
             localFile = Utils.Files.MakeFilesystemSafe(localFile + Path.GetExtension(remoteEntry.FilePath));
 
             try

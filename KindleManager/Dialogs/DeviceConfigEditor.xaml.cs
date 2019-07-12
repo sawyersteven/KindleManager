@@ -5,8 +5,8 @@ namespace KindleManager.Dialogs
 {
     public partial class DeviceConfigEditor : MetroWindow
     {
-        public Devices.DeviceConfig Config { get; set; }
-        private readonly Devices.Device Kindle;
+        public ConfigManager<Config.DeviceConfig> ConfigManager { get; set; }
+        public Config.DeviceConfig Config { get; set; }
         public bool HelpOpen { get; set; }
 
         private void ToggleHelpOpen(object sender, RoutedEventArgs e)
@@ -14,11 +14,12 @@ namespace KindleManager.Dialogs
             HelpOpen = !HelpOpen;
         }
 
-        public DeviceConfigEditor(Devices.DeviceConfig config)
+        public DeviceConfigEditor(ConfigManager<Config.DeviceConfig> confManager)
         {
-            this.DataContext = this;
-            this.Config = new Devices.DeviceConfig(config);
-            this.Owner = App.Current.MainWindow;
+            ConfigManager = confManager;
+            DataContext = this;
+            Config = ConfigManager.Copy();
+            Owner = App.Current.MainWindow;
             InitializeComponent();
         }
 

@@ -10,13 +10,13 @@ namespace KindleManager
         public static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public static Database Database;
         public static string LibraryDirectory;
-        public static ConfigManager ConfigManager;
+        public static ConfigManager<Config.PCConfig> ConfigManager;
 
         public void StartApp(object sender, StartupEventArgs e)
         {
-            ConfigManager = new ConfigManager();
+            ConfigManager = new ConfigManager<Config.PCConfig>(Path.Combine(Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\"), "Settings.conf"));
 
-            LibraryDirectory = Environment.ExpandEnvironmentVariables(ConfigManager.config.LibraryDir);
+            LibraryDirectory = Environment.ExpandEnvironmentVariables(ConfigManager.config.LibraryRoot);
 
             Directory.CreateDirectory(LibraryDirectory);
 

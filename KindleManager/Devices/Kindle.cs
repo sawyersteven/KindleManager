@@ -33,7 +33,7 @@ namespace Devices
 
             Dictionary<string, string> bookMetadata = localBook.Props();
 
-            string remoteFileAbs = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
+            string remoteFileAbs = Path.Combine(ConfigManager.config.LibraryRoot, ConfigManager.config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
             remoteFileAbs = Utils.Files.MakeFilesystemSafe(Path.Combine(this.DriveLetter, remoteFileAbs));
             string remoteFileRelative = remoteFileAbs.Substring(Path.GetPathRoot(remoteFileAbs).Length);
 
@@ -65,9 +65,9 @@ namespace Devices
             remoteBook = new Formats.Mobi.Book(remoteFileAbs);
             remoteBook.Id = localBook.Id;
 
-            if (Config.ChangeTitleOnSync)
+            if (ConfigManager.config.ChangeTitleOnSync)
             {
-                remoteBook.Title = Config.TitleFormat.DictFormat(bookMetadata);
+                remoteBook.Title = ConfigManager.config.TitleFormat.DictFormat(bookMetadata);
                 Logger.Info("Changing title of {} to {}", localBook.Title, remoteBook.Title);
                 remoteBook.WriteMetadata();
             }

@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow x:Class="KindleManager.Dialogs.ConfigEditor"
+﻿<Controls:MetroWindow x:Class="KindleManager.Dialogs.PCConfigEditor"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -48,14 +48,14 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding Config.LibraryDir}" IsReadOnly="True" Grid.Column="0" BorderThickness="1,1,0,1"/>
+            <TextBox Text="{Binding Config.LibraryRoot}" IsReadOnly="True" Grid.Column="0" BorderThickness="1,1,0,1"/>
             <Button Click="SelectLibraryDir" Width="24" Height="24" Padding="0" Grid.Column="1" BorderThickness="1" VerticalAlignment="Top">
                 <icons:PackIconOcticons Kind="FileDirectory" Height="14" Width="14"/>
             </Button>
         </Grid>
 
         <Label>Library Format</Label>
-        <TextBox Text="{Binding Config.LibraryFormat}"/>
+        <TextBox Text="{Binding Config.DirectoryFormat}"/>
         
         <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
