@@ -91,7 +91,7 @@ namespace Devices
         public virtual IEnumerable<string> ReorganizeLibrary()
         {
             List<Exception> errs = new List<Exception>();
-            foreach (Formats.BookBase book in this.Database.Library)
+            foreach (BookBase book in Database.BOOKS)
             {
                 yield return book.Title;
                 string origPath = AbsoluteFilePath(book);
@@ -155,7 +155,7 @@ namespace Devices
                     }
                     BookBase local = KindleManager.App.Database.FindMatch(book);
 
-                    if (local != null && !Database.Library.Any(x => x.Id == local.Id))
+                    if (local != null && !Database.BOOKS.Any(x => x.Id == local.Id))
                     {
                         book.Id = local.Id;
                         book.Series = local.Series;
@@ -189,7 +189,7 @@ namespace Devices
 
         public virtual void DeleteBook(int id)
         {
-            KindleManager.Database.BookEntry b = Database.Library.FirstOrDefault(x => x.Id == id);
+            KindleManager.Database.BookEntry b = Database.BOOKS.FirstOrDefault(x => x.Id == id);
             if (b == null)
             {
                 throw new ArgumentException($"Book with Id [{id}] not found in library");

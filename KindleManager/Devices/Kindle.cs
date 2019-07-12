@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Devices
+namespace KindleManager.Devices
 {
     class Kindle : Device
     {
@@ -23,7 +23,7 @@ namespace Devices
         public override void SendBook(BookBase localBook)
         {
             Logger.Info("Copying {} to Kindle.", localBook.Title);
-            BookBase remoteBook = Database.Library.FirstOrDefault(x => x.Id == localBook.Id);
+            BookBase remoteBook = Database.BOOKS.FirstOrDefault(x => x.Id == localBook.Id);
             if (remoteBook != null)
             {
                 Logger.Info("{}[{}] already exists on Kindle, copying metadata from pc library.", localBook.Title, localBook.Id);
@@ -42,7 +42,7 @@ namespace Devices
 
             if (File.Exists(remoteFileAbs))
             {
-                KindleManager.Database.BookEntry remoteEntry = Database.Library.FirstOrDefault(x => x.FilePath == remoteFileRelative);
+                KindleManager.Database.BookEntry remoteEntry = Database.BOOKS.FirstOrDefault(x => x.FilePath == remoteFileRelative);
                 if (remoteEntry == null) // file exists but not in database
                 {
                     Logger.Info("File {} exists but is not in Kindle's database. Overwriting with local copy.", remoteFileAbs);
