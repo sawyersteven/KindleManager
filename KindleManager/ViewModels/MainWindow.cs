@@ -643,7 +643,7 @@ namespace KindleManager.ViewModels
                     }
                     try
                     {
-                        Library.ImportBook(remoteEntry);
+                        App.LocalLibrary.ImportBook(remoteEntry);
                     }
                     catch (Exception e)
                     {
@@ -710,7 +710,7 @@ namespace KindleManager.ViewModels
 
                 try
                 {
-                    Library.ImportBook(remoteEntry);
+                    App.LocalLibrary.ImportBook(remoteEntry);
                 }
                 catch (LiteDB.LiteException e)
                 {
@@ -735,7 +735,7 @@ namespace KindleManager.ViewModels
             BackgroundWork = true;
             try
             {
-                Library.ImportBook(filePath);
+                App.LocalLibrary.ImportBook(filePath);
             }
             catch (LiteDB.LiteException e)
             {
@@ -781,7 +781,7 @@ namespace KindleManager.ViewModels
                         StatusBarText = $"Importing {file}";
                         try
                         {
-                            Library.ImportBook(file);
+                            App.LocalLibrary.ImportBook(file);
                         }
                         catch (Exception e)
                         {

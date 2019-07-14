@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace KindleManager
 {
-    class Library
+    public class Library
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -13,7 +13,7 @@ namespace KindleManager
         /// Adds book to library directory and database, converting if neccesary. Preserves book.Id
         /// </summary>
         /// <returns>Int Id assigned to book in database</returns>
-        public static int ImportBook(BookBase book)
+        public void ImportBook(BookBase book)
         {
             string template = Path.Combine(App.ConfigManager.config.LibraryFormat, "{Title}");
             string destinationFile = Path.Combine(App.ConfigManager.config.LibraryDir, template.DictFormat(book.Props())) + ".mobi";
@@ -39,13 +39,12 @@ namespace KindleManager
                 book.FilePath = destinationFile;
             }
             App.Database.AddBook(book);
-            return book.Id;
         }
 
         /// <summary>
         /// Adds book to library directory and database, converting if neccesary
         /// </summary>
-        public static void ImportBook(string filePath)
+        public void ImportBook(string filePath)
         {
             ImportBook(BookBase.Auto(filePath));
         }

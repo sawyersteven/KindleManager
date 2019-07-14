@@ -11,6 +11,7 @@ namespace KindleManager
         public static Database Database;
         public static string LibraryDirectory;
         public static ConfigManager ConfigManager;
+        public static Library LocalLibrary;
 
         public void StartApp(object sender, StartupEventArgs e)
         {
@@ -19,6 +20,8 @@ namespace KindleManager
             LibraryDirectory = Environment.ExpandEnvironmentVariables(ConfigManager.config.LibraryDir);
 
             Directory.CreateDirectory(LibraryDirectory);
+
+            LocalLibrary = new Library();
 
             Database = new Database(Path.Combine(LibraryDirectory, "Library.db"));
 
