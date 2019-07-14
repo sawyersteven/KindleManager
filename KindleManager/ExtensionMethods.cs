@@ -200,15 +200,15 @@ namespace ExtensionMethods
             {
                 s = s.Replace($"{{{kv.Key}}}", kv.Value);
             }
-            s = s.Replace("[]", "");
-            s = s.Replace("{}", "");
-            s = s.Replace("()", "");
-
             while (s.Contains("  "))
             {
                 s = s.Replace("  ", " ");
             }
-            return s.Trim();
+            s = s.Replace("[]", "");
+            s = s.Replace("{}", "");
+            s = s.Replace("()", "");
+
+            return s;
         }
     }
 

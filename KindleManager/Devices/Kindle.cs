@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace KindleManager.Devices
+namespace Devices
 {
     class Kindle : Device
     {
@@ -23,7 +23,7 @@ namespace KindleManager.Devices
         public override void SendBook(BookBase localBook)
         {
             Logger.Info("Copying {} to Kindle.", localBook.Title);
-            BookBase remoteBook = Database.BOOKS.FirstOrDefault(x => x.Id == localBook.Id);
+            BookBase remoteBook = Database.Library.FirstOrDefault(x => x.Id == localBook.Id);
             if (remoteBook != null)
             {
                 Logger.Info("{}[{}] already exists on Kindle, copying metadata from pc library.", localBook.Title, localBook.Id);
@@ -33,7 +33,7 @@ namespace KindleManager.Devices
 
             Dictionary<string, string> bookMetadata = localBook.Props();
 
-            string remoteFileAbs = Path.Combine(ConfigManager.config.LibraryRoot, ConfigManager.config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
+            string remoteFileAbs = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
             remoteFileAbs = Utils.Files.MakeFilesystemSafe(Path.Combine(this.DriveLetter, remoteFileAbs));
             string remoteFileRelative = remoteFileAbs.Substring(Path.GetPathRoot(remoteFileAbs).Length);
 
@@ -42,7 +42,7 @@ namespace KindleManager.Devices
 
             if (File.Exists(remoteFileAbs))
             {
-                KindleManager.Database.BookEntry remoteEntry = Database.BOOKS.FirstOrDefault(x => x.FilePath == remoteFileRelative);
+                KindleManager.Database.BookEntry remoteEntry = Database.Library.FirstOrDefault(x => x.FilePath == remoteFileRelative);
                 if (remoteEntry == null) // file exists but not in database
                 {
                     Logger.Info("File {} exists but is not in Kindle's database. Overwriting with local copy.", remoteFileAbs);
@@ -65,9 +65,9 @@ namespace KindleManager.Devices
             remoteBook = new Formats.Mobi.Book(remoteFileAbs);
             remoteBook.Id = localBook.Id;
 
-            if (ConfigManager.config.ChangeTitleOnSync)
+            if (Config.ChangeTitleOnSync)
             {
-                remoteBook.Title = ConfigManager.config.TitleFormat.DictFormat(bookMetadata);
+                remoteBook.Title = Config.TitleFormat.DictFormat(bookMetadata);
                 Logger.Info("Changing title of {} to {}", localBook.Title, remoteBook.Title);
                 remoteBook.WriteMetadata();
             }

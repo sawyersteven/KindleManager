@@ -4,10 +4,9 @@ using System.Windows.Forms;
 
 namespace KindleManager.Dialogs
 {
-    public partial class PCConfigEditor : MetroWindow
+    public partial class ConfigEditor : MetroWindow
     {
-        public ConfigManager<Config.PCConfig> ConfigManager { get; set; }
-        public Config.PCConfig Config { get; }
+        public ConfigManager.Config Config { get; }
         public bool HelpOpen { get; set; }
 
         private void ToggleHelpOpen(object sender, RoutedEventArgs e)
@@ -15,12 +14,11 @@ namespace KindleManager.Dialogs
             HelpOpen = !HelpOpen;
         }
 
-        public PCConfigEditor(ConfigManager<Config.PCConfig> confManager)
+        public ConfigEditor()
         {
-            ConfigManager = confManager;
-            DataContext = this;
-            Config = confManager.Copy();
-            Owner = App.Current.MainWindow;
+            this.DataContext = this;
+            this.Config = new ConfigManager.Config(App.ConfigManager.config);
+            this.Owner = App.Current.MainWindow;
             InitializeComponent();
         }
 
@@ -36,13 +34,14 @@ namespace KindleManager.Dialogs
             dlg.ShowDialog();
             if (dlg.SelectedPath != null)
             {
-                Config.LibraryRoot = dlg.SelectedPath;
+                Config.LibraryDir = dlg.SelectedPath;
             }
         }
 
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
-            ConfigManager.Write(Config);
+            App.ConfigManager.config = Config;
+            App.ConfigManager.Write();
 
             DialogResult = true;
             this.Close();

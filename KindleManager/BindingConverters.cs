@@ -121,7 +121,7 @@ namespace KindleManager.BindingConverters
             {
                 id = (int)values[0];
             }
-            catch (Exception) { return false; }
+            catch (Exception _) { return false; }
 
             ObservableCollection<Database.BookEntry> db1 = values[1] as ObservableCollection<Database.BookEntry>;
             ObservableCollection<Database.BookEntry> db2 = values[2] as ObservableCollection<Database.BookEntry>;

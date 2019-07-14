@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using ReactiveUI.Fody.Helpers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 
-namespace KindleManager.Devices
+namespace Devices
 {
     class DevManager
     {
+        [Reactive]
         public Device[] DeviceList { get; set; }
 
         public DevManager()
@@ -30,6 +32,7 @@ namespace KindleManager.Devices
             d.AddRange(FindKindles());
             DeviceList = d.ToArray();
         }
+
         private Device[] FindKindles()
         {
             List<Device> devices = new List<Device>();
@@ -42,7 +45,7 @@ namespace KindleManager.Devices
                     {
                         foreach (ManagementObject i in o.GetRelated("Win32_LogicalDisk"))
                         {
-                            devices.Add(new Devices.Kindle(i.GetPropertyValue("Name") + "\\", (string)i.GetPropertyValue("VolumeName"), (string)drive.GetPropertyValue("Caption")));
+                            devices.Add(new Kindle(i.GetPropertyValue("Name") + "\\", (string)i.GetPropertyValue("VolumeName"), (string)drive.GetPropertyValue("Caption")));
                         }
                     }
                 }

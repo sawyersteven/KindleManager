@@ -82,11 +82,11 @@ namespace Utils
                     {
                         Directory.Delete(start);
                     }
-                    catch (DirectoryNotFoundException) { }
+                    catch (DirectoryNotFoundException _) { }
                     start = Path.GetFullPath(Path.Combine(start, ".."));
                 }
             }
-            catch (Exception) { }
+            catch (Exception _) { }
         }
 
         /// <summary>

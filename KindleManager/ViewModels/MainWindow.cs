@@ -25,7 +25,7 @@ namespace KindleManager.ViewModels
     class MainWindow : ReactiveObject
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-        public Devices.DevManager DevManager { get; set; } = new Devices.DevManager();
+
         private readonly Unit UnitNull = new Unit();
 
         public MainWindow()
@@ -47,13 +47,15 @@ namespace KindleManager.ViewModels
             ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
+
             #endregion
+
+            DevManager = new DevManager();
 
             StatusBarIcon = Icons.None;
             StatusBarText = "";
+            SideBarOpen = true;
             BackgroundWork = false;
-
-            _OpenSideBar();
         }
 
         #region properties
@@ -70,10 +72,11 @@ namespace KindleManager.ViewModels
         [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string StatusBarText { get; set; }
         [Reactive] public string StatusBarIcon { get; set; }
+        public DevManager DevManager { get; set; }
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
-        [Reactive] public Devices.Device SelectedDevice { get; set; }
+        [Reactive] public Device SelectedDevice { get; set; }
         [Reactive] public bool SideBarOpen { get; set; }
-        [Reactive] public Devices.Device[] DeviceList { get; set; }
+        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.Database.Library;
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
         #endregion
 
@@ -270,10 +273,11 @@ namespace KindleManager.ViewModels
         public void _OpenSideBar()
         {
             SideBarOpen = true;
+            BackgroundWork = true;
             Task.Run(() =>
             {
                 DevManager.FindDevices();
-                DeviceList = DevManager.DeviceList;
+                SetStatusBar(false, null, null);
             });
         }
 
@@ -285,7 +289,7 @@ namespace KindleManager.ViewModels
             {
                 System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
             }
-            catch (System.ComponentModel.Win32Exception)
+            catch (System.ComponentModel.Win32Exception _)
             {
                 if (SelectedDevice != null)
                 {
@@ -302,7 +306,7 @@ namespace KindleManager.ViewModels
         public void _OpenDeviceFolder()
         {
             if (SelectedDevice == null) return;
-            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.ConfigManager.config.LibraryRoot);
+            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot);
             while (!Directory.Exists(p))
             {
                 p = Directory.GetParent(p).FullName;
@@ -345,7 +349,7 @@ namespace KindleManager.ViewModels
                     return false;
                 }
 
-                _EditDeviceSettings(true);
+                _EditDeviceSettings(false);
                 _ScanDeviceLibrary();
             }
 
@@ -358,7 +362,7 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
         public void _EditSettings()
         {
-            var dlg = new Dialogs.PCConfigEditor(App.ConfigManager);
+            var dlg = new Dialogs.ConfigEditor();
             dlg.ShowDialog();
         }
 
@@ -401,20 +405,20 @@ namespace KindleManager.ViewModels
 
         public ReactiveCommand<bool, Unit> EditDeviceSettings { get; set; }
         /// <summary>
-        /// Edits config for device. Pass true to disable reorg prompt
+        /// Pass prompt=false to disable asking to reorganize library
         /// </summary>
-        private Unit _EditDeviceSettings(bool disablePrompt = false)
+        private Unit _EditDeviceSettings(bool prompt = true)
         {
             if (SelectedDevice == null) return UnitNull;
-            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.ConfigManager);
+            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
 
             if (dlg.ShowDialog() == false) return UnitNull;
 
-            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.ConfigManager.config.DirectoryFormat);
+            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.Config.DirectoryFormat);
 
-            SelectedDevice.ConfigManager.Write(dlg.Config);
+            SelectedDevice.WriteConfig(dlg.Config);
 
-            if (!disablePrompt && a)
+            if (prompt && a)
             {
                 var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
                 if (dlg2.ShowDialog() == true)
@@ -482,8 +486,8 @@ namespace KindleManager.ViewModels
                         {
                             File.Delete(localBook.FilePath);
                         }
-                        catch (FileNotFoundException) { }
-                        catch (DirectoryNotFoundException) { }
+                        catch (FileNotFoundException _) { }
+                        catch (DirectoryNotFoundException _) { }
 
                         Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
                     }
@@ -543,7 +547,7 @@ namespace KindleManager.ViewModels
 
             if (errs.Count != 0)
             {
-                string msg = $"Metadata could not be updated. {string.Join("; ", errs.Select(x => x.Message).ToList())}";
+                string msg = $"Metadata could not be updated.&#x0a; {string.Join("; ", errs.Select(x => x.Message).ToList())}";
 
                 new Dialogs.Error("Error updating metadata", msg).ShowDialog();
             }
@@ -605,7 +609,7 @@ namespace KindleManager.ViewModels
 
             Dictionary<string, string> remoteMetadata = remoteEntry.Props();
 
-            string localFile = Path.Combine(App.ConfigManager.config.LibraryRoot, App.ConfigManager.config.DirectoryFormat, "{Title}").DictFormat(remoteMetadata);
+            string localFile = Path.Combine(App.ConfigManager.config.LibraryDir, App.ConfigManager.config.LibraryFormat, "{Title}").DictFormat(remoteMetadata);
             localFile = Utils.Files.MakeFilesystemSafe(localFile + Path.GetExtension(remoteEntry.FilePath));
 
             try
