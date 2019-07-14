@@ -216,8 +216,8 @@ namespace Devices
             {
                 File.Delete(file);
             }
-            catch (FileNotFoundException _) { }
-            catch (DirectoryNotFoundException _) { }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
 
             Database.RemoveBook(b);
 

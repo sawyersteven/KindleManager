@@ -289,7 +289,7 @@ namespace KindleManager.ViewModels
             {
                 System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
             }
-            catch (System.ComponentModel.Win32Exception _)
+            catch (System.ComponentModel.Win32Exception)
             {
                 if (SelectedDevice != null)
                 {
@@ -486,8 +486,8 @@ namespace KindleManager.ViewModels
                         {
                             File.Delete(localBook.FilePath);
                         }
-                        catch (FileNotFoundException _) { }
-                        catch (DirectoryNotFoundException _) { }
+                        catch (FileNotFoundException) { }
+                        catch (DirectoryNotFoundException) { }
 
                         Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
                     }
