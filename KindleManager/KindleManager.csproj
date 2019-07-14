@@ -60,9 +60,11 @@
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
     <Compile Include="BindingConverters.cs" />
-    <Compile Include="ConfigManager.cs" />
+    <Compile Include="Config\IConfig.cs" />
+    <Compile Include="Config\ConfigManager.cs" />
+    <Compile Include="Config\PCConfig.cs" />
     <Compile Include="Devices\DeviceBase.cs" />
-    <Compile Include="Devices\DeviceConfig.cs" />
+    <Compile Include="Config\DeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
     <Compile Include="Devices\Kindle.cs" />
     <Compile Include="Dialogs\BulkProcessErrors.xaml.cs">
@@ -83,8 +85,8 @@
     <Compile Include="Dialogs\DeviceConfigEditor.xaml.cs">
       <DependentUpon>DeviceConfigEditor.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Dialogs\ConfigEditor.xaml.cs">
-      <DependentUpon>ConfigEditor.xaml</DependentUpon>
+    <Compile Include="Dialogs\PCConfigEditor.xaml.cs">
+      <DependentUpon>PCConfigEditor.xaml</DependentUpon>
     </Compile>
     <Compile Include="Formats\BookBase.cs" />
     <Compile Include="Formats\Converters.cs" />
@@ -140,7 +142,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Dialogs\ConfigEditor.xaml">
+    <Page Include="Dialogs\PCConfigEditor.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
