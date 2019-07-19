@@ -208,7 +208,7 @@ namespace ExtensionMethods
             s = s.Replace("{}", "");
             s = s.Replace("()", "");
 
-            return s;
+            return s.Trim();
         }
     }
 

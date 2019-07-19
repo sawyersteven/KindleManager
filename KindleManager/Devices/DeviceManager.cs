@@ -3,24 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 
-namespace Devices
+namespace KindleManager.Devices
 {
     class DevManager
     {
         [Reactive]
-        public Device[] DeviceList { get; set; }
+        public DeviceBase[] DeviceList { get; set; }
 
         public DevManager()
         {
             FindDevices();
         }
 
-        public Device OpenDevice(string driveLetter)
+        public DeviceBase OpenDevice(string Id)
         {
-            Device SelectedDevice = DeviceList.FirstOrDefault(x => x.DriveLetter == driveLetter);
+            DeviceBase SelectedDevice = DeviceList.FirstOrDefault(x => x.Id == Id);
             if (SelectedDevice == null)
             {
-                throw new KeyNotFoundException($"Drive {driveLetter} could not be opened.");
+                throw new KeyNotFoundException($"Device with ID {Id} could not be opened.");
             }
 
             return SelectedDevice;
@@ -28,14 +28,14 @@ namespace Devices
 
         public void FindDevices()
         {
-            List<Device> d = new List<Device>();
+            List<DeviceBase> d = new List<DeviceBase>();
             d.AddRange(FindKindles());
             DeviceList = d.ToArray();
         }
 
-        private Device[] FindKindles()
+        private DeviceBase[] FindKindles()
         {
-            List<Device> devices = new List<Device>();
+            List<DeviceBase> devices = new List<DeviceBase>();
 
             foreach (ManagementObject drive in new ManagementObjectSearcher("select * from Win32_DiskDrive").Get())
             {
@@ -45,15 +45,13 @@ namespace Devices
                     {
                         foreach (ManagementObject i in o.GetRelated("Win32_LogicalDisk"))
                         {
-                            devices.Add(new Kindle(i.GetPropertyValue("Name") + "\\", (string)i.GetPropertyValue("VolumeName"), (string)drive.GetPropertyValue("Caption")));
+                            devices.Add(new FSDevice(i.GetPropertyValue("Name") + "\\", (string)i.GetPropertyValue("VolumeName"), (string)drive.GetPropertyValue("Caption"), (string)i.GetPropertyValue("VolumeSerialNumber")));
                         }
                     }
                 }
             }
 #if DEBUG
-            string debugDir = System.Environment.ExpandEnvironmentVariables("%USERPROFILE%\\Desktop\\KindleManagerDebug");
-            System.IO.Directory.CreateDirectory(debugDir);
-            devices.Add(new Kindle("G:\\", "Kindle", "Kindle Dir DEBUG"));
+            devices.Add(new FSDevice("H:\\", "USB Drive", "Description", "ID123456"));
 #endif
             return devices.ToArray();
         }

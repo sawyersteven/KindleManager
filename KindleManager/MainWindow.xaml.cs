@@ -26,7 +26,7 @@ namespace KindleManager
 
             foreach (var c in LibraryTable.Columns)
             {
-                if (App.ConfigManager.config.HiddenColumns.Contains(c.Header))
+                if (App.Config.HiddenColumns.Contains(c.Header))
                 {
                     c.Visibility = Visibility.Collapsed;
                 }

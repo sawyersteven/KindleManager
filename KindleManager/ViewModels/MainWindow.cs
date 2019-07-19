@@ -1,5 +1,4 @@
-﻿using Devices;
-using ExtensionMethods;
+﻿using ExtensionMethods;
 using Formats;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -20,6 +19,7 @@ namespace KindleManager.ViewModels
         public static string None = "None";
         public static string Check = "Check";
         public static string Alert = "Alert";
+        public static string Clone = "RepoClone";
     }
 
     class MainWindow : ReactiveObject
@@ -50,7 +50,7 @@ namespace KindleManager.ViewModels
 
             #endregion
 
-            DevManager = new DevManager();
+            DevManager = new Devices.DevManager();
 
             StatusBarIcon = Icons.None;
             StatusBarText = "";
@@ -72,11 +72,11 @@ namespace KindleManager.ViewModels
         [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string StatusBarText { get; set; }
         [Reactive] public string StatusBarIcon { get; set; }
-        public DevManager DevManager { get; set; }
+        public Devices.DevManager DevManager { get; set; }
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
-        [Reactive] public Device SelectedDevice { get; set; }
+        [Reactive] public Devices.DeviceBase SelectedDevice { get; set; }
         [Reactive] public bool SideBarOpen { get; set; }
-        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.Database.Library;
+        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.LocalLibrary.Database.BOOKS;
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
         #endregion
 
@@ -131,16 +131,16 @@ namespace KindleManager.ViewModels
             if (dlg.DialogResult == false) return;
 
             BackgroundWork = true;
-            StatusBarIcon = Icons.None;
+            SetStatusBar(true, "Preparing library...", Icons.Clone);
             Task.Run(() =>
             {
                 try
                 {
-                    foreach (string title in SelectedDevice.ReorganizeLibrary())
+                    foreach (BookBase book in SelectedDevice.Reorganize())
                     {
-                        StatusBarText = $"Processing {title}";
+                        StatusBarText = $"Processed {book.Title}";
                     }
-                    SelectedDevice.CleanLibrary();
+                    SelectedDevice.Clean();
                 }
                 catch (AggregateException e)
                 {
@@ -172,13 +172,15 @@ namespace KindleManager.ViewModels
             dlg.ShowDialog();
             if (dlg.DialogResult == false) return;
 
+            SetStatusBar(true, null, Icons.Clone);
+
             Task.Run(() =>
             {
                 try
                 {
-                    foreach (string title in SelectedDevice.RecreateLibraryAndDatabse())
+                    foreach (BookBase book in SelectedDevice.Rescan())
                     {
-                        SetStatusBar(true, $"Processing {title}", null);
+                        SetStatusBar(true, $"Processed {book.Title}", null);
                     }
                 }
                 catch (AggregateException e)
@@ -213,9 +215,9 @@ namespace KindleManager.ViewModels
 
             List<Database.BookEntry> toTransfer = new List<Database.BookEntry>();
 
-            foreach (Database.BookEntry book in App.Database.Library)
+            foreach (Database.BookEntry book in App.LocalLibrary.Database.BOOKS)
             {
-                if (!SelectedDevice.Database.Library.Any(x => x.Id == book.Id))
+                if (!SelectedDevice.Database.BOOKS.Any(x => x.Id == book.Id))
                 {
                     toTransfer.Add(book);
                 }
@@ -249,7 +251,8 @@ namespace KindleManager.ViewModels
                     try
                     {
                         StatusBarText = $"Copying {book.Title}";
-                        SelectedDevice.SendBook(book);
+                        book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
+                        SelectedDevice.ImportBook(book);
                     }
                     catch (Exception e)
                     {
@@ -281,13 +284,14 @@ namespace KindleManager.ViewModels
             });
         }
 
+        // OK
         public ReactiveCommand<Unit, Unit> OpenBookFolder { get; set; }
         public void _OpenBookFolder()
         {
             if (SelectedTableRow == null) return;
             try
             {
-                System.Diagnostics.Process.Start(Path.GetDirectoryName(SelectedTableRow.FilePath));
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(App.LocalLibrary.AbsoluteFilePath(SelectedTableRow)));
             }
             catch (System.ComponentModel.Win32Exception)
             {
@@ -306,7 +310,7 @@ namespace KindleManager.ViewModels
         public void _OpenDeviceFolder()
         {
             if (SelectedDevice == null) return;
-            string p = Path.Combine(SelectedDevice.DriveLetter, SelectedDevice.Config.LibraryRoot);
+            string p = SelectedDevice.LibraryRoot;
             while (!Directory.Exists(p))
             {
                 p = Directory.GetParent(p).FullName;
@@ -314,6 +318,7 @@ namespace KindleManager.ViewModels
             System.Diagnostics.Process.Start(p);
         }
 
+        // OK
         public ReactiveCommand<string, bool> SelectDevice { get; set; }
         public bool _SelectDevice(string driveLetter)
         {
@@ -329,7 +334,7 @@ namespace KindleManager.ViewModels
                 return false;
             }
 
-            if (SelectedDevice.FirstUse)
+            if (SelectedDevice.Open())
             {
                 var dlg = new Dialogs.YesNo("Device Setup", "It appears this is the first time you've used this device with KindleManager. A new configuration and database will be created.");
                 if (dlg.ShowDialog() == false)
@@ -338,27 +343,16 @@ namespace KindleManager.ViewModels
                     return false;
                 }
 
-                try
-                {
-                    SelectedDevice.Init(true);
-                }
-                catch (Exception e)
-                {
-                    var errdlg = new Dialogs.Error("Error initializing device", e.Message);
-                    errdlg.ShowDialog();
-                    return false;
-                }
-
-                _EditDeviceSettings(false);
+                _EditDeviceSettings(true);
                 _ScanDeviceLibrary();
             }
 
-            SelectedDevice.Open();
-            RemoteLibrary = SelectedDevice.Database.Library;
+            RemoteLibrary = SelectedDevice.Database.BOOKS;
 
             return true;
         }
 
+        // OK
         public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
         public void _EditSettings()
         {
@@ -371,8 +365,9 @@ namespace KindleManager.ViewModels
          * example for how to convert other methods to accept multiple
          * datagrid selections. 
          */
+        // OK
         public ReactiveCommand<IList, Unit> SendBook { get; set; }
-        public Unit _SendBook(IList p)
+        public Unit _SendBook(IList bookList)
         {
             if (SelectedDevice == null)
             {
@@ -384,20 +379,24 @@ namespace KindleManager.ViewModels
             StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
-                Database.BookEntry book = (Database.BookEntry)p[0];
-                try
+                List<Exception> errs = new List<Exception>();
+                foreach (Database.BookEntry book in bookList)
                 {
-                    SelectedDevice.SendBook(book);
-                    StatusBarIcon = Icons.Check;
-                    StatusBarText = $"{book.Title} sent to {SelectedDevice.Name}.";
+                    try
+                    {
+                        book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
+                        SelectedDevice.ImportBook(book);
+                        SetStatusBar(true, $"{book.Title} sent to {SelectedDevice.Name}.", Icons.Check);
+                    }
+                    catch (Exception e)
+                    {
+                        e.Data["item"] = book.Title;
+                        errs.Add(e);
+                    }
                 }
-                catch (Exception e)
+                if (errs.Count > 0)
                 {
-                    SetStatusBar(false, e.Message, Icons.Alert);
-                }
-                finally
-                {
-                    SetStatusBar(false, null, null);
+                    new Dialogs.BulkProcessErrors("Error transferring books", errs.ToArray()).ShowDialog();
                 }
             });
             return UnitNull;
@@ -407,23 +406,28 @@ namespace KindleManager.ViewModels
         /// <summary>
         /// Pass prompt=false to disable asking to reorganize library
         /// </summary>
-        private Unit _EditDeviceSettings(bool prompt = true)
+        /// <remarks>
+        /// This method is a bit wonky but I wanted to lay the basics
+        /// for handling different kinds of devices in case it is needed
+        /// in the future.
+        /// </remarks>
+        private Unit _EditDeviceSettings(bool skipPrompt = false)
         {
             if (SelectedDevice == null) return UnitNull;
-            var dlg = new Dialogs.DeviceConfigEditor(SelectedDevice.Config);
 
-            if (dlg.ShowDialog() == false) return UnitNull;
-
-            bool a = (dlg.Config.DirectoryFormat != SelectedDevice.Config.DirectoryFormat);
-
-            SelectedDevice.WriteConfig(dlg.Config);
-
-            if (prompt && a)
+            if (SelectedDevice is Devices.FSDevice d)
             {
-                var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
-                if (dlg2.ShowDialog() == true)
+                var dlg = new Dialogs.FSDeviceConfigEditor(d.Config);
+                if (dlg.ShowDialog() == false) return UnitNull;
+                d.Config.CopyFrom(dlg.Config);
+
+                if (!skipPrompt && dlg.RequestReorg)
                 {
-                    _ReorganizeDeviceLibrary();
+                    var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
+                    if (dlg2.ShowDialog() == true)
+                    {
+                        _ReorganizeDeviceLibrary();
+                    }
                 }
             }
             return UnitNull;
@@ -455,7 +459,7 @@ namespace KindleManager.ViewModels
         {
             if (SelectedTableRow == null) { return; }
 
-            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.Library.Any(x => x.Id == SelectedTableRow.Id);
+            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.BOOKS.Any(x => x.Id == SelectedTableRow.Id);
             bool onPC = LocalLibrary.Any(x => x.Id == SelectedTableRow.Id);
 
             var dlg = new Dialogs.DeleteConfirm(SelectedTableRow.Title, onDevice, onPC);
@@ -463,7 +467,7 @@ namespace KindleManager.ViewModels
             if (dlg.ShowDialog() == false) { return; }
             if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 1) // device
             {
-                Database.BookEntry remoteBook = SelectedDevice.Database.Library.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+                Database.BookEntry remoteBook = SelectedDevice.Database.BOOKS.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
                 try
                 {
                     SelectedDevice.DeleteBook(SelectedTableRow.Id);
@@ -491,7 +495,7 @@ namespace KindleManager.ViewModels
 
                         Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
                     }
-                    App.Database.RemoveBook(SelectedTableRow);
+                    App.LocalLibrary.Database.RemoveBook(SelectedTableRow);
                 }
                 catch (Exception e)
                 {
@@ -514,15 +518,12 @@ namespace KindleManager.ViewModels
             List<Exception> errs = new List<Exception>();
 
             Database.BookEntry bookEntry;
-            BookBase recip;
             bookEntry = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
             if (bookEntry != null)
             {
                 try
                 {
-                    recip = BookBase.Auto(bookEntry.FilePath);
-                    App.Database.UpdateBook(dlg.ModBook);
-                    recip.UpdateMetadata(dlg.ModBook);
+                    App.LocalLibrary.UpdateBookMetadata(dlg.ModBook);
                 }
                 catch (Exception e)
                 {
@@ -535,9 +536,7 @@ namespace KindleManager.ViewModels
             {
                 try
                 {
-                    recip = BookBase.Auto(SelectedDevice.AbsoluteFilePath(bookEntry));
-                    SelectedDevice.Database.UpdateBook(dlg.ModBook);
-                    recip.UpdateMetadata(dlg.ModBook);
+                    SelectedDevice.UpdateBookMetadata(dlg.ModBook);
                 }
                 catch (Exception e)
                 {
@@ -609,7 +608,7 @@ namespace KindleManager.ViewModels
 
             Dictionary<string, string> remoteMetadata = remoteEntry.Props();
 
-            string localFile = Path.Combine(App.ConfigManager.config.LibraryDir, App.ConfigManager.config.LibraryFormat, "{Title}").DictFormat(remoteMetadata);
+            string localFile = Path.Combine(App.Config.LibraryRoot, App.Config.LibraryRoot, "{Title}").DictFormat(remoteMetadata);
             localFile = Utils.Files.MakeFilesystemSafe(localFile + Path.GetExtension(remoteEntry.FilePath));
 
             try
@@ -673,7 +672,7 @@ namespace KindleManager.ViewModels
                     try
                     {
                         localEntry.UpdateMetadata(remoteEntry);
-                        App.Database.UpdateBook(localEntry);
+                        App.LocalLibrary.Database.UpdateBook(localEntry);
                     }
                     catch (LiteDB.LiteException e)
                     {
@@ -698,7 +697,7 @@ namespace KindleManager.ViewModels
                     Logger.Info("{} found in database but not on disk, removing database entry before importing.", localEntry.Title);
                     try
                     {
-                        App.Database.RemoveBook(localEntry);
+                        App.LocalLibrary.Database.RemoveBook(localEntry);
                     }
                     catch (LiteDB.LiteException e)
                     {
@@ -805,10 +804,10 @@ namespace KindleManager.ViewModels
 
         public void SaveLibraryColumns(List<string> hiddenColumns)
         {
-            if (hiddenColumns.SequenceEqual(App.ConfigManager.config.HiddenColumns)) return;
+            if (hiddenColumns.SequenceEqual(App.Config.HiddenColumns)) return;
 
-            App.ConfigManager.config.HiddenColumns = hiddenColumns.ToArray();
-            App.ConfigManager.Write();
+            App.Config.HiddenColumns = hiddenColumns.ToArray();
+            App.Config.Write();
         }
     }
 }

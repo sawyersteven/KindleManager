@@ -70,6 +70,11 @@ namespace Formats
             return b;
         }
 
+        /// <summary>
+        /// Copies all book metadata except ID
+        /// </summary>
+        /// <param name="donor"></param>
+        /// <param name="recipient"></param>
         public static void Merge(BookBase donor, BookBase recipient)
         {
             recipient.Title = donor.Title;

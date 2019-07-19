@@ -1,4 +1,5 @@
-﻿using MahApps.Metro.Controls;
+﻿using KindleManager.Config;
+using MahApps.Metro.Controls;
 using System.Windows;
 using System.Windows.Forms;
 
@@ -6,7 +7,7 @@ namespace KindleManager.Dialogs
 {
     public partial class ConfigEditor : MetroWindow
     {
-        public ConfigManager.Config Config { get; }
+        public PCConfig Config { get; }
         public bool HelpOpen { get; set; }
 
         private void ToggleHelpOpen(object sender, RoutedEventArgs e)
@@ -17,7 +18,7 @@ namespace KindleManager.Dialogs
         public ConfigEditor()
         {
             this.DataContext = this;
-            this.Config = new ConfigManager.Config(App.ConfigManager.config);
+            this.Config = new PCConfig(App.Config);
             this.Owner = App.Current.MainWindow;
             InitializeComponent();
         }
@@ -34,14 +35,21 @@ namespace KindleManager.Dialogs
             dlg.ShowDialog();
             if (dlg.SelectedPath != null)
             {
-                Config.LibraryDir = dlg.SelectedPath;
+                Config.LibraryRoot = dlg.SelectedPath;
             }
         }
 
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
-            App.ConfigManager.config = Config;
-            App.ConfigManager.Write();
+            App.Config = Config;
+            try
+            {
+                App.Config.Write();
+            }
+            catch (System.Exception ex)
+            {
+                System.Console.WriteLine(ex.Message);
+            }
 
             DialogResult = true;
             this.Close();

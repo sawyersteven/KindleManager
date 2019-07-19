@@ -15,14 +15,14 @@ namespace KindleManager
 
         private readonly LiteDatabase db;
         public readonly string DBFile;
-        public ObservableCollection<BookEntry> Library { get; set; }
+        public ObservableCollection<BookEntry> BOOKS { get; set; }
 
         /// <summary>
         /// Gets next usable ID for book entries table
         /// </summary>
         public static int NextID()
         {
-            DatabaseMetadata m = App.Database.ReadMetadata();
+            DatabaseMetadata m = App.LocalLibrary.Database.ReadMetadata();
             if (m == null)
             {
                 Logger.Error("Database does not contain METADATA collection and may be corrupt");
@@ -30,7 +30,7 @@ namespace KindleManager
             }
             m.LastUsedID++;
 
-            App.Database.db.GetCollection<DatabaseMetadata>("METADATA").Update(m);
+            App.LocalLibrary.Database.db.GetCollection<DatabaseMetadata>("METADATA").Update(m);
 
             return m.LastUsedID;
         }
@@ -39,7 +39,7 @@ namespace KindleManager
         {
             Logger.Info("Connecting to database {}", DBFile);
             db = new LiteDatabase(DBFile);
-            Library = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
+            BOOKS = new ObservableCollection<BookEntry>(db.GetCollection<BookEntry>("BOOKS").FindAll());
             if (!db.CollectionExists("METADATA"))
             {
                 Logger.Info("Creating new METADATA collection in database");
@@ -56,7 +56,7 @@ namespace KindleManager
         public void AddBook(BookBase book)
         {
             Logger.Info("Adding {} [{}] to database.", book.Title, book.Id);
-            if (Library.Any(x => x.Id == book.Id))
+            if (BOOKS.Any(x => x.Id == book.Id))
             {
                 throw new LiteException($"{book.FilePath} [{book.Id}] already exists in library"); ;
             }
@@ -71,7 +71,7 @@ namespace KindleManager
             // ObservableCollections *must* be updated from the main/ui thread
             App.Current.Dispatcher.Invoke(() =>
             {
-                Library.Add(entry);
+                BOOKS.Add(entry);
             });
         }
 
@@ -90,14 +90,14 @@ namespace KindleManager
         public BookBase FindMatch(BookBase b)
         {
             // This can be expanded? There aren't a lot of good uuids for books
-            return b.ISBN == 0 ? null : Library.First(x => x.ISBN == b.ISBN);
+            return b.ISBN == 0 ? null : BOOKS.First(x => x.ISBN == b.ISBN);
         }
 
         public string[] ListAuthors()
         {
             HashSet<string> authors = new HashSet<string>();
 
-            foreach (var book in Library)
+            foreach (var book in BOOKS)
             {
                 authors.Add(book.Author);
             }
@@ -108,7 +108,7 @@ namespace KindleManager
         {
             HashSet<string> series = new HashSet<string>();
 
-            foreach (var book in Library)
+            foreach (var book in BOOKS)
             {
                 series.Add(book.Series);
             }
@@ -131,12 +131,21 @@ namespace KindleManager
                 throw new IDNotFoundException($"{update.FilePath} not found in library");
             }
 
-            BookEntry tableRow = Library.First(x => x.Id == update.Id);
+            BookEntry tableRow = BOOKS.First(x => x.Id == update.Id);
 
             dbEntry = new BookEntry(update);
             tableRow.CopyFrom(update);
 
             col.Update(dbEntry);
+
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                BOOKS.Move(0, 0);
+                //var last = BOOKS.Last();
+                //if (last == null) return;
+                //BOOKS.Remove(last);
+                //BOOKS.Add(last);
+            });
         }
 
         /// <summary>
@@ -158,7 +167,7 @@ namespace KindleManager
             Logger.Info("Removing {} [{}] from database.", book.Title, book.Id);
             var c = db.GetCollection<BookEntry>("BOOKS");
             c.Delete(x => x.Id == book.Id);
-            Library.Remove(book);
+            BOOKS.Remove(book);
         }
 
         public void RemoveBook(int id)
@@ -166,22 +175,21 @@ namespace KindleManager
             Logger.Info("Removing ID [{}] from database.", id);
             var c = db.GetCollection<BookEntry>("BOOKS");
             c.Delete(x => x.Id == id);
-            BookEntry m = Library.FirstOrDefault(x => x.Id == id);
-            if (m != null) Library.Remove(m);
+            BookEntry m = BOOKS.FirstOrDefault(x => x.Id == id);
+            if (m != null) BOOKS.Remove(m);
         }
 
         /// <summary>
-        /// Drops DB tables.
-        /// Does not make a backup.
-        /// Be careful.
+        /// Drops DB collection and clears associated observables
         /// </summary>
-        public void ScorchedEarth()
+        /// <param name="collection"></param>
+        public void Drop(string collection)
         {
-            Logger.Info("Dropping all collections from database");
-            // Manually list all database tables because it throws weird errors
-            //  I can't figure out when calling getcollectionnames()
-            db.DropCollection("BOOKS");
-            Library.Clear();
+            Logger.Info("Dropping collection {} from database.", collection);
+            db.DropCollection(collection);
+
+            if (collection == "BOOKS") BOOKS.Clear();
+
         }
         #endregion
 

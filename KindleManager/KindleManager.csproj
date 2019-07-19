@@ -60,11 +60,12 @@
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
     <Compile Include="BindingConverters.cs" />
-    <Compile Include="ConfigManager.cs" />
-    <Compile Include="Devices\DeviceBase.cs" />
-    <Compile Include="Devices\DeviceConfig.cs" />
+    <Compile Include="Config\ConfigBase.cs" />
+    <Compile Include="Config\PCConfig.cs" />
+    <Compile Include="Devices\FSDevice.cs" />
+    <Compile Include="Config\FSDeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
-    <Compile Include="Devices\Kindle.cs" />
+    <Compile Include="Devices\LocalLibrary.cs" />
     <Compile Include="Dialogs\BulkProcessErrors.xaml.cs">
       <DependentUpon>BulkProcessErrors.xaml</DependentUpon>
     </Compile>
@@ -80,8 +81,8 @@
     <Compile Include="Dialogs\YesNo.xaml.cs">
       <DependentUpon>YesNo.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Dialogs\DeviceConfigEditor.xaml.cs">
-      <DependentUpon>DeviceConfigEditor.xaml</DependentUpon>
+    <Compile Include="Dialogs\FSDeviceConfigEditor.xaml.cs">
+      <DependentUpon>FSDeviceConfigEditor.xaml</DependentUpon>
     </Compile>
     <Compile Include="Dialogs\ConfigEditor.xaml.cs">
       <DependentUpon>ConfigEditor.xaml</DependentUpon>
@@ -103,7 +104,7 @@
     <Compile Include="Formats\Mobi\Headers\PalmDOCHeader.cs" />
     <Compile Include="Formats\Mobi\Headers\PDBHeader.cs" />
     <Compile Include="Formats\Resources.cs" />
-    <Compile Include="Library.cs" />
+    <Compile Include="Devices\DeviceBase.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="Utils\Base32Int.cs" />
     <Compile Include="Utils\BigEndian.cs" />
@@ -136,7 +137,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Dialogs\DeviceConfigEditor.xaml">
+    <Page Include="Dialogs\FSDeviceConfigEditor.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

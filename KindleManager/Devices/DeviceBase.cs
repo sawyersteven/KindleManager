@@ -1,135 +1,112 @@
 ﻿using ExtensionMethods;
 using Formats;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Devices
+namespace KindleManager.Devices
 {
-    public abstract class Device
+    public abstract class DeviceBase
     {
-        public virtual string DriveLetter { get; set; }
-        public virtual string Name { get; set; }
-        public virtual string Description { get; set; }
-        public virtual string ConfigFile { get; set; }
-        public virtual string DatabaseFile { get; set; }
-        public DeviceConfig Config { get; set; }
-        public virtual string[] CompatibleFiletypes { get; set; }
-        public virtual bool FirstUse
+        protected NLog.Logger Logger { get; } = NLog.LogManager.GetCurrentClassLogger();
+
+        public virtual Database Database { get; set; }
+
+        #region abstract props
+        public abstract string[] CompatibleFiletypes { get; }
+        public abstract string Name { get; }
+        public abstract string Description { get; set; }
+        public abstract string Id { get; }
+        public abstract string LibraryRoot { get; }
+        #endregion
+
+        #region abstract methods
+        public abstract string AbsoluteFilePath(BookBase book);
+        public abstract string RelativeFilepath(string absPath);
+        public abstract string FilePathTemplate();
+        public abstract bool Open();
+        public abstract void Clean();
+
+        #endregion
+
+        #region virtual methods
+        public virtual void UpdateBookMetadata(BookBase donor)
         {
-            get
+            Database.BookEntry entry = Database.BOOKS.FirstOrDefault(x => x.Id == donor.Id);
+            if (entry == null) return;
+            // update db
+            //donor.FilePath = entry.FilePath;
+            //Database.UpdateBook(donor);
+            // update book on disk
+            BookBase recip = BookBase.Auto(AbsoluteFilePath(entry));
+            recip.UpdateMetadata(donor);
+
+            Database.UpdateBook(donor);
+
+            string origPath = recip.FilePath;
+            string targetPath = FormatFilePath(FilePathTemplate(), recip);
+            if (origPath != targetPath)
             {
-                return !File.Exists(Path.Combine(DriveLetter, "KindleManager.conf"));
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
+                    File.Move(origPath, targetPath);
+                    donor.FilePath = targetPath;
+                    Database.UpdateBook(donor);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Could not rename file in library directory. {e.Message}");
+                }
             }
         }
-        public virtual KindleManager.Database Database { get; set; }
+        #endregion
 
-        /// <summary>
-        /// Gets absolute path to book on device.
-        /// Since drive letters/mount points will change only a relative path
-        ///     is stored in the db.
-        /// </summary>
-        public virtual string AbsoluteFilePath(BookBase book)
-        {
-            return Path.Combine(DriveLetter, book.FilePath);
-        }
-
-        public void WriteConfig(DeviceConfig c)
-        {
-            File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(c));
-            Config = c;
-        }
-
-        /// <summary>
-        /// Opens device config, database, etc for read/write
-        /// </summary>
-        public virtual void Open()
-        {
-            if (File.Exists(ConfigFile))
-            {
-                Config = JsonConvert.DeserializeObject<DeviceConfig>(File.ReadAllText(ConfigFile));
-            }
-            else
-            {
-                Config = new DeviceConfig();
-                WriteConfig(Config);
-            }
-            Database = new KindleManager.Database(DatabaseFile);
-        }
-
-        /// <summary>
-        /// Creates new config and database on device
-        /// </summary>
-        /// <param name="newDevice">If device</param>
-        public virtual void Init(bool newDevice)
-        {
-            try
-            {
-                Config = new DeviceConfig();
-                WriteConfig(Config);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Unable to create new config file. [{e.Message}]");
-            }
-
-            try
-            {
-                Directory.CreateDirectory(Path.Combine(DriveLetter, Config.LibraryRoot));
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Unable to create root library directory. [{e.Message}]");
-            }
-
-            try
-            {
-                Database = new KindleManager.Database(Path.Combine(DriveLetter, "KindleManager.db"));
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Unable to create new database file. [{e.Message}]");
-            }
-        }
-
-        /// <summary>
-        /// Formats a new filepath string based on template. Removes illegal filesystem chars.
-        /// </summary>
         public string FormatFilePath(string template, BookBase book)
         {
-            return Utils.Files.MakeFilesystemSafe(template.DictFormat(book.Props()) + Path.GetExtension(book.FilePath));
+            string p = Utils.Files.MakeFilesystemSafe(template.DictFormat(book.Props()) + Path.GetExtension(book.FilePath));
+
+            string trimmable = RelativeFilepath(p);
+            string o = LibraryRoot;
+
+            foreach (string part in trimmable.Split(Path.DirectorySeparatorChar))
+            {
+                o = Path.Combine(o, part.Trim());
+            }
+            return Path.GetFullPath(o);
         }
 
+
         /// <summary>
-        /// Moves and names books based on config settings
+        /// Reorganizes library directory structure based on config
         /// </summary>
-        public virtual IEnumerable<string> ReorganizeLibrary()
+        /// <returns></returns>
+        public virtual IEnumerable<BookBase> Reorganize()
         {
             List<Exception> errs = new List<Exception>();
-            foreach (Formats.BookBase book in this.Database.Library)
+
+            foreach (BookBase book in Database.BOOKS.ToArray())
             {
-                yield return book.Title;
                 string origPath = AbsoluteFilePath(book);
-                string template = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, (Config.ChangeTitleOnSync ? Config.TitleFormat : "{Title}"));
-                string dest = FormatFilePath(template, book);
+                string dest = FormatFilePath(FilePathTemplate(), book);
                 try
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                    if (dest != book.FilePath)
+                    if (dest != origPath)
                     {
                         File.Move(origPath, dest);
+                        Database.UpdateBook(book);
                     }
-                    book.FilePath = dest.Substring(DriveLetter.Length);
-                    Database.UpdateBook(book);
                 }
-                catch (KindleManager.Database.IDNotFoundException) { } // Don't care;
+                catch (Database.IDNotFoundException) { } // Don't care;
                 catch (Exception e)
                 {
-                    e.Data["item"] = book.Title;
+                    e.Data["item"] = book.FilePath;
                     errs.Add(e);
+                    continue;
                 }
+                yield return book;
             }
             if (errs.Count > 0)
             {
@@ -137,42 +114,40 @@ namespace Devices
             }
         }
 
-        /// <summary>
-        /// Finds all compatible files on device, moves/renames them, and adds to database
-        /// Will create a *new* database, all existing information will be lost
-        /// </summary>
-        public virtual IEnumerable<string> RecreateLibraryAndDatabse()
-        {
-            List<Exception> errors = new List<Exception>();
-            string destTemplate = Path.Combine(DriveLetter, Config.LibraryRoot, Config.DirectoryFormat, "{Title}");
 
-            Database.ScorchedEarth();
-            IEnumerable<string> books = Utils.Files.DirSearch(DriveLetter).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
+        /// <summary>
+        /// Scans for all books in library and recreates database and directory structure
+        /// </summary>
+        public virtual IEnumerable<BookBase> Rescan()
+        {
+            List<Exception> errs = new List<Exception>();
+
+            BookBase[] oldDB = Database.BOOKS.ToArray();
+            Database.Drop("BOOKS");
+
+            IEnumerable<string> bookPaths = Utils.Files.DirSearch(LibraryRoot).Where(x => CompatibleFiletypes.Contains(Path.GetExtension(x)));
+
             BookBase book;
             string dest;
-            foreach (string filepath in books)
+            string destTemplate = FilePathTemplate();
+
+            foreach (string filePath in bookPaths)
             {
-                yield return filepath;
                 try
                 {
-                    book = BookBase.Auto(filepath);
-                    if (Config.ChangeTitleOnSync)
-                    {
-                        book.Title = Config.TitleFormat.DictFormat(book.Props());
-                        book.WriteMetadata();
-                    }
+                    book = BookBase.Auto(filePath);
                     dest = FormatFilePath(destTemplate, book);
-                    book.FilePath = dest.Substring(Path.GetPathRoot(dest).Length);
-                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    Directory.CreateDirectory(Path.GetPathRoot(dest));
                     if (!File.Exists(dest))
                     {
-                        {
-                            File.Move(filepath, dest);
-                        }
+                        Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                        File.Move(filePath, dest);
                     }
-                    BookBase local = KindleManager.App.Database.FindMatch(book);
+                    book.FilePath = RelativeFilepath(dest);
 
-                    if (local != null && !Database.Library.Any(x => x.Id == local.Id))
+                    BookBase local = null;
+                    if (book.ISBN != 0) local = oldDB.FirstOrDefault(x => x.ISBN == book.ISBN);
+                    if (local != null)
                     {
                         book.Id = local.Id;
                         book.Series = local.Series;
@@ -182,48 +157,35 @@ namespace Devices
                 }
                 catch (Exception e)
                 {
-                    e.Data.Add("item", Path.GetFileName(filepath));
-                    errors.Add(e);
+                    e.Data["item"] = filePath;
+                    errs.Add(e);
+                    continue;
                 }
+                yield return book;
             }
-
-            Utils.Files.CleanForward(Path.Combine(DriveLetter, Config.LibraryRoot));
-
-            if (errors.Count > 0)
+            if (errs.Count > 0)
             {
-                throw new AggregateException(errors.ToArray());
+                throw new AggregateException(errs.ToArray());
             }
-
         }
 
         /// <summary>
-        /// Removes empty directories from library dir
+        /// Adds book to library directory and database, converting if neccesary. Preserves book.Id
         /// </summary>
-        public virtual void CleanLibrary()
+        public abstract void ImportBook(BookBase book);
+
+        /// <summary>
+        /// Removes book from database and disk
+        /// </summary>
+        /// <param name="id"></param>
+        public abstract void DeleteBook(int id);
+
+        /// <summary>
+        /// Adds book to library directory and database, converting if neccesary
+        /// </summary>
+        public void ImportBook(string filePath)
         {
-            Utils.Files.CleanForward(Path.Combine(DriveLetter, Config.LibraryRoot));
+            ImportBook(BookBase.Auto(filePath));
         }
-
-        public virtual void DeleteBook(int id)
-        {
-            KindleManager.Database.BookEntry b = Database.Library.FirstOrDefault(x => x.Id == id);
-            if (b == null)
-            {
-                throw new ArgumentException($"Book with Id [{id}] not found in library");
-            }
-            string file = AbsoluteFilePath(b);
-            try
-            {
-                File.Delete(file);
-            }
-            catch (FileNotFoundException) { }
-            catch (DirectoryNotFoundException) { }
-
-            Database.RemoveBook(b);
-
-            Utils.Files.CleanBackward(Path.GetDirectoryName(file), Path.Combine(DriveLetter, Config.LibraryRoot));
-        }
-
-        public abstract void SendBook(BookBase localbook);
     }
 }

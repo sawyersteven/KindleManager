@@ -59,8 +59,7 @@
                         <Border Grid.Row="0" BorderBrush="White" BorderThickness="2" Padding="4">
                             <StackPanel Orientation="Vertical">
                                 <DockPanel LastChildFill="False">
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.DriveLetter}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.Name}" FontWeight="Bold" FontSize="16"/>
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.Name}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
                                     <Button DockPanel.Dock="Right" Command="{Binding CloseDevice}" Style="{StaticResource MetroCircleButtonStyle}" BorderThickness="0" Cursor="Hand">
                                         <icons:PackIconOcticons Kind="X" Foreground="White" Height="12" Width="12"/>
                                     </Button>
@@ -136,13 +135,10 @@
                                 <DataTemplate>
                                     <Border Padding="4" BorderBrush="White" BorderThickness="2" Margin="0,4" Cursor="Hand" Background="Transparent">
                                         <Border.InputBindings>
-                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding DriveLetter}"/>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
                                         </Border.InputBindings>
                                         <StackPanel Orientation="Vertical">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Grid.Column="0" Text="{Binding DriveLetter}" Margin="0,0,8,0" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
-                                            </StackPanel>
+                                            <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
                                             <TextBlock Text="{Binding Description}"/>
                                         </StackPanel>
                                     </Border>

@@ -21,14 +21,14 @@ namespace KindleManager.Dialogs
             this.DataContext = this;
             this.Title = book.Title;
             this.Book = book;
-            this.AuthorsList = App.Database.ListAuthors();
-            this.SeriesList = App.Database.ListSeries();
+            this.AuthorsList = App.LocalLibrary.Database.ListAuthors();
+            this.SeriesList = App.LocalLibrary.Database.ListSeries();
 
             HashSet<string> _authors = new HashSet<string>();
             HashSet<string> _series = new HashSet<string>();
             HashSet<string> _publishers = new HashSet<string>();
 
-            foreach (var b in App.Database.Library)
+            foreach (var b in App.LocalLibrary.Database.BOOKS)
             {
                 _authors.Add(b.Author);
                 _series.Add(b.Series);

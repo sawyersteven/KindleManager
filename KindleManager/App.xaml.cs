@@ -8,26 +8,24 @@ namespace KindleManager
     public partial class App : Application
     {
         public static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-        public static Database Database;
         public static string LibraryDirectory;
-        public static ConfigManager ConfigManager;
-        public static Library LocalLibrary;
+        public static Config.PCConfig Config;
+        public static Devices.LocalLibrary LocalLibrary;
 
         public void StartApp(object sender, StartupEventArgs e)
         {
-            ConfigManager = new ConfigManager();
+            string appDataDir = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\");
 
-            LibraryDirectory = Environment.ExpandEnvironmentVariables(ConfigManager.config.LibraryDir);
+            Logging.Start(appDataDir);
 
+            Config = new Config.PCConfig(Path.Combine(appDataDir, "Settings.conf"));
+
+            LibraryDirectory = Environment.ExpandEnvironmentVariables(Config.LibraryRoot);
             Directory.CreateDirectory(LibraryDirectory);
 
-            LocalLibrary = new Library();
-
-            Database = new Database(Path.Combine(LibraryDirectory, "Library.db"));
+            LocalLibrary = new Devices.LocalLibrary(Path.Combine(appDataDir, "Library.db"));
 
             ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(int.MaxValue));
-
-            Logging.Start(Path.Combine(Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\")));
 
             MainWindow = new MainWindow();
             MainWindow.Show();
