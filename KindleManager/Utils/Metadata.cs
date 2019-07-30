@@ -55,9 +55,9 @@ namespace Utils
         {
             if (date == "")
             {
-                return DateTime.UtcNow.ToString("yyyy-MM-dd");
+                return DateTime.UtcNow.ToString("MM/dd/yyyy");
             }
-            return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("yyyy-MM-dd");
+            return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("MM/dd/yyyy");
         }
     }
 }

@@ -1,54 +1,57 @@
-﻿<Controls:MetroWindow x:Class="KindleManager.Dialogs.DeleteConfirm"
+﻿<UserControl x:Class="KindleManager.Dialogs.DeleteConfirm"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterOwner"
-        Title="Confirm Delete Book"
-        SizeToContent="WidthAndHeight"
-        ShowMinButton="False"
-        ShowMaxRestoreButton="False">
-    
-    <StackPanel Margin="10">
-        <DockPanel>
-            <icons:PackIconOcticons Kind="Trashcan" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
+             Background="White">
+    <GroupBox Header="Delete Book">
+        <StackPanel>
+            <DockPanel>
+                <icons:PackIconOcticons Kind="Trashcan" DockPanel.Dock="Left" Height="48" Width="48" Margin="5" VerticalAlignment="Center"/>
 
-            <Grid Margin="5" DockPanel.Dock="Top" Height="32">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="auto"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" Grid.Column="0" FontSize="14">Delete <TextBlock Text="{Binding BookTitle}"/> from</TextBlock>
-                <ComboBox Name="cbDeleteFrom" SelectedIndex="0" Grid.Column="2" FontSize="14" VerticalAlignment="Center">
-                    <ComboBoxItem Foreground="Black" Visibility="{Binding OnBoth}">
-                        <TextBlock VerticalAlignment="Center">Both Kindle &amp; PC</TextBlock>
+                <TextBlock VerticalAlignment="Center" Grid.Column="0" FontSize="14">
+                    Delete
+                    <TextBlock Text="{Binding BookTitle}"/>
+                    from
+                </TextBlock>
+
+                <ComboBox Name="cbDeleteFrom"
+                          SelectedIndex="0"
+                          Margin="8,0,0,10"
+                          Padding="0"
+                          VerticalAlignment="Center"
+                          FontSize="14"
+                          Width="130"
+                          >
+                    <ComboBoxItem Visibility="{Binding OnBoth}">
+                        Both Kindle &amp; PC
                     </ComboBoxItem>
-                    <ComboBoxItem Foreground="Black" Visibility="{Binding OnDevice}">
-                        <TextBlock VerticalAlignment="Center">Kindle</TextBlock>
+                    <ComboBoxItem Visibility="{Binding OnDevice}">
+                        Kindle
                     </ComboBoxItem>
-                    <ComboBoxItem Foreground="Black" Visibility="{Binding OnPC}">
-                        <TextBlock VerticalAlignment="Center">PC</TextBlock>
+                    <ComboBoxItem Visibility="{Binding OnPC}">
+                        PC
                     </ComboBoxItem>
                 </ComboBox>
-            </Grid>
-        </DockPanel>
 
-        <Grid Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Button Click="Cancel" Grid.Column="0">
-                Cancel
-            </Button>
-            <Button Click="Confirm" Grid.Column="2">
-                Delete Book
-            </Button>
-        </Grid>
-    </StackPanel>
-</Controls:MetroWindow>
+            </DockPanel>
+
+            <Grid Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Click="Close" Grid.Column="0" Style="{StaticResource MaterialDesignFlatButton}">
+                    Cancel
+                </Button>
+                <Button Click="Confirm" Grid.Column="2" Style="{StaticResource MaterialDesignRaisedButton}">
+                    Delete Book
+                </Button>
+            </Grid>
+        </StackPanel>
+    </GroupBox>
+</UserControl>

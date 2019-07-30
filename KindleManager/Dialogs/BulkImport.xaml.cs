@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using ReactiveUI.Fody.Helpers;
+﻿using ReactiveUI.Fody.Helpers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,15 +9,14 @@ namespace KindleManager.Dialogs
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class BulkImport : MetroWindow
+    public partial class BulkImport
     {
         public List<TreeNode> Tree { get; set; }
+        public bool DialogResult = false;
 
         public BulkImport(string dir)
         {
             this.DataContext = this;
-            this.Owner = App.Current.MainWindow;
-
             TreeNode root = new TreeNode();
 
             ReadDirTree(dir, root);
@@ -45,7 +43,6 @@ namespace KindleManager.Dialogs
                 {
                     node.Children.Add(child);
                 }
-
             }
         }
 
@@ -94,16 +91,15 @@ namespace KindleManager.Dialogs
             return files.ToArray();
         }
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void Confirm(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            this.Close();
+            this.Close(sender, e);
         }
     }
 }

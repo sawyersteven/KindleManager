@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -13,7 +12,7 @@ namespace KindleManager
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : MetroWindow
+    public partial class MainWindow
     {
         public MainWindow()
         {

@@ -26,8 +26,6 @@ namespace KindleManager.ViewModels
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private readonly Unit UnitNull = new Unit();
-
         public MainWindow()
         {
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
@@ -40,16 +38,18 @@ namespace KindleManager.ViewModels
             ReceiveBook = ReactiveCommand.Create<IList, Unit>(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
 
             #region device buttons
-            SelectDevice = ReactiveCommand.Create<string, bool>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
-            EditDeviceSettings = ReactiveCommand.Create<bool, Unit>(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
+            SelectDevice = ReactiveCommand.Create<string, Task<bool>>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
+            EditDeviceSettings = ReactiveCommand.Create<bool, Task<Unit>>(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
             SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
 
+            Test = ReactiveCommand.Create(_Test);
             #endregion
 
+            snackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue();
             DevManager = new Devices.DevManager();
 
             StatusBarIcon = Icons.None;
@@ -78,138 +78,153 @@ namespace KindleManager.ViewModels
         [Reactive] public bool SideBarOpen { get; set; }
         public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.LocalLibrary.Database.BOOKS;
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
+
+        public MaterialDesignThemes.Wpf.SnackbarMessageQueue snackBarQueue { get; set; }
+
         #endregion
 
         #region button commands
-        public ReactiveCommand<IList, Unit> ReceiveBook { get; set; }
-        public Unit _ReceiveBook(IList rows)
+        public ReactiveCommand<Unit, Unit> Test { get; set; }
+        public void _Test()
         {
-            if (rows.Count == 0) return UnitNull;
+            snackBarQueue.Enqueue("HI");
+        }
 
-            Database.BookEntry[] dbRows = new Database.BookEntry[rows.Count];
-            rows.CopyTo(dbRows, 0);
+        public ReactiveCommand<IList, Unit> ReceiveBook { get; set; }
+        public Unit _ReceiveBook(IList bookList)
+        {
+            if (bookList.Count == 0) return Unit.Default;
 
-            List<Exception> errs = new List<Exception>();
+            Database.BookEntry[] dbRows = new Database.BookEntry[bookList.Count];
+            bookList.CopyTo(dbRows, 0);
 
             Task.Run(() =>
             {
-                foreach (Database.BookEntry i in dbRows)
+                if (bookList.Count == 1)
                 {
-                    Database.BookEntry copy = new Database.BookEntry(i);
-                    copy.FilePath = SelectedDevice.AbsoluteFilePath(i);
-
-                    SetStatusBar(true, $"Copying {copy.Title}.", null);
+                    Database.BookEntry book = (Database.BookEntry)bookList[0];
                     try
                     {
-                        ImportBook(copy);
+                        book.FilePath = SelectedDevice.AbsoluteFilePath(book);
+                        ImportBook(book);
                     }
                     catch (Exception e)
                     {
-                        errs.Add(e);
+                        App.Current.Dispatcher.Invoke(() =>
+                        {
+                            var dlg = new Dialogs.Error("Error transferring book", e.Message);
+                            MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+                        });
+                        return;
+                    }
+                    snackBarQueue.Enqueue($"{book.Title} copied to library.");
+                }
+                else
+                {
+                    List<Exception> errs = new List<Exception>();
+
+                    var prgDlg = new Dialogs.Progress("Syncing Library", false);
+                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+
+                    int step = 100 / bookList.Count;
+
+                    foreach (Database.BookEntry b in bookList)
+                    {
+                        Database.BookEntry book = new Database.BookEntry(b);
+                        try
+                        {
+
+                            book.FilePath = SelectedDevice.AbsoluteFilePath(book);
+                            ImportBook(book);
+                        }
+                        catch (Exception e)
+                        {
+                            e.Data["item"] = book.Title;
+                            errs.Add(e);
+                        }
+                    }
+
+                    if (errs.Count > 0)
+                    {
+                        prgDlg.ShowError(new AggregateException(errs.ToArray()));
                     }
                 }
-                if (errs.Count != 0)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.BulkProcessErrors("Errors copying books to library.", errs.ToArray()).ShowDialog();
-                    });
-                }
-                SetStatusBar(false, "", Icons.Check);
-
             });
 
-
-            return UnitNull;
+            return Unit.Default;
         }
 
         public ReactiveCommand<Unit, Unit> ReorganizeDeviceLibrary { get; set; }
-        public void _ReorganizeDeviceLibrary()
+        public async void _ReorganizeDeviceLibrary()
         {
             var dlg = new Dialogs.YesNo("Reorganize Library", "All books in your Kindle's library will be moved and renamed according to your Kindle's settings. This may take some time depending on the size of your library.");
-            dlg.ShowDialog();
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
 
-            BackgroundWork = true;
-            SetStatusBar(true, "Preparing library...", Icons.Clone);
-            Task.Run(() =>
-            {
-                try
-                {
-                    foreach (BookBase book in SelectedDevice.Reorganize())
-                    {
-                        StatusBarText = $"Processed {book.Title}";
-                    }
-                    SelectedDevice.Clean();
-                }
-                catch (AggregateException e)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.BulkProcessErrors("The following errors occurred while reorganizing your library.", e.InnerExceptions.ToArray()).ShowDialog();
-                    });
-                }
-                catch (Exception e)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.Error("Processing Error", e.Message).ShowDialog();
-                    });
-                }
-                finally
-                {
-                    SetStatusBar(false, "Kindle library reorganization complete.", Icons.Check);
-                }
-            });
+            var prgDlg = new Dialogs.Progress("Reorganizing Library", true);
+            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+
+            _ = Task.Run(() =>
+              {
+                  try
+                  {
+                      foreach (BookBase book in SelectedDevice.Reorganize())
+                      {
+                          prgDlg.Current = $"Processed {book.Title}";
+                      }
+                      prgDlg.Current = "Cleaning up...";
+                      SelectedDevice.Clean();
+                  }
+                  catch (Exception e)
+                  {
+                      prgDlg.ShowError(e);
+                  }
+                  finally
+                  {
+                      prgDlg.Finish($"{SelectedDevice.Name} reorganized.");
+                  }
+              });
         }
 
         public ReactiveCommand<Unit, Unit> ScanDeviceLibrary { get; set; }
-        public void _ScanDeviceLibrary()
+        public async void _ScanDeviceLibrary()
         {
             StatusBarIcon = Icons.None;
 
-            var dlg = new Dialogs.YesNo("Rebuild Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
-            dlg.ShowDialog();
+            var dlg = new Dialogs.YesNo("Rescan Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
 
-            SetStatusBar(true, null, Icons.Clone);
+            var prgDlg = new Dialogs.Progress("Scanning Library", true);
+            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
 
-            Task.Run(() =>
+            _ = Task.Run(() =>
             {
                 try
                 {
                     foreach (BookBase book in SelectedDevice.Rescan())
                     {
-                        SetStatusBar(true, $"Processed {book.Title}", null);
+                        prgDlg.Current = $"Processed {book.Title}";
                     }
-                }
-                catch (AggregateException e)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.BulkProcessErrors("The following errors occurred while rebuilding your library.", e.InnerExceptions.ToArray()).ShowDialog();
-                    });
                 }
                 catch (Exception e)
                 {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.Error("Recreating Library Failed", e.Message);
-                    });
+                    prgDlg.ShowError(e);
                 }
                 finally
                 {
-                    SetStatusBar(false, "Kindle scan complete.", Icons.Check);
+                    prgDlg.Finish($"{SelectedDevice.Name} library scan complete.");
                 }
             });
         }
 
         public ReactiveCommand<Unit, Unit> SyncDeviceLibrary { get; set; }
-        public void _SyncDeviceLibrary()
+        public async void _SyncDeviceLibrary()
         {
             if (SelectedDevice == null)
             {
-                new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books").ShowDialog();
+                var errDlg = new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books");
+                await MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
                 return;
             }
 
@@ -224,7 +239,8 @@ namespace KindleManager.ViewModels
             }
 
             var dlg = new Dialogs.SyncConfirm(toTransfer, SelectedDevice.Name);
-            if (dlg.ShowDialog() == false)
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+            if (dlg.DialogResult == false)
             {
                 return;
             }
@@ -240,51 +256,55 @@ namespace KindleManager.ViewModels
                 }
             }
 
-            BackgroundWork = true;
-            StatusBarIcon = Icons.None;
-            Task.Run(() =>
-            {
-                List<Exception> errors = new List<Exception>();
+            var prgDlg = new Dialogs.Progress("Syncing Kindle Library", false);
+            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
 
-                foreach (Database.BookEntry book in toTransfer)
-                {
-                    try
-                    {
-                        StatusBarText = $"Copying {book.Title}";
-                        book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
-                        SelectedDevice.ImportBook(book);
-                    }
-                    catch (Exception e)
-                    {
-                        e.Data.Add("item", book.Title);
-                        errors.Add(e);
-                    }
-                }
-                SetStatusBar(false, "Sync Complete.", Icons.Check);
 
-                if (errors.Count > 0)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        new Dialogs.BulkProcessErrors("The following errors occurred while syncing your Kindle library.", errors.ToArray()).ShowDialog();
-                    });
-                }
-            });
+            _ = Task.Run(() =>
+             {
+                 List<Exception> errors = new List<Exception>();
+                 AggregateException errs = new AggregateException();
+                 int step = 100 / toTransfer.Count;
+                 for (int i = 0; i < toTransfer.Count; i++)
+                 {
+                     Database.BookEntry book = toTransfer[i];
+                     try
+                     {
+                         prgDlg.Current = $"Copying {book.Title}";
+                         prgDlg.Percent += step;
+                         book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
+                         SelectedDevice.ImportBook(book);
+                     }
+                     catch (Exception e)
+                     {
+                         e.Data.Add("item", book.Title);
+                         errors.Add(e);
+                     }
+                 }
+
+                 prgDlg.Finish("Library sync complete");
+                 if (errors.Count > 0)
+                 {
+                     prgDlg.ShowError(new AggregateException(errors.ToArray()));
+                 }
+                 else
+                 {
+                     prgDlg.Close(this, null);
+                     snackBarQueue.Enqueue($"{SelectedDevice.Name} library synced");
+                 }
+             });
         }
 
         public ReactiveCommand<Unit, Unit> OpenSideBar { get; set; }
         public void _OpenSideBar()
         {
-            SideBarOpen = true;
             BackgroundWork = true;
             Task.Run(() =>
             {
                 DevManager.FindDevices();
-                SetStatusBar(false, null, null);
             });
         }
 
-        // OK
         public ReactiveCommand<Unit, Unit> OpenBookFolder { get; set; }
         public void _OpenBookFolder()
         {
@@ -318,9 +338,8 @@ namespace KindleManager.ViewModels
             System.Diagnostics.Process.Start(p);
         }
 
-        // OK
-        public ReactiveCommand<string, bool> SelectDevice { get; set; }
-        public bool _SelectDevice(string driveLetter)
+        public ReactiveCommand<string, Task<bool>> SelectDevice { get; set; }
+        public async Task<bool> _SelectDevice(string driveLetter)
         {
             if (BackgroundWork) return false;
             try
@@ -329,21 +348,22 @@ namespace KindleManager.ViewModels
             }
             catch (Exception e)
             {
-                var dlg = new Dialogs.Error("Unable to open Device", e.Message);
-                dlg.ShowDialog();
+                var errDlg = new Dialogs.Error("Unable to open Device", e.Message);
+                await MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
                 return false;
             }
 
             if (SelectedDevice.Open())
             {
                 var dlg = new Dialogs.YesNo("Device Setup", "It appears this is the first time you've used this device with KindleManager. A new configuration and database will be created.");
-                if (dlg.ShowDialog() == false)
+                await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+                if (dlg.DialogResult == false)
                 {
                     SelectedDevice = null;
                     return false;
                 }
 
-                _EditDeviceSettings(true);
+                await _EditDeviceSettings(true);
                 _ScanDeviceLibrary();
             }
 
@@ -352,12 +372,11 @@ namespace KindleManager.ViewModels
             return true;
         }
 
-        // OK
         public ReactiveCommand<Unit, Unit> EditSettings { get; set; }
-        public void _EditSettings()
+        public async void _EditSettings()
         {
             var dlg = new Dialogs.ConfigEditor();
-            dlg.ShowDialog();
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
         }
 
         /* This method is set up to be able to use multiple selections in the
@@ -365,44 +384,70 @@ namespace KindleManager.ViewModels
          * example for how to convert other methods to accept multiple
          * datagrid selections. 
          */
-        // OK
         public ReactiveCommand<IList, Unit> SendBook { get; set; }
         public Unit _SendBook(IList bookList)
         {
             if (SelectedDevice == null)
             {
-                new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books").ShowDialog();
-                return UnitNull;
+                var errDlg = new Dialogs.Error("No Kindle Selected", "Connect to Kindle Before Transferring Books");
+                MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
+                return Unit.Default;
             }
 
-            BackgroundWork = true;
-            StatusBarIcon = Icons.None;
             Task.Run(() =>
             {
-                List<Exception> errs = new List<Exception>();
-                foreach (Database.BookEntry book in bookList)
+                if (bookList.Count == 1)
                 {
                     try
                     {
+                        BookBase book = (BookBase)bookList[0];
                         book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
                         SelectedDevice.ImportBook(book);
-                        SetStatusBar(true, $"{book.Title} sent to {SelectedDevice.Name}.", Icons.Check);
+                        snackBarQueue.Enqueue($"{book.Title} transferred to {SelectedDevice.Name}");
                     }
                     catch (Exception e)
                     {
-                        e.Data["item"] = book.Title;
-                        errs.Add(e);
+                        var dlg = new Dialogs.Error("Error transferring book", e.Message);
                     }
                 }
-                if (errs.Count > 0)
+                else
                 {
-                    new Dialogs.BulkProcessErrors("Error transferring books", errs.ToArray()).ShowDialog();
+                    List<Exception> errs = new List<Exception>();
+
+                    var prgDlg = new Dialogs.Progress("Syncing Library", false);
+                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+
+                    int step = 100 / bookList.Count;
+
+                    foreach (Database.BookEntry book in bookList)
+                    {
+                        try
+                        {
+                            book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
+                            SelectedDevice.ImportBook(book);
+                            prgDlg.Current = $"Transferred {book.Title}";
+                        }
+                        catch (Exception e)
+                        {
+                            e.Data["item"] = book.Title;
+                            errs.Add(e);
+                        }
+                        finally
+                        {
+                            prgDlg.Percent += step;
+                        }
+                    }
+                    prgDlg.Finish("Book transfer complete.");
+                    if (errs.Count > 0)
+                    {
+                        prgDlg.ShowError(new AggregateException(errs.ToArray()));
+                    }
                 }
             });
-            return UnitNull;
+            return Unit.Default;
         }
 
-        public ReactiveCommand<bool, Unit> EditDeviceSettings { get; set; }
+        public ReactiveCommand<bool, Task<Unit>> EditDeviceSettings { get; set; }
         /// <summary>
         /// Pass prompt=false to disable asking to reorganize library
         /// </summary>
@@ -411,26 +456,28 @@ namespace KindleManager.ViewModels
         /// for handling different kinds of devices in case it is needed
         /// in the future.
         /// </remarks>
-        private Unit _EditDeviceSettings(bool skipPrompt = false)
+        private async Task<Unit> _EditDeviceSettings(bool skipPrompt = false)
         {
-            if (SelectedDevice == null) return UnitNull;
+            if (SelectedDevice == null) return Unit.Default;
 
             if (SelectedDevice is Devices.FSDevice d)
             {
                 var dlg = new Dialogs.FSDeviceConfigEditor(d.Config);
-                if (dlg.ShowDialog() == false) return UnitNull;
+                await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+                if (dlg.DialogResult == false) return Unit.Default;
                 d.Config.CopyFrom(dlg.Config);
 
                 if (!skipPrompt && dlg.RequestReorg)
                 {
                     var dlg2 = new Dialogs.YesNo("Reorganize Library", "You have changed your device library's Directory Format. Would you like to reorganize your library now?", "Reorganize");
-                    if (dlg2.ShowDialog() == true)
+                    await MaterialDesignThemes.Wpf.DialogHost.Show(dlg2);
+                    if (dlg2.DialogResult == true)
                     {
                         _ReorganizeDeviceLibrary();
                     }
                 }
             }
-            return UnitNull;
+            return Unit.Default;
         }
 
         public ReactiveCommand<Unit, Unit> BrowseForImport { get; set; }
@@ -444,27 +491,31 @@ namespace KindleManager.ViewModels
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            if (Path.GetExtension(dlg.FileName) != ".mobi")
+            try
             {
-                string msg = $"{dlg.FileName} is not compatible and must be converted to mobi before adding to library.";
-                var convertdlg = new Dialogs.YesNo(Path.GetFileName(dlg.FileName), msg, "Convert");
-                if (convertdlg.ShowDialog() == false) return;
+                ImportBook(dlg.FileName);
             }
-
-            ImportBook(dlg.FileName);
+            catch (Exception e)
+            {
+                var errDlg = new Dialogs.Error("Import failed", e.Message);
+                _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
+            }
         }
 
         public ReactiveCommand<Unit, Unit> RemoveBook { get; set; }
-        public void _RemoveBook()
+        public async void _RemoveBook()
         {
             if (SelectedTableRow == null) { return; }
+            string title = SelectedTableRow.Title;
 
             bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.BOOKS.Any(x => x.Id == SelectedTableRow.Id);
             bool onPC = LocalLibrary.Any(x => x.Id == SelectedTableRow.Id);
 
-            var dlg = new Dialogs.DeleteConfirm(SelectedTableRow.Title, onDevice, onPC);
 
-            if (dlg.ShowDialog() == false) { return; }
+            var dlg = new Dialogs.DeleteConfirm(SelectedTableRow.Title, onDevice, onPC);
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+
+            if (dlg.DialogResult == false) { return; }
             if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 1) // device
             {
                 Database.BookEntry remoteBook = SelectedDevice.Database.BOOKS.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
@@ -474,8 +525,8 @@ namespace KindleManager.ViewModels
                 }
                 catch (Exception e)
                 {
-                    var err = new Dialogs.Error($"Unable to delete book from {SelectedDevice.Name}", e.Message);
-                    err.ShowDialog();
+                    var errDlg = new Dialogs.Error($"Unable to delete book from {SelectedDevice.Name}", e.Message);
+                    await MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
                     return;
                 }
             }
@@ -499,28 +550,33 @@ namespace KindleManager.ViewModels
                 }
                 catch (Exception e)
                 {
-                    var err = new Dialogs.Error("Unable to delete book from library", e.Message);
-                    err.ShowDialog();
+                    var errDlg = new Dialogs.Error("Unable to delete book from library", e.Message);
+                    await MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
                     return;
                 }
             }
+
+            string msg = dlg.DeleteFrom == 0 ? "PC & Kindle" : (dlg.DeleteFrom == 2 ? "PC" : "Kindle");
+            snackBarQueue.Enqueue($"{title} deleted from {msg}.");
         }
 
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
-        public void _EditMetadata()
+        public async void _EditMetadata()
         {
             if (SelectedTableRow == null) return;
 
             var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow));
-            dlg.ShowDialog();
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
 
             List<Exception> errs = new List<Exception>();
 
+            string title = null;
             Database.BookEntry bookEntry;
             bookEntry = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
             if (bookEntry != null)
             {
+                title = bookEntry.Title;
                 try
                 {
                     App.LocalLibrary.UpdateBookMetadata(dlg.ModBook);
@@ -532,8 +588,10 @@ namespace KindleManager.ViewModels
             }
 
             bookEntry = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+
             if (bookEntry != null)
             {
+                if (title == null) title = bookEntry.Title;
                 try
                 {
                     SelectedDevice.UpdateBookMetadata(dlg.ModBook);
@@ -547,8 +605,12 @@ namespace KindleManager.ViewModels
             if (errs.Count != 0)
             {
                 string msg = $"Metadata could not be updated.&#x0a; {string.Join("; ", errs.Select(x => x.Message).ToList())}";
-
-                new Dialogs.Error("Error updating metadata", msg).ShowDialog();
+                var errDlg = new Dialogs.Error("Error updating metadata", msg);
+                _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
+            }
+            else if (title != null)
+            {
+                snackBarQueue.Enqueue($"{title} updated");
             }
 
         }
@@ -563,23 +625,7 @@ namespace KindleManager.ViewModels
         #endregion
 
         /// <summary>
-        /// Sets Status Bar information
-        /// </summary>
-        /// <param name="spinner"></param>
-        /// <param name="message">null to keep current message</param>
-        /// <param name="icon">null to keep current</param>
-        private void SetStatusBar(bool spinner, string message, string icon)
-        {
-            App.Current.Dispatcher.Invoke(() =>
-            {
-                BackgroundWork = spinner;
-                if (message != null) StatusBarText = message;
-                if (icon != null) StatusBarIcon = icon;
-            });
-        }
-
-        /// <summary>
-        /// Used to import from another device's library
+        /// Used to import from another device's library.
         /// </summary>
         private void ImportBook(Database.BookEntry remoteEntry)
         {
@@ -595,14 +641,12 @@ namespace KindleManager.ViewModels
                 catch (LiteDB.LiteException e)
                 {
                     Logger.Error(e, "Unable to update metadata in database.");
-                    new Dialogs.Error("Unable to update metadata in database.", e.Message).ShowDialog();
-                    return;
+                    throw new Exception($"Unable to update metadata in database; {e.Message}");
                 }
                 catch (Exception e)
                 {
                     Logger.Error(e, "Unable to write metadata to disk.");
-                    new Dialogs.Error("Unable to write metadata to disk.", e.Message);
-                    return;
+                    throw new Exception($"Unable to write metadata to disk; {e.Message}");
                 }
             }
 
@@ -618,8 +662,7 @@ namespace KindleManager.ViewModels
             catch (Exception e)
             {
                 Logger.Error(e, "Unable to create directories.");
-                new Dialogs.Error("Unable to create directories.", e.Message).ShowDialog();
-                return;
+                throw new Exception($"Unable to create directories; {e.Message}");
             }
 
             Database.BookEntry localEntry;
@@ -637,8 +680,7 @@ namespace KindleManager.ViewModels
                     catch (Exception e)
                     {
                         Logger.Error(e, "Unable to overwrite file.");
-                        new Dialogs.Error("Unable to overwrite file.", e.Message).ShowDialog();
-                        return;
+                        throw new Exception($"Unable to overwrite file; {e.Message}");
                     }
                     try
                     {
@@ -647,8 +689,7 @@ namespace KindleManager.ViewModels
                     catch (Exception e)
                     {
                         Logger.Error(e, "Unable to update library database.");
-                        new Dialogs.Error("Unable to update library.", e.Message).ShowDialog();
-                        return;
+                        throw new Exception($"Unable to update library; {e.Message}");
                     }
                 }
                 else // target file exists and *is* in local db
@@ -664,8 +705,7 @@ namespace KindleManager.ViewModels
                         catch (Exception e)
                         {
                             Logger.Error(e, "Unable to write to database.");
-                            new Dialogs.Error("Unable to write to database.", e.Message);
-                            return;
+                            throw new Exception($"Unable to write to database; {e.Message}");
                         }
                     }
                     Logger.Info(msg, remoteEntry.Title);
@@ -677,14 +717,12 @@ namespace KindleManager.ViewModels
                     catch (LiteDB.LiteException e)
                     {
                         Logger.Error(e, "Unable to write metadata to database.");
-                        new Dialogs.Error("Unable to write metadata database.", e.Message);
-                        return;
+                        throw new Exception($"Unable to write metadata database; {e.Message}");
                     }
                     catch (Exception e)
                     {
                         Logger.Error(e, "Unable to write metadata to disk.");
-                        new Dialogs.Error("Unable to write metadata disk.", e.Message);
-                        return;
+                        throw new Exception($"Unable to write metadata disk; {e.Message}");
                     }
                 }
             }
@@ -702,8 +740,7 @@ namespace KindleManager.ViewModels
                     catch (LiteDB.LiteException e)
                     {
                         Logger.Error(e, "Unable to write to database.");
-                        new Dialogs.Error("Unable to write to database.", e.Message).ShowDialog();
-                        return;
+                        throw new Exception($"Unable to write to database; {e.Message}");
                     }
                 }
 
@@ -714,14 +751,12 @@ namespace KindleManager.ViewModels
                 catch (LiteDB.LiteException e)
                 {
                     Logger.Error(e, "Unable to write to database.");
-                    new Dialogs.Error("Unable to write to database.", e.Message).ShowDialog();
-                    return;
+                    throw new Exception($"Unable to write to database; {e.Message}");
                 }
                 catch (Exception e)
                 {
                     Logger.Error(e, "Unable to import book.");
-                    new Dialogs.Error("Unable to import book.", e.Message).ShowDialog();
-                    return;
+                    throw new Exception($"Unable to import book; {e.Message}");
                 }
             }
         }
@@ -731,47 +766,54 @@ namespace KindleManager.ViewModels
         /// </summary>
         private void ImportBook(string filePath)
         {
-            BackgroundWork = true;
             try
             {
                 App.LocalLibrary.ImportBook(filePath);
             }
             catch (LiteDB.LiteException e)
             {
-                new Dialogs.Error("Unable to write to database", e.Message).ShowDialog();
-                return;
+                throw new Exception($"Unable to write to database; {e.Message}");
             }
             catch (Exception e)
             {
-                new Dialogs.Error("Import Error", e.Message).ShowDialog();
-                return;
-            }
-            finally
-            {
-                BackgroundWork = false;
+                throw new Exception($"Import failed; {e.Message}");
             }
         }
 
-        public void ImportBooksDrop(string path)
+        public async void ImportBooksDrop(string path)
         {
             if (File.Exists(path))
             {
                 if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(path)))
                 {
-                    new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(path)} format books has not yet been implemented.").ShowDialog();
+                    var errDlg = new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(path)} format books has not yet been implemented.");
+                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
                     return;
                 }
-                ImportBook(path);
+                try
+                {
+                    ImportBook(path);
+                }
+                catch (Exception e)
+                {
+                    var dlg = new Dialogs.Error("Import failed", e.Message);
+                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+                    return;
+                }
             }
             else if (Directory.Exists(path))
             {
                 var dlg = new Dialogs.BulkImport(path);
-                dlg.ShowDialog();
+                await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
                 if (dlg.DialogResult == false) return;
 
                 string[] files = dlg.SelectedFiles();
                 BackgroundWork = true;
-                Task.Run(() =>
+
+                var prgDlg = new Dialogs.Progress("Importing books", false);
+                int step = 100 / files.Length;
+
+                _ = Task.Run(() =>
                 {
                     List<Exception> errors = new List<Exception>();
 
@@ -787,18 +829,18 @@ namespace KindleManager.ViewModels
                             e.Data["item"] = file;
                             errors.Add(e);
                         }
+                        finally
+                        {
+                            prgDlg.Percent += step;
+                        }
                     }
+                    prgDlg.Finish("Import finished.");
 
                     if (errors.Count > 0)
                     {
-                        App.Current.Dispatcher.Invoke(() =>
-                        {
-                            new Dialogs.BulkProcessErrors("The following errors occurred while adding to your library.", errors.ToArray()).ShowDialog();
-                        });
+                        prgDlg.ShowError(new AggregateException(errors.ToArray()));
                     }
-                    SetStatusBar(false, "Import complete.", Icons.Check);
                 });
-                return;
             }
         }
 

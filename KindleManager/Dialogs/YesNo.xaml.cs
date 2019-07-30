@@ -1,32 +1,34 @@
-﻿using MahApps.Metro.Controls;
-using System.Windows;
+﻿using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class YesNo : MetroWindow
+    public partial class YesNo
     {
+        [ReactiveUI.Fody.Helpers.Reactive]
+        public string Title { get; set; }
+
+        public bool DialogResult = false;
+
         public YesNo(string title, string text, string yesButtonText = "OK")
         {
             this.DataContext = this;
-            this.Owner = App.Current.MainWindow;
-            InitializeComponent();
             this.Title = title;
+            InitializeComponent();
             this.BodyText.Text = text;
             this.YesButton.Text = yesButtonText;
-
         }
+
         public bool DeleteFile { get; set; } = false;
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void Confirm(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            this.Close();
+            this.Close(sender, e);
         }
     }
 }

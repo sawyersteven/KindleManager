@@ -3,7 +3,7 @@ using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using EXTHRecordID = Formats.Mobi.Headers.EXTHRecordID;
+using EXTHKey = Formats.Mobi.Headers.EXTHKey;
 
 namespace Formats.Mobi
 {
@@ -140,7 +140,7 @@ namespace Formats.Mobi
                     EXTHHeader.offset = MobiHeader.offset + MobiHeader.length;
                     EXTHHeader.Parse(reader);
 
-                    Author = EXTHHeader.Get(Headers.EXTHRecordID.Author).Decode();
+                    Author = EXTHHeader.Get(EXTHKey.Author).Decode();
 
                     byte[] isbn = EXTHHeader.Get<uint, byte[]>(104);
                     if (isbn != null && isbn.Length == 4)
@@ -148,13 +148,13 @@ namespace Formats.Mobi
                         ISBN = Utils.BigEndian.ToUInt32(isbn, 0x0);
                     }
 
-                    Language = EXTHHeader.Get(EXTHRecordID.Language).Decode();
-                    Contributor = EXTHHeader.Get(EXTHRecordID.Contributor).Decode();
-                    Publisher = EXTHHeader.Get(EXTHRecordID.Publisher).Decode();
-                    Subject = EXTHHeader.Get(EXTHRecordID.Subject).Decode().Split(',');
-                    Description = EXTHHeader.Get(EXTHRecordID.Description).Decode();
-                    PubDate = EXTHHeader.Get(EXTHRecordID.PublishDate).Decode();
-                    Rights = EXTHHeader.Get(EXTHRecordID.Rights).Decode();
+                    Language = EXTHHeader.Get(EXTHKey.Language).Decode();
+                    Contributor = EXTHHeader.Get(EXTHKey.Contributor).Decode();
+                    Publisher = EXTHHeader.Get(EXTHKey.Publisher).Decode();
+                    Subject = EXTHHeader.Get(EXTHKey.Subject).Decode().Split(',');
+                    Description = EXTHHeader.Get(EXTHKey.Description).Decode();
+                    PubDate = EXTHHeader.Get(EXTHKey.PublishDate).Decode();
+                    Rights = EXTHHeader.Get(EXTHKey.Rights).Decode();
 
                 }
                 Title = MobiHeader.fullTitle;
@@ -345,7 +345,7 @@ namespace Formats.Mobi
                 MobiHeader.fullTitleLength = (uint)value.Length;
                 PDBHeader.title = value.Length > 0x20 ? value.Substring(0x0, 0x20) : value + new byte[0x20 - value.Length].Decode();
                 PDBHeader.title = PDBHeader.title.Replace(' ', '_');
-                EXTHHeader.Set(EXTHRecordID.UpdatedTitle, value.Encode());
+                EXTHHeader.Set(EXTHKey.UpdatedTitle, value.Encode());
                 _Title = value;
             }
         }
@@ -356,7 +356,7 @@ namespace Formats.Mobi
             get => _ISBN;
             set
             {
-                EXTHHeader.Set(EXTHRecordID.ISBN, value.ToString().Encode());
+                EXTHHeader.Set(EXTHKey.ISBN, value.ToString().Encode());
                 _ISBN = value;
             }
         }
@@ -390,7 +390,7 @@ namespace Formats.Mobi
             set
             {
                 value = Utils.Metadata.GetDate(value);
-                EXTHHeader[106] = value.Encode();
+                EXTHHeader.Set(EXTHKey.PublishDate, Utils.Mobi.FormatDate(value).Encode());
                 _PubDate = value;
             }
         }
@@ -476,7 +476,7 @@ namespace Formats.Mobi
 
         public override void WriteMetadata()
         {
-            EXTHHeader.Set(EXTHRecordID.Contributor, "KindleManger [https://github.com/sawyersteven/KindleManager]".Encode());
+            EXTHHeader.Set(EXTHKey.Contributor, "KindleManger [https://github.com/sawyersteven/KindleManager]".Encode());
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(this.FilePath, FileMode.Open)))
             {

@@ -1,42 +1,37 @@
-﻿<Controls:MetroWindow x:Class="KindleManager.Dialogs.BulkProcessErrors"
+﻿<UserControl x:Class="KindleManager.Dialogs.BulkProcessErrors"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:KindleManager.BindingConverters"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        Title="Processing Errors"
-        SizeToContent="Height"
-        Width="600"
-        ShowMaxRestoreButton="True"
-        ShowMinButton="False">
-    
-    <Window.Resources>
-        <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
-    </Window.Resources>
+             MinWidth="400"
+             MaxWidth="600">
 
-    <StackPanel Margin="10">
-        <DockPanel>
-            <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
-            <TextBlock Margin="5" x:Name="Message" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center"/>
-        </DockPanel>
-        <ScrollViewer MaxHeight="400">
-        <DataGrid Name="ErrorTable"
-                  BorderBrush="{DynamicResource GrayBrush5}"
+    <UserControl.Resources>
+        <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
+    </UserControl.Resources>
+
+    <GroupBox Header="{Binding Title}">
+        <StackPanel>
+            <DockPanel>
+                <icons:PackIconOcticons Kind="Alert" DockPanel.Dock="Left" Height="48" Width="48" Margin="5"/>
+                <TextBlock Margin="5" x:Name="Message" TextWrapping="Wrap" DockPanel.Dock="Top" VerticalAlignment="Center"/>
+            </DockPanel>
+            <ScrollViewer MaxHeight="400">
+                <DataGrid Name="ErrorTable"
+                  BorderBrush="{StaticResource MaterialDesignDivider}"
                   BorderThickness="1"
                   IsReadOnly="True"
                   AutoGenerateColumns="True"
-                  Background="{DynamicResource WhiteColorBrush}"
                   ItemsSource="{Binding Errors}">
-        </DataGrid>
-        </ScrollViewer>
+                </DataGrid>
+            </ScrollViewer>
 
-        <Button Click="Close" Margin="0,8,0,0">
-            Close
-        </Button>
-    </StackPanel>
-</Controls:MetroWindow>
+            <Button Click="Close" Margin="0,24,0,0" Style="{StaticResource MaterialDesignRaisedButton}">
+                Close
+            </Button>
+        </StackPanel>
+    </GroupBox>
+</UserControl>

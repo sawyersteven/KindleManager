@@ -1,20 +1,19 @@
-﻿using MahApps.Metro.Controls;
-using System.Windows;
+﻿using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class DeleteConfirm : MetroWindow
+    public partial class DeleteConfirm
     {
         public Visibility OnDevice { get; set; }
         public Visibility OnPC { get; set; }
         public Visibility OnBoth { get; set; }
         public string BookTitle { get; set; }
         public int DeleteFrom = -1;
+        public bool DialogResult = false;
 
         public DeleteConfirm(string bookTitle, bool onDevice, bool onPC)
         {
             this.DataContext = this;
-            this.Owner = App.Current.MainWindow;
             this.OnDevice = onDevice ? Visibility.Visible : Visibility.Collapsed;
             this.OnPC = onPC ? Visibility.Visible : Visibility.Collapsed;
             this.OnBoth = (onPC && onDevice) ? Visibility.Visible : Visibility.Collapsed;
@@ -34,17 +33,16 @@ namespace KindleManager.Dialogs
             }
         }
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void Confirm(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
             this.DeleteFrom = cbDeleteFrom.SelectedIndex;
-            this.Close();
+            this.Close(sender, e);
         }
     }
 }

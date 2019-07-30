@@ -1,40 +1,32 @@
-﻿using MahApps.Metro.Controls;
-using System.Windows;
+﻿using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class FSDeviceConfigEditor : MetroWindow
+    public partial class FSDeviceConfigEditor
     {
         public Config.FSDeviceConfig Config { get; set; }
-        public bool HelpOpen { get; set; }
         public bool RequestReorg = false;
         private readonly Config.FSDeviceConfig OrigConfig;
-
-        private void ToggleHelpOpen(object sender, RoutedEventArgs e)
-        {
-            HelpOpen = !HelpOpen;
-        }
+        public bool DialogResult = false;
 
         public FSDeviceConfigEditor(Config.FSDeviceConfig config)
         {
             OrigConfig = config;
             this.DataContext = this;
             this.Config = new Config.FSDeviceConfig(config);
-            this.Owner = App.Current.MainWindow;
             InitializeComponent();
         }
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
             RequestReorg = Config.DirectoryFormat != OrigConfig.DirectoryFormat;
             DialogResult = true;
-            this.Close();
+            this.Close(sender, e);
         }
 
     }

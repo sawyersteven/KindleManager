@@ -5,7 +5,8 @@ using System.IO;
 
 namespace Formats.Mobi.Headers
 {
-    public enum EXTHRecordID
+
+    public enum EXTHKey
     {
         Author = 100,
         Publisher = 101,
@@ -36,6 +37,8 @@ namespace Formats.Mobi.Headers
 
     public class EXTHHeader : Dictionary<uint, byte[]>
     {
+
+
         public long offset;
         public int length
         {
@@ -58,7 +61,7 @@ namespace Formats.Mobi.Headers
 
         public EXTHHeader() { }
 
-        public void Set(EXTHRecordID rec, byte[] val)
+        public void Set(EXTHKey rec, byte[] val)
         {
             this[(uint)rec] = val;
         }
@@ -68,7 +71,7 @@ namespace Formats.Mobi.Headers
             this[rec] = val;
         }
 
-        public byte[] Get(EXTHRecordID rec)
+        public byte[] Get(EXTHKey rec)
         {
             TryGetValue((uint)rec, out byte[] val);
             return val ?? new byte[0];
@@ -109,6 +112,10 @@ namespace Formats.Mobi.Headers
                     uint recType = Utils.BigEndian.ToUInt32(buffer, 0x0);
                     int recLen = Utils.BigEndian.ToInt32(buffer, 0x4) - 0x8;
                     byte[] recData = reader.ReadBytes(recLen);
+                    if (recType == 106)
+                    {
+                        var m = recData.Decode();
+                    }
                     if (!this.ContainsKey(recType)) this.Add(recType, recData);
                 }
                 catch (Exception e)

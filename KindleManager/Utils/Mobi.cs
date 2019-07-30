@@ -1,9 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace Utils
 {
     static class Mobi
     {
+        private static readonly CultureInfo culture = new CultureInfo("en-US");
+
         /// <summary>
         /// Parse backward-encoded Mobipocket variable-width int
         /// Retuns int with optional out param for number of bytes used to create int
@@ -71,6 +75,16 @@ namespace Utils
                 b >>= 1;
             }
             return count;
+        }
+
+        /// <summary>
+        /// Formats app standard date MM/dd/yyyy to mobi standard yyyy-MM-dd
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public static string FormatDate(string date)
+        {
+            return DateTime.ParseExact(date, "MM/dd/yyyy", culture).ToString("yyyy-MM-dd");
         }
     }
 }

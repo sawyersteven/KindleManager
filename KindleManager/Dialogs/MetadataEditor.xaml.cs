@@ -1,11 +1,11 @@
 ﻿using ExtensionMethods;
-using MahApps.Metro.Controls;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class MetadataEditor : MetroWindow
+    public partial class MetadataEditor
     {
         #region Properties
         public string[] AuthorsList { get; set; }
@@ -15,11 +15,12 @@ namespace KindleManager.Dialogs
         public Formats.BookBase ModBook { get; set; }
         #endregion
 
+        private static readonly Regex onlyFloat = new Regex("[^0-9.-]+");
+        public bool DialogResult = false;
+
         public MetadataEditor(Database.BookEntry book)
         {
-            this.Owner = App.Current.MainWindow;
             this.DataContext = this;
-            this.Title = book.Title;
             this.Book = book;
             this.AuthorsList = App.LocalLibrary.Database.ListAuthors();
             this.SeriesList = App.LocalLibrary.Database.ListSeries();
@@ -48,18 +49,43 @@ namespace KindleManager.Dialogs
             this.MaxHeight = this.ActualHeight;
         }
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void CloseAndSave(object sender, RoutedEventArgs e)
         {
+
             ModBook = new Database.BookEntry(Book);
             ModBook.PubDate = Utils.Metadata.GetDate(ModBook.PubDate);
             DialogResult = true;
-            this.Close();
+            this.Close(sender, e);
+        }
+
+        private void TextBoxFloatOnly(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            e.Handled = onlyFloat.IsMatch(e.Text);
+        }
+
+        private void TextBoxPasteFloatOnly(object sender, DataObjectPastingEventArgs e)
+        {
+            string input = (string)e.DataObject.GetData(typeof(string));
+            if (onlyFloat.IsMatch(input)) e.CancelCommand();
+        }
+
+        private void FloatBoxLostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = (System.Windows.Controls.TextBox)sender;
+            if (tb.Text == "") tb.Text = null;
+            if (float.TryParse(tb.Text, out float f))
+            {
+                tb.Text = f.ToString("F1");
+            }
+            else
+            {
+                tb.Text = "";
+            };
         }
     }
 }

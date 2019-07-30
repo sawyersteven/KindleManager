@@ -84,6 +84,11 @@ namespace KindleManager
             return db.GetCollection<DatabaseMetadata>("METADATA").FindById(1);
         }
 
+        public string MetadataDump(BookBase b)
+        {
+            return db.GetCollection("BOOKS").FindById(b.Id).ToString();
+        }
+
         /// <summary>
         /// Finds the best match in library or null.
         /// </summary>
@@ -141,10 +146,6 @@ namespace KindleManager
             App.Current.Dispatcher.Invoke(() =>
             {
                 BOOKS.Move(0, 0);
-                //var last = BOOKS.Last();
-                //if (last == null) return;
-                //BOOKS.Remove(last);
-                //BOOKS.Add(last);
             });
         }
 
@@ -214,7 +215,7 @@ namespace KindleManager
             [Reactive] public override string Rights { get; set; }
 
             [Reactive] public override string Series { get; set; }
-            [Reactive] public override float SeriesNum { get; set; }
+            [Reactive] public override Nullable<float> SeriesNum { get; set; }
             [Reactive] public override string DateAdded { get; set; }
 
             #region methods

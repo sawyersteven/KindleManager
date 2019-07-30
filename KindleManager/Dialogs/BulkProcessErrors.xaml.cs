@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using ReactiveUI.Fody.Helpers;
+﻿using ReactiveUI.Fody.Helpers;
 using System;
 using System.Windows;
 
@@ -8,7 +7,7 @@ namespace KindleManager.Dialogs
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class BulkProcessErrors : MetroWindow
+    public partial class BulkProcessErrors
     {
         [Reactive]
         public GridRow[] Errors { get; set; }
@@ -23,7 +22,6 @@ namespace KindleManager.Dialogs
             }
 
             this.DataContext = this;
-            this.Owner = App.Current.MainWindow;
 
             InitializeComponent();
             Message.Text = message;
@@ -42,8 +40,7 @@ namespace KindleManager.Dialogs
 
         private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
     }
 }

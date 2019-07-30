@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using ReactiveUI.Fody.Helpers;
+﻿using ReactiveUI.Fody.Helpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -9,7 +8,7 @@ namespace KindleManager.Dialogs
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class SyncConfirm : MetroWindow
+    public partial class SyncConfirm
     {
         #region Fields      
         public UserSelectBook[] UserSelectedBooks { get; set; }
@@ -19,6 +18,7 @@ namespace KindleManager.Dialogs
             [Reactive] public string Title { get; set; }
             public int Id { get; set; }
         }
+        public bool DialogResult = false;
         #endregion
 
         #region Props
@@ -36,7 +36,6 @@ namespace KindleManager.Dialogs
             UserSelectedBooks.OrderByDescending(x => x.Title);
 
             this.DataContext = this;
-            this.Owner = App.Current.MainWindow;
             this.KindleName = kindleName;
             InitializeComponent();
 
@@ -44,16 +43,15 @@ namespace KindleManager.Dialogs
             this.BooksListItemsControl.ItemsSource = UserSelectedBooks;
         }
 
-        private void Cancel(object sender, RoutedEventArgs e)
+        private void Close(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            this.Close();
+            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void Confirm(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            this.Close();
+            this.Close(sender, e);
         }
     }
 }

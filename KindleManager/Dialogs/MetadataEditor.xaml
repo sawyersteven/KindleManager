@@ -1,67 +1,95 @@
-﻿<Controls:MetroWindow x:Class="KindleManager.Dialogs.MetadataEditor"
+﻿<UserControl x:Class="KindleManager.Dialogs.MetadataEditor"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:converters="clr-namespace:KindleManager.BindingConverters"
-        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterOwner"
-        Title="{Binding Book.Title}"
-        SizeToContent="Height"
         MinWidth="500"
         Width="500"
         Loaded="WindowLoaded"
-        ShowMinButton="False"
-        ShowMaxRestoreButton="False">                     
-                      
-    <StackPanel Margin="10">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="15"/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Vertical" Grid.Column="0">
-                <Label>Title</Label>
-                <TextBox Text="{Binding Book.Title}" Tag="{Binding Book.Title}"></TextBox>
+             Background="White">
 
-                <Label>Series</Label>
-                <ComboBox x:Name="SeriesCB" Grid.Column="1" Grid.Row="2" IsEditable="True" ItemsSource="{Binding SeriesList}" Text="{Binding Book.Series}"></ComboBox>
+    <UserControl.Resources>
+        <converters:StrToFloat x:Key="StrToFloat"/>
+    </UserControl.Resources>
 
-                <Label>Publisher</Label>
-                <ComboBox IsEditable="True" ItemsSource="{Binding PublisherList}" Text="{Binding Book.Publisher}"></ComboBox>
+    <GroupBox Header="{Binding Book.Title}">
+        <StackPanel Margin="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBox Grid.Row="0"
+                         Grid.Column="0"
+                         Text="{Binding Book.Title}"
+                         Tag="{Binding Book.Title}"
+                         materialDesign:HintAssist.Hint="Title"/>
 
-            </StackPanel>
-            <StackPanel Orientation="Vertical" Grid.Column="2">
-                <Label>Author</Label>
-                <ComboBox x:Name="AuthorCB" IsEditable="True" ItemsSource="{Binding AuthorsList}" Text="{Binding Book.Author}"></ComboBox>
+                <ComboBox x:Name="SeriesCB"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              IsEditable="True"
+                              ItemsSource="{Binding SeriesList}"
+                              materialDesign:HintAssist.Hint="Series"
+                              Text="{Binding Book.Series}"/>
+
+                <ComboBox Grid.Row="2"
+                              Grid.Column="0"
+                              IsEditable="True"
+                              ItemsSource="{Binding PublisherList}"
+                              materialDesign:HintAssist.Hint="Publisher"
+                              Text="{Binding Book.Publisher}"/>
                 
-                <Label>Series Number</Label>
-                <xctk:DecimalUpDown Height="24" Value="{Binding Book.SeriesNum}" FormatString="F1" Increment="1.0" Minimum="0"/>
+                <!-- Column 2 -->
+                <ComboBox x:Name="AuthorCB"
+                              Grid.Row="0"
+                              Grid.Column="2"
+                              IsEditable="True"
+                              ItemsSource="{Binding AuthorsList}"
+                              materialDesign:HintAssist.Hint="Author"
+                              Text="{Binding Book.Author}"/>
 
-                <Label>Publish Date</Label>
-                <DatePicker Grid.Column="4" Grid.Row="4" SelectedDate="{Binding Book.PubDate}" SelectedDateFormat="Short"/>
+                <TextBox Text="{Binding Book.SeriesNum, Converter={StaticResource StrToFloat}}"
+                             Grid.Row="1"
+                             Grid.Column="2"
+                             materialDesign:HintAssist.Hint="Series Number" />
 
-                <Label>ISBN ID</Label>
-                <TextBox Grid.Column="4" Grid.Row="6" Text="{Binding Book.ISBN}" Tag="{Binding Book.ISBN}"/>
+                <DatePicker Grid.Row="2"
+                            Grid.Column="2"
+                            Text="{Binding Book.PubDate}"
+                            materialDesign:HintAssist.Hint="Published Date"
+                            Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
 
-            </StackPanel>
-        </Grid>
+                <TextBox Grid.Row="3"
+                         Grid.Column="2"
+                         Text="{Binding Book.ISBN}"
+                         Tag="{Binding Book.ISBN}"
+                         materialDesign:HintAssist.Hint="ISBN" />
+            </Grid>
 
-        <Grid Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Button Click="Cancel" Grid.Column="0">
-                Cancel
-            </Button>
-            <Button Click="CloseAndSave" Grid.Column="2">
-                OK
-            </Button>
-        </Grid>
-    </StackPanel>
-</Controls:MetroWindow>
+            <Grid Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Click="Close" Grid.Column="0" Style="{StaticResource MaterialDesignFlatButton}">
+                    Cancel
+                </Button>
+                <Button Click="CloseAndSave" Grid.Column="2" Style="{StaticResource MaterialDesignRaisedButton}">
+                    OK
+                </Button>
+            </Grid>
+        </StackPanel>
+    </GroupBox>
+</UserControl>

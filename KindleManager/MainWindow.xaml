@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow
+﻿<Window
         x:Class="KindleManager.MainWindow"
         x:Name="Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -6,9 +6,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:KindleManager.BindingConverters"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:smtx="clr-namespace:ShowMeTheXAML;assembly=ShowMeTheXAML"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
+    
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal" 
+        TextOptions.TextRenderingMode="Auto"        
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+    
         Title="Kindle Manager"
         MinHeight="200"
         MinWidth="450">
@@ -28,7 +38,7 @@
             <CollectionContainer Collection="{Binding Source={StaticResource localBooks}}"/>
             <CollectionContainer Collection="{Binding Source={StaticResource remoteBooks}}"/>
         </CompositeCollection>
-        
+
         <Style TargetType="{x:Type Button}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -45,41 +55,30 @@
         </Style>
     </Window.Resources>
 
-    <Controls:MetroWindow.Flyouts>
-        <Controls:FlyoutsControl>
-            <Controls:Flyout Header="Kindle" Position="Right" Width="300" IsOpen="{Binding SideBarOpen}">
-                <StackPanel Orientation="Vertical" Margin="10">
+    <materialDesign:DialogHost Identifier="RootDialog">
+
+        <materialDesign:DrawerHost IsLeftDrawerOpen="{Binding SideBarOpen}">
+            <materialDesign:DrawerHost.LeftDrawerContent>
+                <StackPanel Orientation="Vertical" Margin="10" Width="250">
                     <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
-                    <Border BorderThickness="1" BorderBrush="{DynamicResource GrayBrush5}"/>
-                    <Grid Margin="0,4" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <Border Grid.Row="0" BorderBrush="White" BorderThickness="2" Padding="4">
-                            <StackPanel Orientation="Vertical">
+                    <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,0,8"/>
+
+                    <GroupBox Header="Card Group Box" Style="{DynamicResource MaterialDesignCardGroupBox}" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
+                        <GroupBox.HeaderTemplate>
+                            <DataTemplate>
                                 <DockPanel LastChildFill="False">
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedDevice.Name}" Margin="0,0,8,0" FontWeight="Bold" FontSize="16"/>
-                                    <Button DockPanel.Dock="Right" Command="{Binding CloseDevice}" Style="{StaticResource MetroCircleButtonStyle}" BorderThickness="0" Cursor="Hand">
-                                        <icons:PackIconOcticons Kind="X" Foreground="White" Height="12" Width="12"/>
+                                    <TextBlock DockPanel.Dock="Left" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" Text="{Binding DataContext.SelectedDevice.Name, ElementName=Window}">
+                                    </TextBlock>
+                                    <Button DockPanel.Dock="Right" Command="{Binding DataContext.CloseDevice, ElementName=Window}" Style="{StaticResource MaterialDesignToolButton}" Foreground="{StaticResource PrimaryHueMidForegroundBrush}" Margin="0,2,0,0" Cursor="Hand" Height="20" Width="20">
+                                        <icons:PackIconOcticons Kind="X" Height="12" Width="12"/>
                                     </Button>
                                 </DockPanel>
-                                <TextBlock Text="{Binding SelectedDevice.Description}"/>
-                                
-                            </StackPanel>
-                        </Border>
-                        <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,12,0,0">
+                            </DataTemplate>
+                        </GroupBox.HeaderTemplate>
+                        <Grid Grid.Row="1" VerticalAlignment="Center">
                             <Grid.Resources>
-                                <Style TargetType="{x:Type icons:PackIconOcticons}">
-                                    <Setter Property="Foreground" Value="White"/>
-                                    <Setter Property="Height" Value="24"/>
-                                    <Setter Property="Width" Value="24"/>
-                                </Style>
-                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroCircleButtonStyle}">
-                                    <Setter Property="Height" Value="32"/>
-                                    <Setter Property="Width" Value="32"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                                    <Setter Property="Foreground" Value="{StaticResource PrimaryHueLightForegroundBrush}"/>
                                     <Style.Triggers>
                                         <Trigger Property="IsEnabled" Value="False" >
                                             <Setter Property="Opacity" Value="0.5" />
@@ -96,7 +95,6 @@
                                     <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="FontSize" Value="14"/>
                                     <Setter Property="Padding" Value="0,6,0,6"/>
-                                    <!-- TODO how to remove border on hover? -->
                                 </Style>
                             </Grid.Resources>
                             <Grid.ColumnDefinitions>
@@ -115,306 +113,294 @@
                                 <icons:PackIconOcticons Kind="FileSymlinkDirectory"/>
                             </Button>
 
-                            <Menu Grid.Column="3" HorizontalAlignment="Center">
-                                <MenuItem Background="Transparent" BorderThickness="0">
-                                    <MenuItem.Header>
-                                        <icons:PackIconOcticons Kind="KebabVertical"/>
-                                    </MenuItem.Header>
-                                    <MenuItem Header="Reorganize Library" Command="{Binding ReorganizeDeviceLibrary}"/>
-                                    <MenuItem Header="Rescan Library" Command="{Binding ScanDeviceLibrary}"/>
-                                </MenuItem>
-                            </Menu>
+                            <materialDesign:PopupBox Grid.Column="3" HorizontalAlignment="Center" Foreground="{StaticResource PrimaryHueMidBrush}">
+                                <materialDesign:PopupBox.ToggleContent>
+                                    <icons:PackIconOcticons Kind="KebabVertical"/>
+                                </materialDesign:PopupBox.ToggleContent>
+                                <StackPanel Orientation="Vertical">
+                                    <Button Command="{Binding ReorganizeDeviceLibrary}">
+                                        Reorganize Library
+                                    </Button>
+                                    <Button Command="{Binding ScanDeviceLibrary}">
+                                        Rescan Library
+                                    </Button>
+                                </StackPanel>
+                            </materialDesign:PopupBox>
                         </Grid>
-                    </Grid>
-
+                    </GroupBox>
                     <TextBlock FontSize="14" FontWeight="Bold" Margin="0,8,0,0">Devices</TextBlock>
-                    <Border BorderThickness="1" BorderBrush="{DynamicResource GrayBrush5}"/>
-                    <ScrollViewer>
-                        <ItemsControl ItemsSource="{Binding DevManager.DeviceList}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="4" BorderBrush="White" BorderThickness="2" Margin="0,4" Cursor="Hand" Background="Transparent">
-                                        <Border.InputBindings>
-                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
-                                        </Border.InputBindings>
-                                        <StackPanel Orientation="Vertical">
-                                            <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
-                                            <TextBlock Text="{Binding Description}"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                    <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}"/>
+                    <ItemsControl ItemsSource="{Binding DevManager.DeviceList}" Padding="0,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <materialDesign:Card Padding="8" Cursor="Hand">
+                                    <materialDesign:Card.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
+                                    </materialDesign:Card.InputBindings>
+                                    <StackPanel Orientation="Vertical">
+                                        <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
+                                        <TextBlock Text="{Binding Description}"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
-            </Controls:Flyout>
-        </Controls:FlyoutsControl>
-    </Controls:MetroWindow.Flyouts>
+            </materialDesign:DrawerHost.LeftDrawerContent>
 
-    <Grid>
-        <Grid.Resources>
-            <Style TargetType="{x:Type Button}">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="Padding" Value="4,0,4,0"/>
-                <Setter Property="Height" Value="32"/>
-                <Setter Property="Margin" Value="4,0,4,0"/>
-                <Style.Triggers>
-                    <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="BorderThickness" Value="0"/>
-                        <Setter Property="BorderBrush" Value="Transparent"/>
-                        <Setter Property="Opacity" Value="0.5"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-            <Style TargetType="{x:Type icons:PackIconOcticons}">
-                <Setter Property="Foreground" Value="#424242"/>
-                <Setter Property="Width" Value="24"/>
-                <Setter Property="Height" Value="24"/>
-                <Setter Property="Margin" Value="4,0,4,0"/>
-            </Style>
-        </Grid.Resources>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid Height="48" Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.Resources>
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                        <Setter Property="Margin" Value="8,0,8,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type icons:PackIconOcticons}">
+                        <Setter Property="Margin" Value="4,0,4,0"/>
+                    </Style>
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Height="48" Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                    </Grid.ColumnDefinitions>
 
-            <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Margin="16,0" Grid.Column="0">
-                <icons:PackIconOcticons Kind="RepoTemplate"/>
-            </Button>
-            <Border BorderBrush="{DynamicResource GrayBrush5}" Margin="0,8,16,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
-            <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Grid.Column="2">
-                <StackPanel Orientation="Horizontal">
-                    <icons:PackIconOcticons Kind="RepoPush"/>
-                    <TextBlock VerticalAlignment="Center">Transfer to Kindle</TextBlock>
-                </StackPanel>
-            </Button>
-            <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Grid.Column="3">
-                <StackPanel Orientation="Horizontal">
-                    <icons:PackIconOcticons Kind="Tag"/>
-                    <TextBlock VerticalAlignment="Center">Edit metadata</TextBlock>
-                </StackPanel>
-            </Button>
-            <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Grid.Column="4">
-                <StackPanel Orientation="Horizontal">
-                    <icons:PackIconOcticons Kind="Trashcan"/>
-                    <TextBlock VerticalAlignment="Center">Delete</TextBlock>
-                </StackPanel>
-            </Button>
-            <Button ToolTip="Open Devices" Command="{Binding OpenSideBar}" Grid.Column="6" Margin="0,0,8,0">
-                <icons:PackIconOcticons Kind="ChevronLeft"/>
-            </Button>
-        </Grid>
+                    <ToggleButton Style="{StaticResource MaterialDesignFlatButton}" Grid.Column="0" IsChecked="{Binding SideBarOpen}" Margin="8,0">
+                        <icons:PackIconOcticons Kind="ThreeBars"/>
+                    </ToggleButton>
+                    <Border BorderBrush="{StaticResource PrimaryHueLightBrush}" Margin="0,8,0,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
+                    <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Grid.Column="2">
+                        <icons:PackIconOcticons Kind="RepoTemplate"/>
+                    </Button>
+                    <Border BorderBrush="{StaticResource PrimaryHueLightBrush}" Margin="0,8,0,8" BorderThickness="1,0,0,0" Grid.Column="3"/>
+                    <Button ToolTip="Copy To Kindle" Command="{Binding SendBook}" CommandParameter="{Binding ElementName=LibraryTable, Path=SelectedItems}" Grid.Column="4">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:PackIconOcticons Kind="RepoPush"/>
+                            <TextBlock VerticalAlignment="Center">Transfer to Kindle</TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button ToolTip="Edit Metadata" Command="{Binding EditMetadata}" Grid.Column="5">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:PackIconOcticons Kind="Tag"/>
+                            <TextBlock VerticalAlignment="Center">Edit metadata</TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button ToolTip="Remove Book" Command="{Binding RemoveBook}" Grid.Column="6">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:PackIconOcticons Kind="Trashcan"/>
+                            <TextBlock VerticalAlignment="Center">Delete</TextBlock>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Grid.Column="8" Command="{Binding Test}">
+                        TEST
+                    </Button>
+                    
+                    <Button Grid.Column="9" ToolTip="Open Settings" Command="{Binding EditSettings}">
+                        <icons:Octicons Kind="Settings"/>
+                    </Button>
 
-        <DataGrid Name="LibraryTable"
-                  BorderBrush="{DynamicResource GrayBrush5}"
+
+                </Grid>
+
+                <DataGrid Name="LibraryTable"
+                  BorderBrush="{DynamicResource MaterialDesignTextBoxBorder}"
                   BorderThickness="0,1,0,0"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   SelectedItem="{Binding SelectedTableRow}"
                   Grid.Row="1"
                   AllowDrop="True"
-                  Background="{DynamicResource WhiteColorBrush}"
+                  Background="{DynamicResource MaterialDesignBackground}"
                   Grid.ZIndex="1"
                   Sorting="SortLibraryTable"
                   Tag="{Binding DataContext}">
-            <DataGrid.ItemsSource>
-                <MultiBinding Converter="{StaticResource MergeLibraries}">
-                    <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                    <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                    <!-- These next two lines are critical but don't look like it.
+                    <DataGrid.ItemsSource>
+                        <MultiBinding Converter="{StaticResource MergeLibraries}">
+                            <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                            <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
+                            <!-- These next two lines are critical but don't look like it.
                     MultiBinds only listen for PropertyChanged notifications on objects.
                     Adding/removing items from an ObservableCollection raises CollectionChanged.
                     Binding to the Count of each collection will cause the MultiBinding to
                         update when items are added/removed                    
                     -->
-                    <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
-                    <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
-                </MultiBinding>
-            </DataGrid.ItemsSource>
+                            <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
+                            <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
+                        </MultiBinding>
+                    </DataGrid.ItemsSource>
 
-            <DataGrid.Resources>
-                <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                    <MenuItem Header="Copy To Kindle" Click="SendBook">
-                        <MenuItem.IsEnabled>
-                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                <Binding/>
-                                <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
-                            </MultiBinding>
-                        </MenuItem.IsEnabled>
-                    </MenuItem>
-                    <MenuItem Header="Copy To Library" Click="ReceiveBook">
-                        <MenuItem.IsEnabled>
-                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                <Binding/>
-                                <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Controls:MetroWindow}}"/>
-                            </MultiBinding>
-                        </MenuItem.IsEnabled>
-                    </MenuItem>
-                    <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
-                    <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
-                    <MenuItem Header="Delete" Click="RemoveBook"/>
-                </ContextMenu>
+                    <DataGrid.Resources>
+                        <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Copy To Kindle" Click="SendBook">
+                                <MenuItem.IsEnabled>
+                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                        <Binding/>
+                                        <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
+                                    </MultiBinding>
+                                </MenuItem.IsEnabled>
+                            </MenuItem>
+                            <MenuItem Header="Copy To Library" Click="ReceiveBook">
+                                <MenuItem.IsEnabled>
+                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                        <Binding/>
+                                        <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
+                                    </MultiBinding>
+                                </MenuItem.IsEnabled>
+                            </MenuItem>
+                            <MenuItem Header="Edit Metadata" Click="EditMetadata"/>
+                            <MenuItem Header="Show In Explorer" Click="OpenBookFolder"/>
+                            <MenuItem Header="Delete" Click="RemoveBook"/>
+                        </ContextMenu>
 
-                <ContextMenu x:Key="GridHeaderContextMenu" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Closed="SaveLibraryColumns">
-                    <ItemsControl ItemsSource="{Binding Columns, Converter={StaticResource GridColumnFilter}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                    <CheckBox IsChecked="{Binding Visibility, Converter={StaticResource VisibilityToBool}}" Tag="{Binding Header}"/>
-                                    <TextBlock Text="{Binding Header}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        <ContextMenu x:Key="GridHeaderContextMenu"
+                                     DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}"
+                                     Closed="SaveLibraryColumns"
+                                     ItemsSource="{Binding Columns, Converter={StaticResource GridColumnFilter}}"
+                                     >
+                            <ContextMenu.ItemContainerStyle>
+                                <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource MaterialDesignMenuItem}">
+                                    <Setter Property="Header" Value="{Binding Header}"/>
+                                    <Setter Property="IsCheckable" Value="True"/>
+                                    <Setter Property="IsChecked" Value="{Binding Visibility, Converter={StaticResource VisibilityToBool}}"/>
+                                </Style>
+                            </ContextMenu.ItemContainerStyle>
+                        </ContextMenu>
 
-                </ContextMenu>
+                    </DataGrid.Resources>
 
-            </DataGrid.Resources>
-            
-            <DataGrid.ColumnHeaderStyle>
-                <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource MetroDataGridColumnHeader}">
-                    <Setter Property="Tag" Value="{Binding ElementName=LibraryTable}"/>
-                    <Setter Property="ContextMenu" Value="{StaticResource GridHeaderContextMenu}"/>
-                </Style>
-            </DataGrid.ColumnHeaderStyle>
-            
-            <DataGrid.RowStyle>
-                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MetroDataGridRow}">
-                    <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}"/>
-                </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-                <DataGridTemplateColumn MinWidth="48" SortMemberPath="Id" CanUserReorder="False">
-                    <DataGridTemplateColumn.HeaderTemplate>
-                        <DataTemplate>
-                            <icons:PackIconOcticons Kind="DeviceDesktop" Height="16" Width="16"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.HeaderTemplate>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <icons:PackIconOcticons>
-                                <icons:PackIconOcticons.Style>
-                                    <Style TargetType="icons:PackIconOcticons">
-                                        <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        <Setter Property="Width" Value="12"/>
-                                        <Setter Property="Kind" Value="None"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Value="True">
-                                                <DataTrigger.Binding>
-                                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                                        <Binding Path="."/>
-                                                        <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                                                    </MultiBinding>
-                                                </DataTrigger.Binding>
-                                                <Setter Property="Kind" Value="Check"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </icons:PackIconOcticons.Style>
-                            </icons:PackIconOcticons>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource MaterialDesignDataGridColumnHeader}">
+                            <Setter Property="Tag" Value="{Binding ElementName=LibraryTable}"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource GridHeaderContextMenu}"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
 
-                <DataGridTemplateColumn MinWidth="48" SortMemberPath="Id" CanUserReorder="False">
-                    <DataGridTemplateColumn.HeaderTemplate>
-                        <DataTemplate>
-                            <icons:PackIconOcticons Kind="DeviceMobile" Height="16" Width="16"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.HeaderTemplate>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <icons:PackIconOcticons>
-                                <icons:PackIconOcticons.Style>
-                                    <Style TargetType="icons:PackIconOcticons">
-                                        <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        <Setter Property="Width" Value="12"/>
-                                        <Setter Property="Kind" Value="None"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Value="True">
-                                                <DataTrigger.Binding>
-                                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                                        <Binding Path="."/>
-                                                        <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                                                    </MultiBinding>
-                                                </DataTrigger.Binding>
-                                                <Setter Property="Kind" Value="Check" />
-                                            </DataTrigger>
-                                            <DataTrigger Value="False">
-                                                <DataTrigger.Binding>
-                                                    <MultiBinding Converter="{StaticResource MetadataMatch}">
-                                                        <Binding Path=".Id"/>
-                                                        <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                                                        <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                                                    </MultiBinding>
-                                                </DataTrigger.Binding>
-                                                <Setter Property="Foreground" Value="Orange" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </icons:PackIconOcticons.Style>
-                            </icons:PackIconOcticons>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource MaterialDesignDataGridRow}">
+                            <Setter Property="ContextMenu" Value="{StaticResource GridRowContextMenu}"/>
+                        </Style>
+                    </DataGrid.RowStyle>
 
-                <DataGridTextColumn MinWidth="100" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
-                <DataGridTextColumn MinWidth="70" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
-                <DataGridTextColumn MinWidth="105" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
-                <DataGridTextColumn MinWidth="95" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="Language" Binding="{Binding Path=Language}" />
-                <DataGridTextColumn MinWidth="100" Width="Auto" Header="ISBN" Binding="{Binding Path=ISBN}" />
-                <DataGridTextColumn MinWidth="85" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
-            </DataGrid.Columns>
-        </DataGrid>
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Background" Value="{StaticResource SecondaryAccentBrush}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.CellStyle>
 
-        <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource LabelTextBrush}">
-            <icons:PackIconOcticons Kind="DiffAdded" Foreground="{DynamicResource WhiteColorBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        </Border>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="Id" CanUserReorder="False">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <icons:PackIconOcticons Kind="DeviceDesktop" Height="16" Width="16"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <icons:PackIconOcticons>
+                                        <icons:PackIconOcticons.Style>
+                                            <Style TargetType="icons:PackIconOcticons">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="Width" Value="12"/>
+                                                <Setter Property="Kind" Value="None"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                                                <Binding Path="."/>
+                                                                <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Kind" Value="Check"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </icons:PackIconOcticons.Style>
+                                    </icons:PackIconOcticons>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
-        <StatusBar Grid.Row="2" Height="32">
-            <StatusBar.Style>
-                <Style TargetType="{x:Type StatusBar}" BasedOn="{StaticResource MetroStatusBar}">
-                    <Setter Property="Background" Value="{DynamicResource WindowTitleColorBrush}" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsActive}" Value="False">
-                            <Setter Property="Background" Value="{Binding Path=NonActiveWindowTitleBrush, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Controls:MetroWindow}}}" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </StatusBar.Style>
-            <StatusBarItem HorizontalContentAlignment="Stretch">
-                <Grid Margin="8,0" Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Controls:ProgressRing IsActive="{Binding BackgroundWork}" Grid.Column="0" Width="24" Foreground="#424242" Margin="0,0,8,0"/>
-                    <icons:PackIconOcticons Kind="{Binding StatusBarIcon}" Margin="4,5,0,0" Height="16"/>
+                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="Id" CanUserReorder="False">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <icons:PackIconOcticons Kind="DeviceMobile" Height="16" Width="16"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <icons:PackIconOcticons>
+                                        <icons:PackIconOcticons.Style>
+                                            <Style TargetType="icons:PackIconOcticons">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="Width" Value="12"/>
+                                                <Setter Property="Kind" Value="None"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                                                <Binding Path="."/>
+                                                                <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Kind" Value="Check" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Value="False">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource MetadataMatch}">
+                                                                <Binding Path=".Id"/>
+                                                                <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
+                                                                <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Foreground" Value="Orange" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </icons:PackIconOcticons.Style>
+                                    </icons:PackIconOcticons>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
-                    <TextBlock Text="{Binding StatusBarText}" VerticalAlignment="Center" FontSize="13" Grid.Column="1" Foreground="{DynamicResource TextBrush}"/>
-                    <Button ToolTip="Library Settings" Command="{Binding EditSettings}" Background="Transparent" Grid.Column="2">
-                        <icons:PackIconOcticons Kind="Gear" Height="24" Width="24" Padding="0,0,0,4"/>
-                    </Button>
-                </Grid>
-            </StatusBarItem>
-        </StatusBar>
-    </Grid>
+                        <DataGridTextColumn MinWidth="100" Width="*" Header="Title" Binding="{Binding Path=Title}"/>
+                        <DataGridTextColumn MinWidth="100" Width="Auto" Header="Author" Binding="{Binding Path=Author}" />
+                        <DataGridTextColumn MinWidth="100" Width="Auto" Header="Series" Binding="{Binding Path=Series}" />
+                        <DataGridTextColumn MinWidth="90" Width="Auto" Header="Series #" Binding="{Binding Path=SeriesNum, Converter={StaticResource FloatToString}}" />
+                        <DataGridTextColumn MinWidth="115" Width="Auto" Header="Publish Date" Binding="{Binding Path=PubDate}" />
+                        <DataGridTextColumn MinWidth="110" Width="Auto" Header="Date Added" Binding="{Binding Path=DateAdded}" />
+                        <DataGridTextColumn MinWidth="100" Width="Auto" Header="Language" Binding="{Binding Path=Language}" />
+                        <DataGridTextColumn MinWidth="100" Width="Auto" Header="ISBN" Binding="{Binding Path=ISBN}" />
+                        <DataGridTextColumn MinWidth="100" Width="Auto" Header="Publisher" Binding="{Binding Path=Publisher}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Grid.Row="2">
+                    <materialDesign:Snackbar HorizontalAlignment="Stretch" MessageQueue="{Binding snackBarQueue}"/>
+                </Border>
 
 
-</Controls:MetroWindow>
+                <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource PrimaryHueLightForegroundBrush}">
+                    <icons:PackIconOcticons Kind="DiffAdded" Foreground="{DynamicResource PrimaryHueDarkForegroundBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                
+            </Grid>
+        </materialDesign:DrawerHost>
+    </materialDesign:DialogHost>
+</Window>

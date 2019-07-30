@@ -17,7 +17,7 @@ namespace Formats
         public virtual string[] Subject { get; set; }
         public virtual string Description { get; set; } = "";
         private string _PubDate = "";
-        public virtual string PubDate
+        public virtual string PubDate // standard format MM/dd/yyyy
         {
             get => _PubDate;
             set
@@ -31,7 +31,7 @@ namespace Formats
         public virtual int Id { get; set; }
         public virtual string Series { get; set; } = "";
         private string _SeriesNum = "";
-        public virtual float SeriesNum
+        public virtual Nullable<float> SeriesNum
         {
             get => float.TryParse(_SeriesNum, out float f) ? f : 0;
             set

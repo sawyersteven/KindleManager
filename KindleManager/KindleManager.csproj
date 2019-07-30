@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\ReactiveUI.Fody.9.15.1\build\ReactiveUI.Fody.props" Condition="Exists('..\packages\ReactiveUI.Fody.9.15.1\build\ReactiveUI.Fody.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -7,8 +8,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Books</RootNamespace>
-    <AssemblyName>Books</AssemblyName>
+    <RootNamespace>KindleManager</RootNamespace>
+    <AssemblyName>KindleManager</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -66,6 +67,9 @@
     <Compile Include="Config\FSDeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
     <Compile Include="Devices\LocalLibrary.cs" />
+    <Compile Include="Dialogs\Progress.xaml.cs">
+      <DependentUpon>Progress.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\BulkProcessErrors.xaml.cs">
       <DependentUpon>BulkProcessErrors.xaml</DependentUpon>
     </Compile>
@@ -117,6 +121,10 @@
     <Compile Include="Utils\Decompressors\PalmDoc.cs" />
     <Compile Include="ViewModels\ErrorDialog.cs" />
     <Compile Include="ViewModels\MainWindow.cs" />
+    <Page Include="Dialogs\Progress.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Dialogs\BulkProcessErrors.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -221,12 +229,21 @@
     <Reference Include="MahApps.Metro.IconPacks.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=0c0d510f9915137a, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.IconPacks.3.0.0-alpha0176\lib\net46\MahApps.Metro.IconPacks.Core.dll</HintPath>
     </Reference>
+    <Reference Include="MaterialDesignColors, Version=1.2.0.325, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MaterialDesignColors.1.2.0\lib\net45\MaterialDesignColors.dll</HintPath>
+    </Reference>
+    <Reference Include="MaterialDesignThemes.Wpf, Version=2.6.0.325, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MaterialDesignThemes.2.6.0\lib\net45\MaterialDesignThemes.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.6.5\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="ShowMeTheXAML, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ShowMeTheXAML.1.0.12\lib\net45\ShowMeTheXAML.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />

@@ -24,6 +24,38 @@ namespace KindleManager.BindingConverters
         }
     }
 
+    public class StrToFloat : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null) return null;
+            float v = (float)value;
+            if (v == 0)
+            {
+                return null;
+            }
+            return ((float)value).ToString("F1");
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string v = (string)value;
+            if (v == "")
+            {
+                return null;
+            }
+            else if (float.TryParse(v, out float f))
+            {
+                return f;
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
+
+
     public class CollapseIfFalse : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -175,6 +207,7 @@ namespace KindleManager.BindingConverters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null) return "";
             return (float)value == 0 ? "" : value.ToString();
         }
 

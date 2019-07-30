@@ -223,7 +223,7 @@ namespace KindleManager.Devices
 
             string remoteFileAbs = Path.Combine(Config.LibraryRoot, Config.DirectoryFormat, Path.GetFileName(localBook.FilePath)).DictFormat(bookMetadata);
             remoteFileAbs = Utils.Files.MakeFilesystemSafe(Path.Combine(this.DriveLetter, remoteFileAbs));
-            string remoteFileRelative = remoteFileAbs.Substring(LibraryRoot.Length);
+            string remoteFileRelative = RelativeFilepath(remoteFileAbs);
 
             Directory.CreateDirectory(Path.GetDirectoryName(remoteFileAbs));
 

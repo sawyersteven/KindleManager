@@ -35,10 +35,6 @@ namespace KindleManager.Devices
         {
             Database.BookEntry entry = Database.BOOKS.FirstOrDefault(x => x.Id == donor.Id);
             if (entry == null) return;
-            // update db
-            //donor.FilePath = entry.FilePath;
-            //Database.UpdateBook(donor);
-            // update book on disk
             BookBase recip = BookBase.Auto(AbsoluteFilePath(entry));
             recip.UpdateMetadata(donor);
 
