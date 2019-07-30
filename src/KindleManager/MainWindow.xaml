@@ -59,93 +59,101 @@
 
         <materialDesign:DrawerHost IsLeftDrawerOpen="{Binding SideBarOpen}">
             <materialDesign:DrawerHost.LeftDrawerContent>
-                <StackPanel Orientation="Vertical" Margin="10" Width="250">
-                    <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
-                    <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,0,8"/>
+                <DockPanel Margin="10" Width="250" LastChildFill="False">
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
+                        <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,0,8"/>
 
-                    <GroupBox Header="Card Group Box" Style="{DynamicResource MaterialDesignCardGroupBox}" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
-                        <GroupBox.HeaderTemplate>
-                            <DataTemplate>
-                                <DockPanel LastChildFill="False">
-                                    <TextBlock DockPanel.Dock="Left" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" Text="{Binding DataContext.SelectedDevice.Name, ElementName=Window}">
-                                    </TextBlock>
-                                    <Button DockPanel.Dock="Right" Command="{Binding DataContext.CloseDevice, ElementName=Window}" Style="{StaticResource MaterialDesignToolButton}" Foreground="{StaticResource PrimaryHueMidForegroundBrush}" Margin="0,2,0,0" Cursor="Hand" Height="20" Width="20">
-                                        <icons:PackIconOcticons Kind="X" Height="12" Width="12"/>
-                                    </Button>
-                                </DockPanel>
-                            </DataTemplate>
-                        </GroupBox.HeaderTemplate>
-                        <Grid Grid.Row="1" VerticalAlignment="Center">
-                            <Grid.Resources>
-                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
-                                    <Setter Property="Foreground" Value="{StaticResource PrimaryHueLightForegroundBrush}"/>
-                                    <Style.Triggers>
-                                        <Trigger Property="IsEnabled" Value="False" >
-                                            <Setter Property="Opacity" Value="0.5" />
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True" >
-                                            <Setter Property="Cursor" Value="Hand" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                                <Style TargetType="{x:Type Menu}">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                </Style>
-                                <Style TargetType="{x:Type MenuItem}">
-                                    <Setter Property="Foreground" Value="White"/>
-                                    <Setter Property="FontSize" Value="14"/>
-                                    <Setter Property="Padding" Value="0,6,0,6"/>
-                                </Style>
-                            </Grid.Resources>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-                            <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0">
-                                <icons:PackIconOcticons Kind="RepoForcePush"/>
-                            </Button>
-                            <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1">
-                                <icons:PackIconOcticons Kind="Gear"/>
-                            </Button>
-                            <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2">
-                                <icons:PackIconOcticons Kind="FileSymlinkDirectory"/>
-                            </Button>
+                        <GroupBox Header="Card Group Box" Style="{DynamicResource MaterialDesignCardGroupBox}" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
+                            <GroupBox.HeaderTemplate>
+                                <DataTemplate>
+                                    <DockPanel LastChildFill="False">
+                                        <TextBlock DockPanel.Dock="Left" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" Text="{Binding DataContext.SelectedDevice.Name, ElementName=Window}">
+                                        </TextBlock>
+                                        <Button DockPanel.Dock="Right" Command="{Binding DataContext.CloseDevice, ElementName=Window}" Style="{StaticResource MaterialDesignToolButton}" Foreground="{StaticResource PrimaryHueMidForegroundBrush}" Margin="0,2,0,0" Cursor="Hand" Height="20" Width="20">
+                                            <icons:PackIconOcticons Kind="X" Height="12" Width="12"/>
+                                        </Button>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </GroupBox.HeaderTemplate>
+                            <Grid Grid.Row="1" VerticalAlignment="Center">
+                                <Grid.Resources>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryHueLightForegroundBrush}"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False" >
+                                                <Setter Property="Opacity" Value="0.5" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True" >
+                                                <Setter Property="Cursor" Value="Hand" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                    <Style TargetType="{x:Type Menu}">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontSize" Value="14"/>
+                                        <Setter Property="Padding" Value="0,6,0,6"/>
+                                    </Style>
+                                </Grid.Resources>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Button ToolTip="Sync Library" Command="{Binding SyncDeviceLibrary}" Grid.Column="0">
+                                    <icons:PackIconOcticons Kind="RepoForcePush"/>
+                                </Button>
+                                <Button ToolTip="Edit Device Settings" Command="{Binding EditDeviceSettings}" Grid.Column="1">
+                                    <icons:PackIconOcticons Kind="Gear"/>
+                                </Button>
+                                <Button ToolTip="Open Library Folder" Command="{Binding OpenDeviceFolder}" Grid.Column="2">
+                                    <icons:PackIconOcticons Kind="FileSymlinkDirectory"/>
+                                </Button>
 
-                            <materialDesign:PopupBox Grid.Column="3" HorizontalAlignment="Center" Foreground="{StaticResource PrimaryHueMidBrush}">
-                                <materialDesign:PopupBox.ToggleContent>
-                                    <icons:PackIconOcticons Kind="KebabVertical"/>
-                                </materialDesign:PopupBox.ToggleContent>
-                                <StackPanel Orientation="Vertical">
-                                    <Button Command="{Binding ReorganizeDeviceLibrary}">
-                                        Reorganize Library
-                                    </Button>
-                                    <Button Command="{Binding ScanDeviceLibrary}">
-                                        Rescan Library
-                                    </Button>
-                                </StackPanel>
-                            </materialDesign:PopupBox>
-                        </Grid>
-                    </GroupBox>
-                    <TextBlock FontSize="14" FontWeight="Bold" Margin="0,8,0,0">Devices</TextBlock>
-                    <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}"/>
-                    <ItemsControl ItemsSource="{Binding DevManager.DeviceList}" Padding="0,8">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <materialDesign:Card Padding="8" Cursor="Hand">
-                                    <materialDesign:Card.InputBindings>
-                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
-                                    </materialDesign:Card.InputBindings>
+                                <materialDesign:PopupBox Grid.Column="3" HorizontalAlignment="Center" Foreground="{StaticResource PrimaryHueMidBrush}">
+                                    <materialDesign:PopupBox.ToggleContent>
+                                        <icons:PackIconOcticons Kind="KebabVertical"/>
+                                    </materialDesign:PopupBox.ToggleContent>
                                     <StackPanel Orientation="Vertical">
-                                        <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
-                                        <TextBlock Text="{Binding Description}"/>
+                                        <Button Command="{Binding ReorganizeDeviceLibrary}">
+                                            Reorganize Library
+                                        </Button>
+                                        <Button Command="{Binding ScanDeviceLibrary}">
+                                            Rescan Library
+                                        </Button>
                                     </StackPanel>
-                                </materialDesign:Card>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                                </materialDesign:PopupBox>
+                            </Grid>
+                        </GroupBox>
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="0,8,0,0">Devices</TextBlock>
+                        <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}"/>
+                        <ItemsControl ItemsSource="{Binding DevManager.DeviceList}" Padding="0,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Card Padding="8" Cursor="Hand">
+                                        <materialDesign:Card.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
+                                        </materialDesign:Card.InputBindings>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock Text="{Binding Name}" Margin="0,0,0,0" FontSize="16" FontWeight="Bold" />
+                                            <TextBlock Text="{Binding Description}"/>
+                                        </StackPanel>
+                                    </materialDesign:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Bottom" Style="{StaticResource MaterialDesignFlatButton}" Command="{Binding ShowAbout}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <icons:PackIconOcticons Kind="Question" Margin="0,0,8,0"/>
+                            <TextBlock>About KindleManager</TextBlock>
+                        </StackPanel>
+                    </Button>
+                </DockPanel>
             </materialDesign:DrawerHost.LeftDrawerContent>
 
             <Grid>
@@ -202,16 +210,11 @@
                             <TextBlock VerticalAlignment="Center">Delete</TextBlock>
                         </StackPanel>
                     </Button>
-                    
-                    <Button Grid.Column="8" Command="{Binding Test}">
-                        TEST
-                    </Button>
-                    
+
                     <Button Grid.Column="9" ToolTip="Open Settings" Command="{Binding EditSettings}">
                         <icons:Octicons Kind="Settings"/>
                     </Button>
-
-
+                    
                 </Grid>
 
                 <DataGrid Name="LibraryTable"

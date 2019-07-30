@@ -15,10 +15,16 @@ namespace KindleManager
         public void StartApp(object sender, StartupEventArgs e)
         {
             string appDataDir = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\");
+            string configFile = Path.Combine(appDataDir, "Settings.conf");
 
             Logging.Start(appDataDir);
 
-            Config = new Config.PCConfig(Path.Combine(appDataDir, "Settings.conf"));
+            bool showSplash = false;
+            if (!File.Exists(configFile))
+            {
+                showSplash = true;
+            }
+            Config = new Config.PCConfig(configFile);
 
             LibraryDirectory = Environment.ExpandEnvironmentVariables(Config.LibraryRoot);
             Directory.CreateDirectory(LibraryDirectory);
@@ -27,7 +33,7 @@ namespace KindleManager
 
             ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(int.MaxValue));
 
-            MainWindow = new MainWindow();
+            MainWindow = new MainWindow(showSplash);
             MainWindow.Show();
         }
     }

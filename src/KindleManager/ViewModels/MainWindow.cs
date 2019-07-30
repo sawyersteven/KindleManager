@@ -46,8 +46,9 @@ namespace KindleManager.ViewModels
             ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
             CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
 
-            Test = ReactiveCommand.Create(_Test);
             #endregion
+
+            ShowAbout = ReactiveCommand.Create(_ShowAbout);
 
             snackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue();
             DevManager = new Devices.DevManager();
@@ -84,11 +85,6 @@ namespace KindleManager.ViewModels
         #endregion
 
         #region button commands
-        public ReactiveCommand<Unit, Unit> Test { get; set; }
-        public void _Test()
-        {
-            snackBarQueue.Enqueue("HI");
-        }
 
         public ReactiveCommand<IList, Unit> ReceiveBook { get; set; }
         public Unit _ReceiveBook(IList bookList)
@@ -623,6 +619,13 @@ namespace KindleManager.ViewModels
         }
 
         #endregion
+
+        public ReactiveCommand<Unit, Unit> ShowAbout { get; set; }
+        public void _ShowAbout()
+        {
+            var dlg = new Dialogs.Splash();
+            MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+        }
 
         /// <summary>
         /// Used to import from another device's library.

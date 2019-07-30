@@ -14,7 +14,7 @@ namespace KindleManager
     /// </summary>
     public partial class MainWindow
     {
-        public MainWindow()
+        public MainWindow(bool showSplash)
         {
             this.DataContext = new ViewModels.MainWindow();
             InitializeComponent();
@@ -29,6 +29,11 @@ namespace KindleManager
                 {
                     c.Visibility = Visibility.Collapsed;
                 }
+            }
+
+            if (showSplash)
+            {
+                this.ContentRendered += (object sender, System.EventArgs e) => this.GetDataContext()._ShowAbout();
             }
         }
 
