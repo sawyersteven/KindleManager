@@ -66,6 +66,7 @@
     <Compile Include="Config\FSDeviceConfig.cs" />
     <Compile Include="Devices\DeviceManager.cs" />
     <Compile Include="Devices\LocalLibrary.cs" />
+    <Compile Include="Dialogs\DialogBase.cs" />
     <Compile Include="Dialogs\Splash.xaml.cs">
       <DependentUpon>Splash.xaml</DependentUpon>
     </Compile>

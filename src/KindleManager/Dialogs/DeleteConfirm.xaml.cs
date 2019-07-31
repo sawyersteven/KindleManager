@@ -2,14 +2,13 @@
 
 namespace KindleManager.Dialogs
 {
-    public partial class DeleteConfirm
+    public partial class DeleteConfirm : DialogBase
     {
         public Visibility OnDevice { get; set; }
         public Visibility OnPC { get; set; }
         public Visibility OnBoth { get; set; }
         public string BookTitle { get; set; }
         public int DeleteFrom = -1;
-        public bool DialogResult = false;
 
         public DeleteConfirm(string bookTitle, bool onDevice, bool onPC)
         {
@@ -33,12 +32,7 @@ namespace KindleManager.Dialogs
             }
         }
 
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
-        }
-
-        private void Confirm(object sender, RoutedEventArgs e)
+        protected override void Confirm(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
             this.DeleteFrom = cbDeleteFrom.SelectedIndex;

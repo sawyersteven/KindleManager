@@ -1,11 +1,9 @@
-﻿using System.Windows;
-
-namespace KindleManager.Dialogs
+﻿namespace KindleManager.Dialogs
 {
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class Error
+    public partial class Error : DialogBase
     {
         public string TitleText { get; set; }
         public string MessageText { get; set; }
@@ -16,10 +14,6 @@ namespace KindleManager.Dialogs
             MessageText = message;
             this.DataContext = this;
             InitializeComponent();
-        }
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
     }
 }

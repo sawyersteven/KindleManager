@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace KindleManager.Dialogs
 {
-    public partial class ConfigEditor
+    public partial class ConfigEditor : DialogBase
     {
         public PCConfig Config { get; }
 
@@ -13,11 +13,6 @@ namespace KindleManager.Dialogs
             this.DataContext = this;
             this.Config = new PCConfig(App.Config);
             InitializeComponent();
-        }
-
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void SelectLibraryDir(object sender, RoutedEventArgs e)

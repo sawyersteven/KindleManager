@@ -1,12 +1,13 @@
-﻿<UserControl x:Class="KindleManager.Dialogs.Error"
+﻿<dialogs:DialogBase x:Class="KindleManager.Dialogs.Error"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:dialogs="clr-namespace:KindleManager.Dialogs"
         mc:Ignorable="d"
         Width="350"
-             Background="White">
+        >
 
     <GroupBox Header="{Binding TitleText}">
     <StackPanel>
@@ -20,4 +21,4 @@
         </Button>
     </StackPanel>
     </GroupBox>
-</UserControl>
+</dialogs:DialogBase>

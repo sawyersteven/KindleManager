@@ -2,12 +2,11 @@
 
 namespace KindleManager.Dialogs
 {
-    public partial class FSDeviceConfigEditor
+    public partial class FSDeviceConfigEditor : DialogBase
     {
         public Config.FSDeviceConfig Config { get; set; }
         public bool RequestReorg = false;
         private readonly Config.FSDeviceConfig OrigConfig;
-        public bool DialogResult = false;
 
         public FSDeviceConfigEditor(Config.FSDeviceConfig config)
         {
@@ -15,11 +14,6 @@ namespace KindleManager.Dialogs
             this.DataContext = this;
             this.Config = new Config.FSDeviceConfig(config);
             InitializeComponent();
-        }
-
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private void SaveSettings(object sender, RoutedEventArgs e)

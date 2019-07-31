@@ -1,13 +1,12 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using System;
-using System.Windows;
 
 namespace KindleManager.Dialogs
 {
     /// <summary>
     /// Interaction logic for Error.xaml
     /// </summary>
-    public partial class BulkProcessErrors
+    public partial class BulkProcessErrors : DialogBase
     {
         [Reactive]
         public GridRow[] Errors { get; set; }
@@ -36,11 +35,6 @@ namespace KindleManager.Dialogs
                 Item = f;
                 Error = e;
             }
-        }
-
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
     }
 }

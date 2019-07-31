@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class Progress
+    public partial class Progress : DialogBase
     {
         #region props
         private int _Percent = 0;
@@ -75,11 +75,6 @@ namespace KindleManager.Dialogs
                 progressBar.Value = 100;
                 closeButton.IsEnabled = true;
             });
-        }
-
-        public void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
         }
 
         private class GridRow

@@ -5,7 +5,7 @@ using System.Windows;
 
 namespace KindleManager.Dialogs
 {
-    public partial class MetadataEditor
+    public partial class MetadataEditor : DialogBase
     {
         #region Properties
         public string[] AuthorsList { get; set; }
@@ -16,7 +16,6 @@ namespace KindleManager.Dialogs
         #endregion
 
         private static readonly Regex onlyFloat = new Regex("[^0-9.-]+");
-        public bool DialogResult = false;
 
         public MetadataEditor(Database.BookEntry book)
         {
@@ -49,14 +48,8 @@ namespace KindleManager.Dialogs
             this.MaxHeight = this.ActualHeight;
         }
 
-        private void Close(object sender, RoutedEventArgs e)
-        {
-            MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand.Execute(this, null);
-        }
-
         private void CloseAndSave(object sender, RoutedEventArgs e)
         {
-
             ModBook = new Database.BookEntry(Book);
             ModBook.PubDate = Utils.Metadata.GetDate(ModBook.PubDate);
             DialogResult = true;
@@ -85,7 +78,7 @@ namespace KindleManager.Dialogs
             else
             {
                 tb.Text = "";
-            };
+            }
         }
     }
 }
