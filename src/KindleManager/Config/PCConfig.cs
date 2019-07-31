@@ -7,8 +7,16 @@ namespace KindleManager.Config
     public class PCConfig : ConfigBase
     {
         #region serialiable properties
+        private string _LibraryRoot = "";
         [JsonProperty]
-        public string LibraryRoot { get; set; }
+        public string LibraryRoot
+        {
+            get => _LibraryRoot;
+            set
+            {
+                _LibraryRoot = value.TrimEnd(new char[] { '\\', '/' });
+            }
+        }
         [JsonProperty]
         public string DirectoryFormat { get; set; }
         [JsonProperty]
@@ -18,7 +26,7 @@ namespace KindleManager.Config
         #region method overrides
         public override void SetDefaults()
         {
-            LibraryRoot = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\Library\");
+            LibraryRoot = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\KindleManager\Library");
             DirectoryFormat = "{Author}\\{Series}";
             HiddenColumns = new string[] { "Contributor", "Id", "Description", "Rights", "Language", "ISBN", "FilePath", "Subject" };
 
