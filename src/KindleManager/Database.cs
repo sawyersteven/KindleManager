@@ -62,7 +62,7 @@ namespace KindleManager
             }
 
             BookEntry entry = new BookEntry(book);
-            entry.DateAdded = DateTime.Now.ToString("yyyy-MM-dd"); // 1950-01-01
+            entry.DateAdded = DateTime.Now.ToString("MM/dd/yyyy");
 
             entry.Id = book.Id != 0 ? book.Id : NextID();
 
