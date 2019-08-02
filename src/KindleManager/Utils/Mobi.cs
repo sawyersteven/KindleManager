@@ -78,13 +78,13 @@ namespace Utils
         }
 
         /// <summary>
-        /// Formats app standard date MM/dd/yyyy to mobi standard yyyy-MM-dd
+        /// Formats app standard date M/d/yyyy to mobi standard yyyy-MM-dd
         /// </summary>
         /// <param name="date"></param>
         /// <returns></returns>
         public static string FormatDate(string date)
         {
-            return DateTime.ParseExact(date, "MM/dd/yyyy", culture).ToString("yyyy-MM-dd");
+            return DateTime.ParseExact(date, "M/d/yyyy", culture).ToString("yyyy-MM-dd");
         }
     }
 }

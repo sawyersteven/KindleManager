@@ -8,7 +8,7 @@ namespace Utils
     {
         private static readonly Random rndm = new Random();
         private static readonly CultureInfo culture = new CultureInfo("en-US");
-        private static readonly string[] dateFormats = new string[] { "yyyy", "yyyy-MM", "yyyy-MM-dd", "MM/dd/yyyy" };
+        private static readonly string[] dateFormats = new string[] { "yyyy", "yyyy-MM", "yyyy-MM-dd", "M/d/yyyy" };
 
         /// <summary>
         /// Generates random number with default length of 3 digits
@@ -57,7 +57,7 @@ namespace Utils
             {
                 return DateTime.UtcNow.ToString("MM/dd/yyyy");
             }
-            return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("MM/dd/yyyy");
+            return DateTime.ParseExact(date.Truncate(10), dateFormats, culture, DateTimeStyles.None).ToString("M/d/yyyy");
         }
     }
 }

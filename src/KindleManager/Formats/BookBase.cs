@@ -17,7 +17,7 @@ namespace Formats
         public virtual string[] Subject { get; set; }
         public virtual string Description { get; set; } = "";
         private string _PubDate = "";
-        public virtual string PubDate // standard format MM/dd/yyyy
+        public virtual string PubDate // standard format M/d/yyyy
         {
             get => _PubDate;
             set
