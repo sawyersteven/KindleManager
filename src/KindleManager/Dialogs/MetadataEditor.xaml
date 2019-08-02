@@ -12,9 +12,9 @@
         Loaded="WindowLoaded"
         >
 
-    <UserControl.Resources>
+    <dialogs:DialogBase.Resources>
         <converters:StrToFloat x:Key="StrToFloat"/>
-    </UserControl.Resources>
+    </dialogs:DialogBase.Resources>
 
     <GroupBox Header="{Binding Book.Title}">
         <StackPanel Margin="10">

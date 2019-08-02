@@ -9,9 +9,9 @@
         mc:Ignorable="d"
         >
 
-    <UserControl.Resources>
+    <dialogs:DialogBase.Resources>
         <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
-    </UserControl.Resources>
+    </dialogs:DialogBase.Resources>
 
     <GroupBox Header="Import Directory">
         <StackPanel>

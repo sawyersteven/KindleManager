@@ -10,9 +10,9 @@
              MinWidth="400"
              MaxWidth="600">
 
-    <UserControl.Resources>
+    <dialogs:DialogBase.Resources>
         <converters:CollapseIfFalse x:Key="CollapseIfFalse" />
-    </UserControl.Resources>
+    </dialogs:DialogBase.Resources>
 
     <GroupBox Header="{Binding Title}">
         <StackPanel>
