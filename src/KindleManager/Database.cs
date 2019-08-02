@@ -200,23 +200,23 @@ namespace KindleManager
         {
             [Reactive] public override int Id { get; set; }
 
-            [Reactive] public override string FilePath { get; set; }
+            [Reactive] public override string FilePath { get; set; } = "";
 
-            [Reactive] public override string Title { get; set; }
-            [Reactive] public override string Language { get; set; }
+            [Reactive] public override string Title { get; set; } = "";
+            [Reactive] public override string Language { get; set; } = "";
             [Reactive] public override ulong ISBN { get; set; }
 
-            [Reactive] public override string Author { get; set; }
-            [Reactive] public override string Contributor { get; set; }
-            [Reactive] public override string Publisher { get; set; }
+            [Reactive] public override string Author { get; set; } = "";
+            [Reactive] public override string Contributor { get; set; } = "";
+            [Reactive] public override string Publisher { get; set; } = "";
             [Reactive] public override string[] Subject { get; set; }
-            [Reactive] public override string Description { get; set; }
-            [Reactive] public override string PubDate { get; set; }
-            [Reactive] public override string Rights { get; set; }
+            [Reactive] public override string Description { get; set; } = "";
+            [Reactive] public override string PubDate { get; set; } = "";
+            [Reactive] public override string Rights { get; set; } = "";
 
-            [Reactive] public override string Series { get; set; }
+            [Reactive] public override string Series { get; set; } = "";
             [Reactive] public override Nullable<float> SeriesNum { get; set; }
-            [Reactive] public override string DateAdded { get; set; }
+            [Reactive] public override string DateAdded { get; set; } = "";
 
             #region methods
             public override string TextContent() => "";
