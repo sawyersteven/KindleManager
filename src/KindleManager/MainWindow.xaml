@@ -182,9 +182,9 @@
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ToggleButton Style="{StaticResource MaterialDesignFlatButton}" Grid.Column="0" IsChecked="{Binding SideBarOpen}" Margin="8,0">
+                    <Button Style="{StaticResource MaterialDesignFlatButton}" Grid.Column="0" Command="{Binding ToggleLeftDrawer}" Margin="8,0">
                         <icons:PackIconOcticons Kind="ThreeBars"/>
-                    </ToggleButton>
+                    </Button>
                     <Border BorderBrush="{StaticResource PrimaryHueLightBrush}" Margin="0,8,0,8" BorderThickness="1,0,0,0" Grid.Column="1"/>
                     <Button ToolTip="Import Book" Command="{Binding BrowseForImport}" Grid.Column="2">
                         <icons:PackIconOcticons Kind="RepoTemplate"/>

@@ -29,54 +29,42 @@ namespace KindleManager.ViewModels
         public MainWindow()
         {
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
-            RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, (b, n) => b && n != null));
-            EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, (b, n) => b && n != null));
-            OpenSideBar = ReactiveCommand.Create(_OpenSideBar);
+            RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAny(vm => vm.SelectedTableRow, (r) => r != null));
+            EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAny(vm => vm.SelectedTableRow, (r) => r != null));
             OpenBookFolder = ReactiveCommand.Create(_OpenBookFolder);
-            SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.ButtonEnable, vm => vm.SelectedTableRow, vm => vm.SelectedDevice, (b, n, m) => b && n != null && m != null));
+            SendBook = ReactiveCommand.Create<IList, Unit>(_SendBook, this.WhenAnyValue(vm => vm.SelectedTableRow, vm => vm.SelectedDevice, (r, d) => r != null && d != null));
             EditSettings = ReactiveCommand.Create(_EditSettings);
-            ReceiveBook = ReactiveCommand.Create<IList, Unit>(_ReceiveBook, this.WhenAnyValue(vm => vm.ButtonEnable));
+            ReceiveBook = ReactiveCommand.Create<IList, Unit>(_ReceiveBook);
+            ShowAbout = ReactiveCommand.Create(_ShowAbout);
+            ToggleLeftDrawer = ReactiveCommand.Create(_ToggleLeftDrawer);
 
             #region device buttons
-            SelectDevice = ReactiveCommand.Create<string, Task<bool>>(_SelectDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
-            EditDeviceSettings = ReactiveCommand.Create<bool, Task<Unit>>(_EditDeviceSettings, this.WhenAnyValue(vm => vm.ButtonEnable));
+
+            SelectDevice = ReactiveCommand.Create<string, Task<bool>>(_SelectDevice);
+            EditDeviceSettings = ReactiveCommand.Create<bool, Task<Unit>>(_EditDeviceSettings);
             OpenDeviceFolder = ReactiveCommand.Create(_OpenDeviceFolder);
-            SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary, this.WhenAnyValue(vm => vm.ButtonEnable));
-            CloseDevice = ReactiveCommand.Create(_CloseDevice, this.WhenAnyValue(vm => vm.ButtonEnable));
+            SyncDeviceLibrary = ReactiveCommand.Create(_SyncDeviceLibrary);
+            ReorganizeDeviceLibrary = ReactiveCommand.Create(_ReorganizeDeviceLibrary);
+            ScanDeviceLibrary = ReactiveCommand.Create(_ScanDeviceLibrary);
+            CloseDevice = ReactiveCommand.Create(_CloseDevice);
 
             #endregion
 
-            ShowAbout = ReactiveCommand.Create(_ShowAbout);
-
-            snackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue();
+            snackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue(TimeSpan.FromMilliseconds(1000));
             DevManager = new Devices.DevManager();
 
             StatusBarIcon = Icons.None;
             StatusBarText = "";
-            SideBarOpen = true;
-            BackgroundWork = false;
+            LeftDrawerOpen = true;
         }
 
         #region properties
-        private bool _BackgroundWork;
-        public bool BackgroundWork
-        {
-            get => _BackgroundWork;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _BackgroundWork, value);
-                ButtonEnable = !value;
-            }
-        }
-        [Reactive] public bool ButtonEnable { get; set; }
         [Reactive] public string StatusBarText { get; set; }
         [Reactive] public string StatusBarIcon { get; set; }
         public Devices.DevManager DevManager { get; set; }
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
         [Reactive] public Devices.DeviceBase SelectedDevice { get; set; }
-        [Reactive] public bool SideBarOpen { get; set; }
+        [Reactive] public bool LeftDrawerOpen { get; set; }
         public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.LocalLibrary.Database.BOOKS;
         [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
 
@@ -102,6 +90,19 @@ namespace KindleManager.ViewModels
         #endregion
 
         #region button commands
+
+        public ReactiveCommand<Unit, Unit> ToggleLeftDrawer { get; set; }
+        public void _ToggleLeftDrawer()
+        {
+            if (!LeftDrawerOpen)
+            {
+                Task.Run(() =>
+                {
+                    DevManager.FindDevices();
+                });
+            }
+            LeftDrawerOpen = !LeftDrawerOpen;
+        }
 
         public ReactiveCommand<IList, Unit> ReceiveBook { get; set; }
         public Unit _ReceiveBook(IList bookList)
@@ -310,16 +311,6 @@ namespace KindleManager.ViewModels
                      snackBarQueue.Enqueue($"{SelectedDevice.Name} library synced");
                  }
              });
-        }
-
-        public ReactiveCommand<Unit, Unit> OpenSideBar { get; set; }
-        public void _OpenSideBar()
-        {
-            BackgroundWork = true;
-            Task.Run(() =>
-            {
-                DevManager.FindDevices();
-            });
         }
 
         public ReactiveCommand<Unit, Unit> OpenBookFolder { get; set; }
