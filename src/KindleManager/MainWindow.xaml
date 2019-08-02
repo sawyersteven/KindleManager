@@ -6,7 +6,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:KindleManager.BindingConverters"
-        xmlns:smtx="clr-namespace:ShowMeTheXAML;assembly=ShowMeTheXAML"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
     
@@ -21,7 +20,7 @@
     
         Title="Kindle Manager"
         MinHeight="200"
-        MinWidth="450">
+        MinWidth="500">
 
     <Window.Resources>
         <converters:CollapseIfNull x:Key="CollapseIfNull" />
