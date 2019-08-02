@@ -520,22 +520,21 @@ namespace KindleManager.ViewModels
         public async void _RemoveBook()
         {
             if (SelectedTableRow == null) { return; }
-            string title = SelectedTableRow.Title;
+            Database.BookEntry book = SelectedTableRow;
 
-            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.BOOKS.Any(x => x.Id == SelectedTableRow.Id);
-            bool onPC = LocalLibrary.Any(x => x.Id == SelectedTableRow.Id);
+            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.BOOKS.Any(x => x.Id == book.Id);
+            bool onPC = LocalLibrary.Any(x => x.Id == book.Id);
 
-
-            var dlg = new Dialogs.DeleteConfirm(SelectedTableRow.Title, onDevice, onPC);
+            var dlg = new Dialogs.DeleteConfirm(book.Title, onDevice, onPC);
             await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
 
             if (dlg.DialogResult == false) { return; }
             if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 1) // device
             {
-                Database.BookEntry remoteBook = SelectedDevice.Database.BOOKS.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+                Database.BookEntry remoteBook = SelectedDevice.Database.BOOKS.FirstOrDefault(x => x.Id == book.Id);
                 try
                 {
-                    SelectedDevice.DeleteBook(SelectedTableRow.Id);
+                    SelectedDevice.DeleteBook(book.Id);
                 }
                 catch (Exception e)
                 {
@@ -546,21 +545,21 @@ namespace KindleManager.ViewModels
             }
             if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 2) // pc
             {
-                Database.BookEntry localBook = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
+                Database.BookEntry localBook = LocalLibrary.FirstOrDefault(x => x.Id == book.Id);
                 try
                 {
                     if (localBook != null)
                     {
                         try
                         {
-                            File.Delete(localBook.FilePath);
+                            App.LocalLibrary.DeleteBook(localBook);
                         }
                         catch (FileNotFoundException) { }
                         catch (DirectoryNotFoundException) { }
 
                         Utils.Files.CleanBackward(Path.GetDirectoryName(localBook.FilePath), App.LibraryDirectory);
                     }
-                    App.LocalLibrary.Database.RemoveBook(SelectedTableRow);
+                    App.LocalLibrary.Database.RemoveBook(book);
                 }
                 catch (Exception e)
                 {
@@ -571,7 +570,7 @@ namespace KindleManager.ViewModels
             }
 
             string msg = dlg.DeleteFrom == 0 ? "PC & Kindle" : (dlg.DeleteFrom == 2 ? "PC" : "Kindle");
-            snackBarQueue.Enqueue($"{title} deleted from {msg}.");
+            snackBarQueue.Enqueue($"{book.Title} deleted from {msg}.");
         }
 
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
