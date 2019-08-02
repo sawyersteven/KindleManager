@@ -617,7 +617,7 @@ namespace KindleManager.ViewModels
 
             if (errs.Count != 0)
             {
-                string msg = $"Metadata could not be updated.&#x0a; {string.Join("; ", errs.Select(x => x.Message).ToList())}";
+                string msg = $"Metadata could not be updated. {string.Join("; ", errs.Select(x => x.Message).ToList())}";
                 var errDlg = new Dialogs.Error("Error updating metadata", msg);
                 _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
             }
