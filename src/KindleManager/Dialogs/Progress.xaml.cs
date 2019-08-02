@@ -1,9 +1,16 @@
-﻿using System;
+﻿using MaterialDesignThemes.Wpf;
+using System;
 using System.Windows;
+using System.Windows.Controls;
 
+
+/// <summary>
+/// Because of the way dialogs are handled in MaterialDesign this works better
+/// as a drawer content than an actual dialog.
+/// </summary>
 namespace KindleManager.Dialogs
 {
-    public partial class Progress : DialogBase
+    public partial class Progress : UserControl
     {
         #region props
         private int _Percent = 0;
@@ -33,9 +40,8 @@ namespace KindleManager.Dialogs
 
         public Progress(string Title, bool IsIndeterminate)
         {
-            this.DataContext = this;
-            this.Title = Title;
             InitializeComponent();
+            titleText.Text = Title;
             progressBar.IsIndeterminate = IsIndeterminate;
         }
 
@@ -86,6 +92,16 @@ namespace KindleManager.Dialogs
                 Item = f;
                 Error = e;
             }
+        }
+
+        public void Close()
+        {
+            Close(null, null);
+        }
+
+        private void Close(object sender, RoutedEventArgs e)
+        {
+            App.Current.Dispatcher.Invoke(() => DrawerHost.CloseDrawerCommand.Execute(Dock.Bottom, null));
         }
     }
 }

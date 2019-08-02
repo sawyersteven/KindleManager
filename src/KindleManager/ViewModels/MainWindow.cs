@@ -82,6 +82,23 @@ namespace KindleManager.ViewModels
 
         public MaterialDesignThemes.Wpf.SnackbarMessageQueue snackBarQueue { get; set; }
 
+        [Reactive] public bool BottomBarOpen { get; set; } = false;
+        [Reactive] public object BottomDrawerContent { get; set; }
+        #region drawer controls
+        public void OpenBottomDrawer(object content)
+        {
+            BottomDrawerContent = content;
+            BottomBarOpen = true;
+        }
+
+        public void CloseBottomDrawer()
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                BottomBarOpen = false;
+                BottomDrawerContent = null;
+            });
+        }
         #endregion
 
         #region button commands
@@ -120,7 +137,7 @@ namespace KindleManager.ViewModels
                     List<Exception> errs = new List<Exception>();
 
                     var prgDlg = new Dialogs.Progress("Syncing Library", false);
-                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+                    OpenBottomDrawer(prgDlg.Content);
 
                     int step = 100 / bookList.Count;
 
@@ -142,7 +159,13 @@ namespace KindleManager.ViewModels
 
                     if (errs.Count > 0)
                     {
+                        prgDlg.Finish("Book transfer finished with errors:");
                         prgDlg.ShowError(new AggregateException(errs.ToArray()));
+                    }
+                    else
+                    {
+                        prgDlg.Close();
+                        snackBarQueue.Enqueue("Book transfer finished");
                     }
                 }
             });
@@ -158,7 +181,7 @@ namespace KindleManager.ViewModels
             if (dlg.DialogResult == false) return;
 
             var prgDlg = new Dialogs.Progress("Reorganizing Library", true);
-            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+            OpenBottomDrawer(prgDlg.Content);
 
             _ = Task.Run(() =>
               {
@@ -192,7 +215,7 @@ namespace KindleManager.ViewModels
             if (dlg.DialogResult == false) return;
 
             var prgDlg = new Dialogs.Progress("Scanning Library", true);
-            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+            OpenBottomDrawer(prgDlg.Content);
 
             _ = Task.Run(() =>
             {
@@ -253,13 +276,11 @@ namespace KindleManager.ViewModels
             }
 
             var prgDlg = new Dialogs.Progress("Syncing Kindle Library", false);
-            _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
-
+            OpenBottomDrawer(prgDlg.Content);
 
             _ = Task.Run(() =>
              {
-                 List<Exception> errors = new List<Exception>();
-                 AggregateException errs = new AggregateException();
+                 List<Exception> errs = new List<Exception>();
                  int step = 100 / toTransfer.Count;
                  for (int i = 0; i < toTransfer.Count; i++)
                  {
@@ -274,18 +295,18 @@ namespace KindleManager.ViewModels
                      catch (Exception e)
                      {
                          e.Data.Add("item", book.Title);
-                         errors.Add(e);
+                         errs.Add(e);
                      }
                  }
 
-                 prgDlg.Finish("Library sync complete");
-                 if (errors.Count > 0)
+                 if (errs.Count > 0)
                  {
-                     prgDlg.ShowError(new AggregateException(errors.ToArray()));
+                     prgDlg.Finish("Library sync finished with errors:");
+                     prgDlg.ShowError(new AggregateException(errs.ToArray()));
                  }
                  else
                  {
-                     prgDlg.Close(this, null);
+                     prgDlg.Close();
                      snackBarQueue.Enqueue($"{SelectedDevice.Name} library synced");
                  }
              });
@@ -411,7 +432,7 @@ namespace KindleManager.ViewModels
                     List<Exception> errs = new List<Exception>();
 
                     var prgDlg = new Dialogs.Progress("Syncing Library", false);
-                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(prgDlg);
+                    OpenBottomDrawer(prgDlg.Content);
 
                     int step = 100 / bookList.Count;
 
@@ -433,10 +454,16 @@ namespace KindleManager.ViewModels
                             prgDlg.Percent += step;
                         }
                     }
-                    prgDlg.Finish("Book transfer complete.");
+
                     if (errs.Count > 0)
                     {
+                        prgDlg.Finish("Book transfer finished with errors:");
                         prgDlg.ShowError(new AggregateException(errs.ToArray()));
+                    }
+                    else
+                    {
+                        prgDlg.Close();
+                        snackBarQueue.Enqueue("Book transfer finished");
                     }
                 }
             });

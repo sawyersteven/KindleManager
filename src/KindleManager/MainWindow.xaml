@@ -56,8 +56,7 @@
     </Window.Resources>
 
     <materialDesign:DialogHost Identifier="RootDialog">
-
-        <materialDesign:DrawerHost IsLeftDrawerOpen="{Binding SideBarOpen}">
+        <materialDesign:DrawerHost IsLeftDrawerOpen="{Binding LeftDrawerOpen}" IsBottomDrawerOpen="{Binding BottomBarOpen}" BottomDrawerCloseOnClickAway="False">
             <materialDesign:DrawerHost.LeftDrawerContent>
                 <DockPanel Margin="10" Width="250" LastChildFill="False">
                     <StackPanel DockPanel.Dock="Top">
@@ -155,7 +154,6 @@
                     </Button>
                 </DockPanel>
             </materialDesign:DrawerHost.LeftDrawerContent>
-
             <Grid>
                 <Grid.Resources>
                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
@@ -214,7 +212,6 @@
                     <Button Grid.Column="9" ToolTip="Open Settings" Command="{Binding EditSettings}">
                         <icons:Octicons Kind="Settings"/>
                     </Button>
-                    
                 </Grid>
 
                 <DataGrid Name="LibraryTable"
@@ -394,16 +391,19 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Border Grid.Row="2">
-                    <materialDesign:Snackbar HorizontalAlignment="Stretch" MessageQueue="{Binding snackBarQueue}"/>
+                <Border Grid.Row="2" Panel.ZIndex="999">
+                    <materialDesign:Snackbar HorizontalAlignment="Stretch" MessageQueue="{Binding snackBarQueue}" FontSize="16"/>
                 </Border>
-
 
                 <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource PrimaryHueLightForegroundBrush}">
                     <icons:PackIconOcticons Kind="DiffAdded" Foreground="{DynamicResource PrimaryHueDarkForegroundBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 
             </Grid>
+            <materialDesign:DrawerHost.BottomDrawerContent>
+                <UserControl Content="{Binding BottomDrawerContent}">
+                </UserControl>
+            </materialDesign:DrawerHost.BottomDrawerContent>
         </materialDesign:DrawerHost>
     </materialDesign:DialogHost>
 </Window>
