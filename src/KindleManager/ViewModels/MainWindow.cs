@@ -72,6 +72,9 @@ namespace KindleManager.ViewModels
 
         [Reactive] public bool BottomBarOpen { get; set; } = false;
         [Reactive] public object BottomDrawerContent { get; set; }
+
+        #endregion
+
         #region drawer controls
         public void OpenBottomDrawer(object content)
         {
@@ -349,7 +352,6 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<string, Task<bool>> SelectDevice { get; set; }
         public async Task<bool> _SelectDevice(string driveLetter)
         {
-            if (BackgroundWork) return false;
             try
             {
                 SelectedDevice = DevManager.OpenDevice(driveLetter);
@@ -635,14 +637,17 @@ namespace KindleManager.ViewModels
             RemoteLibrary.Clear();
         }
 
-        #endregion
-
         public ReactiveCommand<Unit, Unit> ShowAbout { get; set; }
         public void _ShowAbout()
         {
             var dlg = new Dialogs.Splash();
             MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
         }
+
+        #endregion
+
+        // todo test this whole region
+        #region book import methods
 
         /// <summary>
         /// Used to import from another device's library.
@@ -800,69 +805,136 @@ namespace KindleManager.ViewModels
             }
         }
 
-        public async void ImportBooksDrop(string path)
+        public async void ImportDirectory(string path)
         {
-            if (File.Exists(path))
+            var dlg = new Dialogs.BulkImport(path);
+            await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+            if (dlg.DialogResult == false) return;
+
+            string[] files = dlg.SelectedFiles();
+
+            var prgDlg = new Dialogs.Progress("Importing books", false);
+            int step = 100 / files.Length;
+
+            OpenBottomDrawer(prgDlg.Content);
+
+            _ = Task.Run(() =>
             {
-                if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(path)))
-                {
-                    var errDlg = new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(path)} format books has not yet been implemented.");
-                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
-                    return;
-                }
-                try
-                {
-                    ImportBook(path);
-                }
-                catch (Exception e)
-                {
-                    var dlg = new Dialogs.Error("Import failed", e.Message);
-                    _ = MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
-                    return;
-                }
-            }
-            else if (Directory.Exists(path))
-            {
-                var dlg = new Dialogs.BulkImport(path);
-                await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
-                if (dlg.DialogResult == false) return;
+                List<Exception> errors = new List<Exception>();
 
-                string[] files = dlg.SelectedFiles();
-                BackgroundWork = true;
-
-                var prgDlg = new Dialogs.Progress("Importing books", false);
-                int step = 100 / files.Length;
-
-                _ = Task.Run(() =>
+                foreach (string file in files)
                 {
-                    List<Exception> errors = new List<Exception>();
-
-                    foreach (string file in files)
+                    StatusBarText = $"Importing {file}";
+                    try
                     {
-                        StatusBarText = $"Importing {file}";
+                        App.LocalLibrary.ImportBook(file);
+                    }
+                    catch (Exception e)
+                    {
+                        e.Data["item"] = file;
+                        errors.Add(e);
+                    }
+                    finally
+                    {
+                        prgDlg.Percent += step;
+                    }
+                }
+                prgDlg.Finish("Import finished.");
+
+                if (errors.Count > 0)
+                {
+                    prgDlg.ShowError(new AggregateException(errors.ToArray()));
+                }
+            });
+        }
+
+        public void ImportBooksDrop(string[] paths)
+        {
+            if (paths.Length == 1 && Directory.Exists(paths[0]))
+            {
+                ImportDirectory(paths[0]);
+                return;
+            }
+            else if (paths.Length == 1)
+            {
+                OpenBottomDrawer($"Importing {Path.GetFileName(paths[0])}");
+
+                Task.Run(() =>
+                {
+                    if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(paths[0])))
+                    {
+                        var errDlg = new Dialogs.Error("Incompatible Format", $"Importing {Path.GetExtension(paths[0])} format books has not yet been implemented.");
+                        _ = MaterialDesignThemes.Wpf.DialogHost.Show(errDlg);
+                        return;
+                    }
+                    try
+                    {
+                        ImportBook(paths[0]);
+                    }
+                    catch (Exception e)
+                    {
+                        App.Current.Dispatcher.Invoke(() =>
+                        {
+                            var dlg = new Dialogs.Error("Import failed", e.Message);
+                            _ = MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
+                        });
+                        return;
+                    }
+                    finally
+                    {
+                        CloseBottomDrawer();
+                    }
+                    snackBarQueue.Enqueue($"{Path.GetFileName(paths[0])} imported");
+                });
+            }
+            else
+            {
+                List<Exception> errs = new List<Exception>();
+
+                var prgDlg = new Dialogs.Progress("Importing Books", false);
+                OpenBottomDrawer(prgDlg.Content);
+                int step = 100 / paths.Length;
+
+                Task.Run(() =>
+                {
+                    foreach (string path in paths)
+                    {
+                        prgDlg.Current = $"Importing {Path.GetFileName(path)}";
+                        prgDlg.Percent += step;
+                        if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(path)))
+                        {
+                            Exception e = new Exception($"Invalid filetype ${Path.GetExtension(path)}");
+                            e.Data["item"] = path;
+                            errs.Add(e);
+                            continue;
+                        }
                         try
                         {
-                            App.LocalLibrary.ImportBook(file);
+                            ImportBook(path);
                         }
                         catch (Exception e)
                         {
-                            e.Data["item"] = file;
-                            errors.Add(e);
-                        }
-                        finally
-                        {
-                            prgDlg.Percent += step;
+                            e.Data["item"] = path;
+                            errs.Add(e);
+                            continue;
                         }
                     }
-                    prgDlg.Finish("Import finished.");
 
-                    if (errors.Count > 0)
+                    if (errs.Count > 0)
                     {
-                        prgDlg.ShowError(new AggregateException(errors.ToArray()));
+                        prgDlg.Finish("Import finished with errors:");
+                        prgDlg.ShowError(new AggregateException(errs.ToArray()));
+                    }
+                    else
+                    {
+                        prgDlg.Close();
+                        snackBarQueue.Enqueue($"{paths.Length} new books imported successfully");
                     }
                 });
             }
         }
+
+        #endregion
 
         public void SaveLibraryColumns(List<string> hiddenColumns)
         {
