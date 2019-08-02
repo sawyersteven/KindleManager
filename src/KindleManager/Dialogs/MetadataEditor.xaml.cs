@@ -11,7 +11,6 @@ namespace KindleManager.Dialogs
         public string[] AuthorsList { get; set; }
         public string[] SeriesList { get; set; }
         public string[] PublisherList { get; set; }
-        public Formats.BookBase Book { get; set; }
         public Formats.BookBase ModBook { get; set; }
         #endregion
 
@@ -20,9 +19,9 @@ namespace KindleManager.Dialogs
         public MetadataEditor(Database.BookEntry book)
         {
             this.DataContext = this;
-            this.Book = book;
             this.AuthorsList = App.LocalLibrary.Database.ListAuthors();
             this.SeriesList = App.LocalLibrary.Database.ListSeries();
+            this.ModBook = new Database.BookEntry(book);
 
             HashSet<string> _authors = new HashSet<string>();
             HashSet<string> _series = new HashSet<string>();
@@ -50,8 +49,6 @@ namespace KindleManager.Dialogs
 
         private void CloseAndSave(object sender, RoutedEventArgs e)
         {
-            ModBook = new Database.BookEntry(Book);
-            ModBook.PubDate = Utils.Metadata.GetDate(ModBook.PubDate);
             DialogResult = true;
             this.Close(sender, e);
         }

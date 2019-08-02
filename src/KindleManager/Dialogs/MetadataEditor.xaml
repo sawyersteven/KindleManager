@@ -16,7 +16,7 @@
         <converters:StrToFloat x:Key="StrToFloat"/>
     </dialogs:DialogBase.Resources>
 
-    <GroupBox Header="{Binding Book.Title}">
+    <GroupBox Header="{Binding ModBook.Title}">
         <StackPanel Margin="10">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -32,8 +32,7 @@
                 </Grid.RowDefinitions>
                 <TextBox Grid.Row="0"
                          Grid.Column="0"
-                         Text="{Binding Book.Title}"
-                         Tag="{Binding Book.Title}"
+                         Text="{Binding ModBook.Title}"
                          materialDesign:HintAssist.Hint="Title"/>
 
                 <ComboBox x:Name="SeriesCB"
@@ -42,14 +41,14 @@
                               IsEditable="True"
                               ItemsSource="{Binding SeriesList}"
                               materialDesign:HintAssist.Hint="Series"
-                              Text="{Binding Book.Series}"/>
+                              Text="{Binding ModBook.Series}"/>
 
                 <ComboBox Grid.Row="2"
                               Grid.Column="0"
                               IsEditable="True"
                               ItemsSource="{Binding PublisherList}"
                               materialDesign:HintAssist.Hint="Publisher"
-                              Text="{Binding Book.Publisher}"/>
+                              Text="{Binding ModBook.Publisher}"/>
                 
                 <!-- Column 2 -->
                 <ComboBox x:Name="AuthorCB"
@@ -58,23 +57,22 @@
                               IsEditable="True"
                               ItemsSource="{Binding AuthorsList}"
                               materialDesign:HintAssist.Hint="Author"
-                              Text="{Binding Book.Author}"/>
+                              Text="{Binding ModBook.Author}"/>
 
-                <TextBox Text="{Binding Book.SeriesNum, Converter={StaticResource StrToFloat}}"
+                <TextBox Text="{Binding ModBook.SeriesNum, Converter={StaticResource StrToFloat}}"
                              Grid.Row="1"
                              Grid.Column="2"
                              materialDesign:HintAssist.Hint="Series Number" />
 
                 <DatePicker Grid.Row="2"
                             Grid.Column="2"
-                            Text="{Binding Book.PubDate}"
+                            Text="{Binding ModBook.PubDate, Mode=TwoWay}"
                             materialDesign:HintAssist.Hint="Published Date"
                             Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
 
                 <TextBox Grid.Row="3"
                          Grid.Column="2"
-                         Text="{Binding Book.ISBN}"
-                         Tag="{Binding Book.ISBN}"
+                         Text="{Binding ModBook.ISBN}"
                          materialDesign:HintAssist.Hint="ISBN" />
             </Grid>
 
