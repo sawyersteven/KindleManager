@@ -176,6 +176,11 @@ namespace KindleManager.Devices
         /// <param name="id"></param>
         public abstract void DeleteBook(int id);
 
+        public void DeleteBook(BookBase book)
+        {
+            DeleteBook(book.Id);
+        }
+
         /// <summary>
         /// Adds book to library directory and database, converting if neccesary
         /// </summary>
