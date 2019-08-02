@@ -50,10 +50,9 @@ namespace KindleManager
             Cursor = System.Windows.Input.Cursors.Arrow;
 
             string[] fileList = e.Data.GetData(DataFormats.FileDrop) as string[];
-            if (!VerifyDrop(fileList)) return;
 
             ViewModels.MainWindow vm = (ViewModels.MainWindow)DataContext;
-            vm.ImportBooksDrop(fileList[0]);
+            vm.ImportBooksDrop(fileList);
         }
 
         private void Library_DragEnter(object sender, DragEventArgs e)
@@ -64,6 +63,7 @@ namespace KindleManager
             if (!VerifyDrop(fileList))
             {
                 Cursor = System.Windows.Input.Cursors.No;
+                LibraryTable.AllowDrop = false;
             }
         }
 
@@ -71,14 +71,13 @@ namespace KindleManager
         {
             LibraryTable.Opacity = 1.0;
             Cursor = System.Windows.Input.Cursors.Arrow;
+            LibraryTable.AllowDrop = true;
         }
 
         private bool VerifyDrop(string[] paths)
         {
-            // Only allow single drops for now;
-            if (paths.Length > 1) return false;
-            if (System.IO.Directory.Exists(paths[0])) return true;
-            return Formats.Resources.AcceptedFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
+            if (paths.Length > 1) return true;
+            return System.IO.Directory.Exists(paths[0]) || Formats.Resources.AcceptedFileTypes.Contains(System.IO.Path.GetExtension(paths[0]));
         }
         #endregion
 
@@ -167,7 +166,7 @@ namespace KindleManager
         private void SaveLibraryColumns(object sender, RoutedEventArgs e)
         {
             if (!(sender is ContextMenu menu)) return;
-            DataGrid grid = menu.DataContext as DataGrid;
+            if (!(menu.DataContext is DataGrid grid)) return;
             if (grid.Columns == null) return;
 
             List<string> hiddenColumns = new List<string>();
