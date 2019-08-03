@@ -5,8 +5,16 @@ namespace KindleManager.Config
     public class FSDeviceConfig : ConfigBase
     {
         #region serializable properties
+        private string _LibraryRoot = "";
         [JsonProperty]
-        public string LibraryRoot { get; set; }
+        public string LibraryRoot
+        {
+            get => _LibraryRoot;
+            set
+            {
+                _LibraryRoot = value.TrimEnd(new char[] { '\\', '/' });
+            }
+        }
         [JsonProperty]
         public string DirectoryFormat { get; set; }
         [JsonProperty]
@@ -18,8 +26,8 @@ namespace KindleManager.Config
         #region method overrides
         public override void SetDefaults()
         {
-            LibraryRoot = "documents/";
-            DirectoryFormat = "{Author}/";
+            LibraryRoot = "documents";
+            DirectoryFormat = "{Author}";
             ChangeTitleOnSync = false;
             TitleTemplate = "{Series} {SeriesNum} {Title}";
         }
