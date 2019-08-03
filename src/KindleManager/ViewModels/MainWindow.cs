@@ -580,7 +580,27 @@ namespace KindleManager.ViewModels
         {
             if (SelectedTableRow == null) return;
 
-            var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow));
+            HashSet<string> authors = new HashSet<string>();
+            HashSet<string> series = new HashSet<string>();
+            HashSet<string> publishers = new HashSet<string>();
+
+            foreach (var b in LocalLibrary)
+            {
+                authors.Add(b.Author);
+                series.Add(b.Series);
+                publishers.Add(b.Publisher);
+            }
+            if (SelectedDevice != null)
+            {
+                foreach (var b in RemoteLibrary)
+                {
+                    authors.Add(b.Author);
+                    series.Add(b.Series);
+                    publishers.Add(b.Publisher);
+                }
+            }
+
+            var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow), authors, series, publishers);
             await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
 

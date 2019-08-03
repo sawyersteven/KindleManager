@@ -16,26 +16,16 @@ namespace KindleManager.Dialogs
 
         private static readonly Regex onlyFloat = new Regex("[^0-9.-]+");
 
-        public MetadataEditor(Database.BookEntry book)
+        public MetadataEditor(Database.BookEntry book, HashSet<string> authors, HashSet<string> series, HashSet<string> publishers)
         {
             this.DataContext = this;
             this.AuthorsList = App.LocalLibrary.Database.ListAuthors();
             this.SeriesList = App.LocalLibrary.Database.ListSeries();
             this.ModBook = new Database.BookEntry(book);
 
-            HashSet<string> _authors = new HashSet<string>();
-            HashSet<string> _series = new HashSet<string>();
-            HashSet<string> _publishers = new HashSet<string>();
-
-            foreach (var b in App.LocalLibrary.Database.BOOKS)
-            {
-                _authors.Add(b.Author);
-                _series.Add(b.Series);
-                _publishers.Add(b.Publisher);
-            }
-            AuthorsList = _authors.ToArray();
-            SeriesList = _series.ToArray();
-            PublisherList = _publishers.ToArray();
+            AuthorsList = authors.ToArray();
+            SeriesList = series.ToArray();
+            PublisherList = publishers.ToArray();
 
             InitializeComponent();
         }
