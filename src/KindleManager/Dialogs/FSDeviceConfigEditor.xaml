@@ -47,7 +47,7 @@
                      materialDesign:HintAssist.Hint="Library Directory Format"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,16,0,8">
-                <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}"/>
+                <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" IsChecked="{Binding Config.ChangeTitleOnSync}"/>
                 <TextBlock VerticalAlignment="Center">Format Transferred Book Titles</TextBlock>
             </StackPanel>
             <TextBox Text="{Binding Config.TitleTemplate}"
