@@ -5,7 +5,6 @@ using ReactiveUI.Fody.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -28,6 +27,8 @@ namespace KindleManager.ViewModels
 
         public MainWindow()
         {
+            #region library buttons
+
             BrowseForImport = ReactiveCommand.Create(_BrowseForImport);
             RemoveBook = ReactiveCommand.Create(_RemoveBook, this.WhenAny(vm => vm.SelectedTableRow, (r) => r != null));
             EditMetadata = ReactiveCommand.Create(_EditMetadata, this.WhenAny(vm => vm.SelectedTableRow, (r) => r != null));
@@ -37,6 +38,8 @@ namespace KindleManager.ViewModels
             ReceiveBook = ReactiveCommand.Create<IList, Unit>(_ReceiveBook);
             ShowAbout = ReactiveCommand.Create(_ShowAbout);
             ToggleLeftDrawer = ReactiveCommand.Create(_ToggleLeftDrawer);
+
+            #endregion
 
             #region device buttons
 
@@ -50,26 +53,23 @@ namespace KindleManager.ViewModels
 
             #endregion
 
-            snackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue(TimeSpan.FromMilliseconds(1000));
             DevManager = new Devices.DevManager();
+            CombinedLibrary = new CombinedLibraryManager(App.LocalLibrary.Database.BOOKS);
+            SnackBarQueue = new MaterialDesignThemes.Wpf.SnackbarMessageQueue(TimeSpan.FromMilliseconds(1000));
 
-            StatusBarIcon = Icons.None;
-            StatusBarText = "";
             LeftDrawerOpen = true;
         }
 
+
         #region properties
-        [Reactive] public string StatusBarText { get; set; }
-        [Reactive] public string StatusBarIcon { get; set; }
         public Devices.DevManager DevManager { get; set; }
+        public CombinedLibraryManager CombinedLibrary { get; set; }
+        public MaterialDesignThemes.Wpf.SnackbarMessageQueue SnackBarQueue { get; set; }
+        //public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.LocalLibrary.Database.BOOKS;
+
         [Reactive] public Database.BookEntry SelectedTableRow { get; set; }
         [Reactive] public Devices.DeviceBase SelectedDevice { get; set; }
         [Reactive] public bool LeftDrawerOpen { get; set; }
-        public ObservableCollection<Database.BookEntry> LocalLibrary { get; set; } = App.LocalLibrary.Database.BOOKS;
-        [Reactive] public ObservableCollection<Database.BookEntry> RemoteLibrary { get; set; } = new ObservableCollection<Database.BookEntry>();
-
-        public MaterialDesignThemes.Wpf.SnackbarMessageQueue snackBarQueue { get; set; }
-
         [Reactive] public bool BottomBarOpen { get; set; } = false;
         [Reactive] public object BottomDrawerContent { get; set; }
 
@@ -377,7 +377,7 @@ namespace KindleManager.ViewModels
                 _ScanDeviceLibrary();
             }
 
-            RemoteLibrary = SelectedDevice.Database.BOOKS;
+            CombinedLibrary.AddRemoteLibrary(SelectedDevice.Database.BOOKS);
 
             return true;
         }
@@ -524,8 +524,8 @@ namespace KindleManager.ViewModels
             if (SelectedTableRow == null) { return; }
             Database.BookEntry book = SelectedTableRow;
 
-            bool onDevice = SelectedDevice == null ? false : SelectedDevice.Database.BOOKS.Any(x => x.Id == book.Id);
-            bool onPC = LocalLibrary.Any(x => x.Id == book.Id);
+            bool onDevice = SelectedDevice == null ? false : CombinedLibrary.Any(x => x.IsRemote && x.Id == book.Id);
+            bool onPC = CombinedLibrary.Any(x => x.IsLocal && x.Id == book.Id);
 
             var dlg = new Dialogs.DeleteConfirm(book.Title, onDevice, onPC);
             await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
@@ -547,7 +547,7 @@ namespace KindleManager.ViewModels
             }
             if (dlg.DeleteFrom == 0 || dlg.DeleteFrom == 2) // pc
             {
-                Database.BookEntry localBook = LocalLibrary.FirstOrDefault(x => x.Id == book.Id);
+                Database.BookEntry localBook = CombinedLibrary.FirstOrDefault(x => x.IsLocal && x.Id == book.Id);
                 try
                 {
                     if (localBook != null)
@@ -584,20 +584,11 @@ namespace KindleManager.ViewModels
             HashSet<string> series = new HashSet<string>();
             HashSet<string> publishers = new HashSet<string>();
 
-            foreach (var b in LocalLibrary)
+            foreach (Database.BookEntry i in CombinedLibrary)
             {
-                authors.Add(b.Author);
-                series.Add(b.Series);
-                publishers.Add(b.Publisher);
-            }
-            if (SelectedDevice != null)
-            {
-                foreach (var b in RemoteLibrary)
-                {
-                    authors.Add(b.Author);
-                    series.Add(b.Series);
-                    publishers.Add(b.Publisher);
-                }
+                authors.Add(i.Author);
+                series.Add(i.Series);
+                publishers.Add(i.Publisher);
             }
 
             var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow), authors, series, publishers);
@@ -607,9 +598,8 @@ namespace KindleManager.ViewModels
             List<Exception> errs = new List<Exception>();
 
             string title = null;
-            Database.BookEntry bookEntry;
-            bookEntry = LocalLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-            if (bookEntry != null)
+
+            if (CombinedLibrary.FirstOrDefault(x => x.IsLocal && x.Id == SelectedTableRow.Id) is Database.BookEntry bookEntry)
             {
                 title = bookEntry.Title;
                 try
@@ -622,20 +612,22 @@ namespace KindleManager.ViewModels
                 }
             }
 
-            bookEntry = RemoteLibrary.FirstOrDefault(x => x.Id == SelectedTableRow.Id);
-
-            if (bookEntry != null)
+            if (SelectedDevice != null)
             {
-                if (title == null) title = bookEntry.Title;
-                try
+                if (CombinedLibrary.FirstOrDefault(x => x.IsRemote && x.Id == SelectedTableRow.Id) is Database.BookEntry deviceBook)
                 {
-                    SelectedDevice.UpdateBookMetadata(dlg.ModBook);
-                }
-                catch (Exception e)
-                {
-                    errs.Add(e);
+                    if (title == null) title = deviceBook.Title;
+                    try
+                    {
+                        SelectedDevice.UpdateBookMetadata(dlg.ModBook);
+                    }
+                    catch (Exception e)
+                    {
+                        errs.Add(e);
+                    }
                 }
             }
+
 
             if (errs.Count != 0)
             {
@@ -653,8 +645,8 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> CloseDevice { get; set; }
         public void _CloseDevice()
         {
+            CombinedLibrary.RemoveRemoteLibrary(SelectedDevice.Database.BOOKS);
             SelectedDevice = null;
-            RemoteLibrary.Clear();
         }
 
         public ReactiveCommand<Unit, Unit> ShowAbout { get; set; }
@@ -675,7 +667,7 @@ namespace KindleManager.ViewModels
         private void ImportBook(Database.BookEntry remoteEntry)
         {
             Logger.Info("Importing {}.", remoteEntry.Title);
-            BookBase localBook = LocalLibrary.FirstOrDefault(x => x.Id == remoteEntry.Id);
+            BookBase localBook = CombinedLibrary.FirstOrDefault(x => x.IsLocal && x.Id == remoteEntry.Id);
             if (localBook != null)
             {
                 Logger.Info("{}[{}] already exists in library, copying metadata from Kindle.", localBook.Title, localBook.Id);
@@ -713,7 +705,7 @@ namespace KindleManager.ViewModels
             Database.BookEntry localEntry;
             if (File.Exists(localFile))
             {
-                localEntry = LocalLibrary.FirstOrDefault(x => x.FilePath == localFile);
+                localEntry = CombinedLibrary.FirstOrDefault(x => x.IsLocal && x.FilePath == localFile);
                 if (localEntry == null) // target file exists but is *not* in local db
                 {
                     Logger.Info("{} exists but is not in local database. File will be overwritten with remote copy.", localFile);
@@ -773,7 +765,7 @@ namespace KindleManager.ViewModels
             }
             else
             {
-                localEntry = LocalLibrary.FirstOrDefault(x => x.Id == remoteEntry.Id);
+                localEntry = CombinedLibrary.FirstOrDefault(x => x.IsLocal && x.Id == remoteEntry.Id);
                 if (localEntry != null)
                 {
 

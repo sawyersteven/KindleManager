@@ -112,6 +112,7 @@
     <Compile Include="Formats\Mobi\Headers\PDBHeader.cs" />
     <Compile Include="Formats\Resources.cs" />
     <Compile Include="Devices\DeviceBase.cs" />
+    <Compile Include="CombinedLibraryManager.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="Utils\Base32Int.cs" />
     <Compile Include="Utils\BigEndian.cs" />

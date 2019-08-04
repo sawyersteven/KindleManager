@@ -1,11 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace KindleManager
 {
@@ -81,51 +77,6 @@ namespace KindleManager
         }
         #endregion
 
-        /// <summary>
-        /// Custom sort logic for InLibrary columns
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void SortLibraryTable(object sender, System.Windows.Controls.DataGridSortingEventArgs e)
-        {
-            DataGridColumn column = e.Column;
-
-            if (column.DisplayIndex == 0 || column.DisplayIndex == 1)
-            {
-                e.Handled = true;
-                ViewModels.MainWindow vm = (ViewModels.MainWindow)DataContext;
-
-                ObservableCollection<Database.BookEntry> library = (column.DisplayIndex == 0) ? vm.LocalLibrary : vm.RemoteLibrary;
-
-                ListSortDirection direction = (column.SortDirection != ListSortDirection.Ascending) ? ListSortDirection.Ascending : ListSortDirection.Descending;
-                column.SortDirection = direction;
-
-                ListCollectionView books = (ListCollectionView)CollectionViewSource.GetDefaultView(((DataGrid)sender).ItemsSource);
-
-                //apply the sort
-                books.CustomSort = new Sorter(library, direction);
-            }
-        }
-
-        private class Sorter : IComparer
-        {
-            private readonly ListSortDirection direction;
-            private readonly ObservableCollection<Database.BookEntry> library;
-
-            public Sorter(ObservableCollection<Database.BookEntry> l, ListSortDirection d)
-            {
-                direction = d;
-                library = l;
-            }
-
-            public int Compare(object x, object y)
-            {
-                int a = library.Any(z => z.Id == ((Database.BookEntry)x).Id) ? 1 : 0;
-                int b = library.Any(z => z.Id == ((Database.BookEntry)y).Id) ? 1 : 0;
-                return (direction == ListSortDirection.Ascending) ? a - b : b - a;
-            }
-        }
-
         #region ContextMenu Helpers
 
         private void OpenContextMenu(object sender, RoutedEventArgs e)
@@ -179,5 +130,6 @@ namespace KindleManager
             GetDataContext().SaveLibraryColumns(hiddenColumns);
         }
         #endregion
+
     }
 }

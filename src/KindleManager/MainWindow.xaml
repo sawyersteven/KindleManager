@@ -31,13 +31,6 @@
         <converters:GridColumnFilter x:Key="GridColumnFilter" />
         <converters:MetadataMatch x:Key="MetadataMatch" />
 
-        <CollectionViewSource x:Key="localBooks" Source="{Binding LocalLibrary}"/>
-        <CollectionViewSource x:Key="remoteBooks" Source="{Binding RemoteLibrary}"/>
-        <CompositeCollection x:Key="CombinedLibraries">
-            <CollectionContainer Collection="{Binding Source={StaticResource localBooks}}"/>
-            <CollectionContainer Collection="{Binding Source={StaticResource remoteBooks}}"/>
-        </CompositeCollection>
-
         <Style TargetType="{x:Type Button}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -223,38 +216,25 @@
                   AllowDrop="True"
                   Background="{DynamicResource MaterialDesignBackground}"
                   Grid.ZIndex="1"
-                  Sorting="SortLibraryTable"
-                  Tag="{Binding DataContext}">
-                    <DataGrid.ItemsSource>
-                        <MultiBinding Converter="{StaticResource MergeLibraries}">
-                            <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                            <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                            <!-- These next two lines are critical but don't look like it.
-                    MultiBinds only listen for PropertyChanged notifications on objects.
-                    Adding/removing items from an ObservableCollection raises CollectionChanged.
-                    Binding to the Count of each collection will cause the MultiBinding to
-                        update when items are added/removed                    
-                    -->
-                            <Binding ElementName="Window" Path="DataContext.LocalLibrary.Count"/>
-                            <Binding ElementName="Window" Path="DataContext.RemoteLibrary.Count"/>
-                        </MultiBinding>
-                    </DataGrid.ItemsSource>
+                  
+                  Tag="{Binding DataContext}"
+                  ItemsSource="{Binding CombinedLibrary}">
 
                     <DataGrid.Resources>
                         <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="Copy To Kindle" Click="SendBook">
                                 <MenuItem.IsEnabled>
-                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                    <MultiBinding Converter="{StaticResource BookInLibrary}" ConverterParameter="local">
                                         <Binding/>
-                                        <Binding Path="DataContext.LocalLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
+                                        <Binding Path="DataContext.CombinedLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
                                     </MultiBinding>
                                 </MenuItem.IsEnabled>
                             </MenuItem>
                             <MenuItem Header="Copy To Library" Click="ReceiveBook">
                                 <MenuItem.IsEnabled>
-                                    <MultiBinding Converter="{StaticResource BookInLibrary}">
+                                    <MultiBinding Converter="{StaticResource BookInLibrary}" ConverterParameter="remote">
                                         <Binding/>
-                                        <Binding Path="DataContext.RemoteLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
+                                        <Binding Path="DataContext.CombinedLibrary" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}"/>
                                     </MultiBinding>
                                 </MenuItem.IsEnabled>
                             </MenuItem>
@@ -304,7 +284,7 @@
                     </DataGrid.CellStyle>
 
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="Id" CanUserReorder="False">
+                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="IsLocal" CanUserReorder="False">
                             <DataGridTemplateColumn.HeaderTemplate>
                                 <DataTemplate>
                                     <icons:PackIconOcticons Kind="DeviceDesktop" Height="16" Width="16"/>
@@ -321,10 +301,7 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Value="True">
                                                         <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                                                <Binding Path="."/>
-                                                                <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                                                            </MultiBinding>
+                                                            <Binding Path="IsLocal"/>
                                                         </DataTrigger.Binding>
                                                         <Setter Property="Kind" Value="Check"/>
                                                     </DataTrigger>
@@ -336,7 +313,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="Id" CanUserReorder="False">
+                        <DataGridTemplateColumn MinWidth="68" MaxWidth="68" SortMemberPath="IsRemote" CanUserReorder="False">
                             <DataGridTemplateColumn.HeaderTemplate>
                                 <DataTemplate>
                                     <icons:PackIconOcticons Kind="DeviceMobile" Height="16" Width="16"/>
@@ -353,10 +330,7 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Value="True">
                                                         <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource BookInLibrary}">
-                                                                <Binding Path="."/>
-                                                                <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                                                            </MultiBinding>
+                                                            <Binding Path="IsRemote"/>
                                                         </DataTrigger.Binding>
                                                         <Setter Property="Kind" Value="Check" />
                                                     </DataTrigger>
@@ -397,7 +371,7 @@
                 <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource PrimaryHueLightForegroundBrush}">
                     <icons:PackIconOcticons Kind="DiffAdded" Foreground="{DynamicResource PrimaryHueDarkForegroundBrush}" Height="128" Width="128" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
-                
+
             </Grid>
             <materialDesign:DrawerHost.BottomDrawerContent>
                 <UserControl Content="{Binding BottomDrawerContent}">

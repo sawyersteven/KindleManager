@@ -55,7 +55,6 @@ namespace KindleManager.BindingConverters
         }
     }
 
-
     public class CollapseIfFalse : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -91,7 +90,6 @@ namespace KindleManager.BindingConverters
         }
     }
 
-
     public class GridColumnFilter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -125,13 +123,24 @@ namespace KindleManager.BindingConverters
     /// </summary>
     public class BookInLibrary : IMultiValueConverter
     {
-        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            KindleManager.Database.BookEntry book = values[0] as KindleManager.Database.BookEntry;
-            return book == null ? false : ((IEnumerable<KindleManager.Database.BookEntry>)values[1]).Any(x => x.Id == book.Id);
+            LibraryEntry book = values[0] as LibraryEntry;
+            if (book == null) return false;
+
+            var library = values[1] as IEnumerable<LibraryEntry>;
+
+            if ((string)parameter == "local")
+            {
+                return library.Any(x => x.IsLocal && x.Id == book.Id);
+            }
+            else
+            {
+                return library.Any(x => x.IsRemote && x.Id == book.Id);
+            }
         }
 
-        public object[] ConvertBack(object value, Type[] targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object[] ConvertBack(object value, Type[] targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
