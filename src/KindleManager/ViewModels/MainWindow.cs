@@ -134,7 +134,7 @@ namespace KindleManager.ViewModels
                         });
                         return;
                     }
-                    snackBarQueue.Enqueue($"{book.Title} copied to library.");
+                    SnackBarQueue.Enqueue($"{book.Title} copied to library.");
                 }
                 else
                 {
@@ -169,7 +169,7 @@ namespace KindleManager.ViewModels
                     else
                     {
                         prgDlg.Close();
-                        snackBarQueue.Enqueue("Book transfer finished");
+                        SnackBarQueue.Enqueue("Book transfer finished");
                     }
                 }
             });
@@ -212,8 +212,6 @@ namespace KindleManager.ViewModels
         public ReactiveCommand<Unit, Unit> ScanDeviceLibrary { get; set; }
         public async void _ScanDeviceLibrary()
         {
-            StatusBarIcon = Icons.None;
-
             var dlg = new Dialogs.YesNo("Rescan Library", "Your Kindle will be scanned for books which will then be organized and renamed according to your Kindle's settings.");
             await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
@@ -311,7 +309,7 @@ namespace KindleManager.ViewModels
                  else
                  {
                      prgDlg.Close();
-                     snackBarQueue.Enqueue($"{SelectedDevice.Name} library synced");
+                     SnackBarQueue.Enqueue($"{SelectedDevice.Name} library synced");
                  }
              });
         }
@@ -413,7 +411,7 @@ namespace KindleManager.ViewModels
                         BookBase book = (BookBase)bookList[0];
                         book.FilePath = App.LocalLibrary.AbsoluteFilePath(book);
                         SelectedDevice.ImportBook(book);
-                        snackBarQueue.Enqueue($"{book.Title} transferred to {SelectedDevice.Name}");
+                        SnackBarQueue.Enqueue($"{book.Title} transferred to {SelectedDevice.Name}");
                     }
                     catch (Exception e)
                     {
@@ -456,7 +454,7 @@ namespace KindleManager.ViewModels
                     else
                     {
                         prgDlg.Close();
-                        snackBarQueue.Enqueue("Book transfer finished");
+                        SnackBarQueue.Enqueue("Book transfer finished");
                     }
                 }
             });
@@ -572,7 +570,7 @@ namespace KindleManager.ViewModels
             }
 
             string msg = dlg.DeleteFrom == 0 ? "PC & Kindle" : (dlg.DeleteFrom == 2 ? "PC" : "Kindle");
-            snackBarQueue.Enqueue($"{book.Title} deleted from {msg}.");
+            SnackBarQueue.Enqueue($"{book.Title} deleted from {msg}.");
         }
 
         public ReactiveCommand<Unit, Unit> EditMetadata { get; set; }
@@ -637,7 +635,7 @@ namespace KindleManager.ViewModels
             }
             else if (title != null)
             {
-                snackBarQueue.Enqueue($"{title} updated");
+                SnackBarQueue.Enqueue($"{title} updated");
             }
 
         }
@@ -836,7 +834,7 @@ namespace KindleManager.ViewModels
 
                 foreach (string file in files)
                 {
-                    StatusBarText = $"Importing {file}";
+                    prgDlg.Current = $"Importing {file}";
                     try
                     {
                         App.LocalLibrary.ImportBook(file);
@@ -869,8 +867,6 @@ namespace KindleManager.ViewModels
             }
             else if (paths.Length == 1)
             {
-                OpenBottomDrawer($"Importing {Path.GetFileName(paths[0])}");
-
                 Task.Run(() =>
                 {
                     if (!Formats.Resources.AcceptedFileTypes.Contains(Path.GetExtension(paths[0])))
@@ -896,7 +892,7 @@ namespace KindleManager.ViewModels
                     {
                         CloseBottomDrawer();
                     }
-                    snackBarQueue.Enqueue($"{Path.GetFileName(paths[0])} imported");
+                    SnackBarQueue.Enqueue($"{Path.GetFileName(paths[0])} imported");
                 });
             }
             else
@@ -940,7 +936,7 @@ namespace KindleManager.ViewModels
                     else
                     {
                         prgDlg.Close();
-                        snackBarQueue.Enqueue($"{paths.Length} new books imported successfully");
+                        SnackBarQueue.Enqueue($"{paths.Length} new books imported successfully");
                     }
                 });
             }
