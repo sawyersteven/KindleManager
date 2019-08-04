@@ -1,5 +1,4 @@
 ﻿using ReactiveUI.Fody.Helpers;
-using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -73,17 +72,49 @@ namespace KindleManager
             switch (e.Action)
             {
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                    foreach (Database.BookEntry i in e.NewItems)
+                    {
+                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                        if (existing == null)
+                        {
+                            this.Add(new LibraryEntry(i) { IsRemote = true });
+                        }
+                        else
+                        {
+                            existing.IsLocal = true;
+                        }
+                    }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                    foreach (Database.BookEntry i in e.OldItems)
+                    {
+                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                        if (existing == null) continue;
+
+                        if (existing.IsLocal)
+                        {
+                            existing.IsRemote = false;
+                        }
+                        else
+                        {
+                            this.Remove(existing);
+                        }
+                    }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                    foreach (Database.BookEntry i in e.NewItems)
+                    {
+                        if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                        {
+                            existing.CopyFrom(i);
+                        }
+                    }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                     break;
             }
-            throw new NotImplementedException();
         }
 
         public void LocalCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -123,6 +154,13 @@ namespace KindleManager
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                    foreach (Database.BookEntry i in e.NewItems)
+                    {
+                        if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                        {
+                            existing.CopyFrom(i);
+                        }
+                    }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                     break;

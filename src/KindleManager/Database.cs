@@ -145,7 +145,8 @@ namespace KindleManager
 
             App.Current.Dispatcher.Invoke(() =>
             {
-                BOOKS.Move(0, 0);
+                int index = BOOKS.IndexOf(tableRow);
+                BOOKS.Move(index, index);
             });
         }
 
