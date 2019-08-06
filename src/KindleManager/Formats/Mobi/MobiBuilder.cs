@@ -90,7 +90,7 @@ namespace Formats.Mobi
             PDB.recordCount = (ushort)records.Count;
             PDB.records = CalcRecordOffsets();
 
-            MobiHeader.fullTitleOffset = (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length;
+            MobiHeader.fullTitleOffset = (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length + 0x10;
 
             using (FileStream file = new FileStream(OutputPath, FileMode.CreateNew))
             using (BinaryWriter writer = new BinaryWriter(file))
