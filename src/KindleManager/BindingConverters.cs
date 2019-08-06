@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -147,49 +146,6 @@ namespace KindleManager.BindingConverters
     }
 
     /// <summary>
-    /// Tests if metatada for id matches in both databases
-    /// 
-    /// values[0] : int
-    /// values[1] : Database
-    /// values[2] : Database
-    /// </summary>
-    public class MetadataMatch : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            int id;
-            try
-            {
-                id = (int)values[0];
-            }
-            catch (Exception _) { return false; }
-
-            ObservableCollection<Database.BookEntry> db1 = values[1] as ObservableCollection<Database.BookEntry>;
-            ObservableCollection<Database.BookEntry> db2 = values[2] as ObservableCollection<Database.BookEntry>;
-            if (db1 == null || db2 == null) { return true; }
-
-            Database.BookEntry bk1 = db1.FirstOrDefault(x => x.Id == id);
-            Database.BookEntry bk2 = db2.FirstOrDefault(x => x.Id == id);
-            if (bk1 == null || bk2 == null) { return true; }
-
-            Dictionary<string, string> props1 = bk1.Props();
-            foreach (KeyValuePair<string, string> kv in bk2.Props())
-            {
-                if ((props1[kv.Key] ?? "") != (kv.Value ?? ""))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    /// <summary>
     /// Merges two IEnumerable<Database.BookEntry> by including objects in the
     ///   second IEnumerable only if their ID prop is not in the first IEnumerable
     /// </summary>
@@ -198,8 +154,8 @@ namespace KindleManager.BindingConverters
         public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
 
-            var local = values[0] as IEnumerable<KindleManager.Database.BookEntry>;
-            var remote = values[1] as IEnumerable<KindleManager.Database.BookEntry>;
+            var local = values[0] as IEnumerable<Database.BookEntry>;
+            var remote = values[1] as IEnumerable<Database.BookEntry>;
             if (local == null || remote == null) return local;
             var l = local.ToList();
             l.AddRange(remote.Where(x => !local.Any(y => y.Id == x.Id)));

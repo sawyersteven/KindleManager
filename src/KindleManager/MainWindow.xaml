@@ -29,7 +29,6 @@
         <converters:FloatToString x:Key="FloatToString" />
         <converters:VisibilityToBool x:Key="VisibilityToBool" />
         <converters:GridColumnFilter x:Key="GridColumnFilter" />
-        <converters:MetadataMatch x:Key="MetadataMatch" />
 
         <Style TargetType="{x:Type Button}">
             <Setter Property="Background" Value="Transparent"/>
@@ -333,16 +332,6 @@
                                                             <Binding Path="IsRemote"/>
                                                         </DataTrigger.Binding>
                                                         <Setter Property="Kind" Value="Check" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Value="False">
-                                                        <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource MetadataMatch}">
-                                                                <Binding Path=".Id"/>
-                                                                <Binding ElementName="Window" Path="DataContext.LocalLibrary"/>
-                                                                <Binding ElementName="Window" Path="DataContext.RemoteLibrary"/>
-                                                            </MultiBinding>
-                                                        </DataTrigger.Binding>
-                                                        <Setter Property="Foreground" Value="Orange" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
