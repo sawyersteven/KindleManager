@@ -37,8 +37,6 @@ namespace Formats.Mobi.Headers
 
     public class EXTHHeader : Dictionary<uint, byte[]>
     {
-
-
         public long offset;
         public int length
         {

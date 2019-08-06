@@ -50,9 +50,6 @@ namespace KindleManager.Devices
                     }
                 }
             }
-#if DEBUG
-            devices.Add(new FSDevice("H:\\", "USB Drive", "Description", "ID123456"));
-#endif
             return devices.ToArray();
         }
     }
