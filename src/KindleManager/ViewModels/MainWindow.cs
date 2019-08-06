@@ -591,6 +591,10 @@ namespace KindleManager.ViewModels
                 publishers.Add(i.Publisher);
             }
 
+            authors.Remove("");
+            series.Remove("");
+            publishers.Remove("");
+
             var dlg = new Dialogs.MetadataEditor(new Database.BookEntry(SelectedTableRow), authors, series, publishers);
             await MaterialDesignThemes.Wpf.DialogHost.Show(dlg);
             if (dlg.DialogResult == false) return;
