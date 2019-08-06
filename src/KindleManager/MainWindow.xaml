@@ -54,7 +54,7 @@
                         <TextBlock FontSize="14" FontWeight="Bold">Connected Device</TextBlock>
                         <Border BorderThickness="1" BorderBrush="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,0,8"/>
 
-                        <GroupBox Header="Card Group Box" Style="{DynamicResource MaterialDesignCardGroupBox}" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
+                        <GroupBox Style="{DynamicResource MaterialDesignCardGroupBox}" Visibility="{Binding SelectedDevice, Converter={StaticResource CollapseIfNull}}">
                             <GroupBox.HeaderTemplate>
                                 <DataTemplate>
                                     <DockPanel LastChildFill="False">
@@ -124,7 +124,7 @@
                         <ItemsControl ItemsSource="{Binding DevManager.DeviceList}" Padding="0,8">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <materialDesign:Card Padding="8" Cursor="Hand">
+                                    <materialDesign:Card Padding="8" Margin="0,4" Cursor="Hand">
                                         <materialDesign:Card.InputBindings>
                                             <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectDevice, ElementName=Window}" CommandParameter="{Binding Id}"/>
                                         </materialDesign:Card.InputBindings>
@@ -354,7 +354,7 @@
                 </DataGrid>
 
                 <Border Grid.Row="2" Panel.ZIndex="999">
-                    <materialDesign:Snackbar HorizontalAlignment="Stretch" MessageQueue="{Binding snackBarQueue}" FontSize="16"/>
+                    <materialDesign:Snackbar HorizontalAlignment="Stretch" MessageQueue="{Binding SnackBarQueue}" FontSize="16"/>
                 </Border>
 
                 <Border x:Name="LibraryDropOverlay" Grid.ZIndex="0" Grid.Row="1" Background="{DynamicResource PrimaryHueLightForegroundBrush}">
