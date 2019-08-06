@@ -19,6 +19,16 @@ KindleManager is a simple, fast, and easy way to sync your library. Using modern
 
 ![DeviceList](https://raw.githubusercontent.com/sawyersteven/KindleManager/master/images/Devices.PNG)
 
+# Support
+
+KindleManager is free, but if you would like to support development you can contribute below. 
+
+
+![BTC](https://img.balancebadge.io/BTC/17BfQVGCsmHBNkVVbL1GxhhYFUMX2uytaT.svg)
+
+[![Support via PayPal](https://cdn.rawgit.com/twolfson/paypal-github-button/1.0.0/dist/button.svg)](https://www.paypal.me/sawyerstevenk/)
+
+
 # TODO
 * Unit tests for everything
 * Migrate to DotNet Core 3.0 (when released)
