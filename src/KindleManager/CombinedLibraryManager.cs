@@ -1,11 +1,13 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Data;
 
 namespace KindleManager
 {
     class CombinedLibraryManager : ObservableCollection<LibraryEntry>
     {
+        public object Lock = new object();
 
         public CombinedLibraryManager(ObservableCollection<Database.BookEntry> localLibrary)
         {
@@ -15,6 +17,8 @@ namespace KindleManager
             }
 
             localLibrary.CollectionChanged += LocalCollectionChanged;
+
+            BindingOperations.EnableCollectionSynchronization(this, Lock);
         }
 
         /// <summary>
