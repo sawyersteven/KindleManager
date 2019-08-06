@@ -26,21 +26,22 @@ namespace KindleManager
         /// </summary>
         public void AddRemoteLibrary(ObservableCollection<Database.BookEntry> remoteLibrary)
         {
-            foreach (LibraryEntry i in this)
+            for (int i = 0; i < this.Count; i++)
             {
-                if (i.IsLocal)
+                LibraryEntry book = this[i];
+                if (book.IsLocal)
                 {
-                    i.IsRemote = false;
+                    book.IsRemote = false;
                 }
                 else
                 {
-                    this.Remove(i);
+                    this.Remove(book);
+                    i--;
                 }
             }
 
             foreach (Database.BookEntry i in remoteLibrary)
             {
-
                 LibraryEntry local = this.FirstOrDefault(x => x.Id == i.Id);
                 if (local != null)
                 {
@@ -57,119 +58,140 @@ namespace KindleManager
         public void RemoveRemoteLibrary(ObservableCollection<Database.BookEntry> remoteLibrary)
         {
             remoteLibrary.CollectionChanged -= RemoteCollectionChanged;
-            foreach (LibraryEntry i in this)
+            for (int i = 0; i < this.Count; i++)
             {
-                if (i.IsLocal)
+                LibraryEntry book = this[i];
+                if (book.IsLocal)
                 {
-                    i.IsRemote = false;
+                    book.IsRemote = false;
                 }
                 else
                 {
-                    this.Remove(i);
+                    this.Remove(book);
+                    i--;
                 }
             }
         }
 
-
         private void RemoteCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            switch (e.Action)
+            App.Current.Dispatcher.Invoke(() =>
             {
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
-                    foreach (Database.BookEntry i in e.NewItems)
-                    {
-                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
-                        if (existing == null)
+                switch (e.Action)
+                {
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                        foreach (Database.BookEntry i in e.NewItems)
                         {
-                            this.Add(new LibraryEntry(i) { IsRemote = true });
+                            var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                            if (existing == null)
+                            {
+                                this.Add(new LibraryEntry(i) { IsRemote = true });
+                            }
+                            else
+                            {
+                                existing.IsRemote = true;
+                            }
                         }
-                        else
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                        foreach (Database.BookEntry i in e.OldItems)
                         {
-                            existing.IsLocal = true;
-                        }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                    foreach (Database.BookEntry i in e.OldItems)
-                    {
-                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
-                        if (existing == null) continue;
+                            var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                            if (existing == null) continue;
 
-                        if (existing.IsLocal)
-                        {
-                            existing.IsRemote = false;
+                            if (existing.IsLocal)
+                            {
+                                existing.IsRemote = false;
+                            }
+                            else
+                            {
+                                this.Remove(existing);
+                            }
                         }
-                        else
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                        foreach (Database.BookEntry i in e.NewItems)
                         {
-                            this.Remove(existing);
+                            if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                            {
+                                existing.CopyFrom(i);
+                            }
                         }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
-                    foreach (Database.BookEntry i in e.NewItems)
-                    {
-                        if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+                        for (int i = 0; i < this.Count; i++)
                         {
-                            existing.CopyFrom(i);
+                            LibraryEntry book = this[i];
+                            if (book.IsLocal)
+                            {
+                                book.IsRemote = false;
+                            }
+                            else
+                            {
+                                this.Remove(book);
+                                i--;
+                            }
                         }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
-                    break;
-            }
+                        break;
+                }
+            });
         }
 
-        public void LocalCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void LocalCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            switch (e.Action)
+            App.Current.Dispatcher.Invoke(() =>
             {
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
-                    foreach (Database.BookEntry i in e.NewItems)
-                    {
-                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
-                        if (existing == null)
+                switch (e.Action)
+                {
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                        foreach (Database.BookEntry i in e.NewItems)
                         {
-                            this.Add(new LibraryEntry(i) { IsLocal = true });
+                            var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                            if (existing == null)
+                            {
+                                this.Add(new LibraryEntry(i) { IsLocal = true });
+                            }
+                            else
+                            {
+                                existing.IsLocal = true;
+                            }
                         }
-                        else
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                        foreach (Database.BookEntry i in e.OldItems)
                         {
-                            existing.IsLocal = true;
-                        }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                    foreach (Database.BookEntry i in e.OldItems)
-                    {
-                        var existing = this.FirstOrDefault(x => x.Id == i.Id);
-                        if (existing == null) continue;
+                            var existing = this.FirstOrDefault(x => x.Id == i.Id);
+                            if (existing == null) continue;
 
-                        if (existing.IsRemote)
-                        {
-                            existing.IsLocal = false;
+                            if (existing.IsRemote)
+                            {
+                                existing.IsLocal = false;
+                            }
+                            else
+                            {
+                                this.Remove(existing);
+                            }
                         }
-                        else
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                        foreach (Database.BookEntry i in e.NewItems)
                         {
-                            this.Remove(existing);
+                            if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                            {
+                                existing.CopyFrom(i);
+                            }
                         }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
-                    foreach (Database.BookEntry i in e.NewItems)
-                    {
-                        if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
-                        {
-                            existing.CopyFrom(i);
-                        }
-                    }
-                    break;
-                case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
-                    break;
-            }
+                        break;
+                    case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+                        break;
+                }
+            });
         }
+
     }
 
     public class LibraryEntry : Database.BookEntry
