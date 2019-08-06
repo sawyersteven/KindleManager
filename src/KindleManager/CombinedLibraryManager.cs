@@ -180,7 +180,7 @@ namespace KindleManager
                     case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
                         foreach (Database.BookEntry i in e.NewItems)
                         {
-                            if (this.FirstOrDefault(x => x.Id == i.Id) is Database.BookEntry existing)
+                            if (this.FirstOrDefault(x => x.Id == i.Id) is LibraryEntry existing)
                             {
                                 existing.CopyFrom(i);
                             }

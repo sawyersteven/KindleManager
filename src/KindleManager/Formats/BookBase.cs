@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Formats
 {
-    public abstract class BookBase
+    public abstract class BookBase : ReactiveUI.ReactiveObject
     {
         #region IBook impl
         public virtual string FilePath { get; set; } = "";
