@@ -219,6 +219,10 @@
                   Tag="{Binding DataContext}"
                   ItemsSource="{Binding CombinedLibrary}">
 
+                    <DataGrid.InputBindings>
+                        <KeyBinding Gesture="Ctrl+m" Command="{Binding EditMetadata}"/>
+                    </DataGrid.InputBindings>
+                    
                     <DataGrid.Resources>
                         <ContextMenu x:Key="GridRowContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="Copy To Kindle" Click="SendBook">
