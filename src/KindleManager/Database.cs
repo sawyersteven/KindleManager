@@ -124,6 +124,18 @@ namespace KindleManager
 
         #region Update
         /// <summary>
+        /// Forces CollectionChanged even on ObservableCollection by moving a book (but not really)
+        /// </summary>
+        public void RefreshBook(BookEntry book)
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                int index = BOOKS.IndexOf(book);
+                BOOKS.Move(index, index);
+            });
+        }
+
+        /// <summary>
         /// Updates BOOKS entry with matching Id
         /// Raises exception if filename not in colletion
         /// </summary>
@@ -143,11 +155,7 @@ namespace KindleManager
 
             col.Update(dbEntry);
 
-            App.Current.Dispatcher.Invoke(() =>
-            {
-                int index = BOOKS.IndexOf(tableRow);
-                BOOKS.Move(index, index);
-            });
+            RefreshBook(tableRow);
         }
 
         /// <summary>
@@ -167,8 +175,7 @@ namespace KindleManager
         public void RemoveBook(BookEntry book)
         {
             Logger.Info("Removing {} [{}] from database.", book.Title, book.Id);
-            var c = db.GetCollection<BookEntry>("BOOKS");
-            c.Delete(x => x.Id == book.Id);
+            db.GetCollection<BookEntry>("BOOKS").Delete(x => x.Id == book.Id);
             BOOKS.Remove(book);
         }
 
@@ -191,7 +198,6 @@ namespace KindleManager
             db.DropCollection(collection);
 
             if (collection == "BOOKS") BOOKS.Clear();
-
         }
         #endregion
 
