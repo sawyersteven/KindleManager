@@ -1,7 +1,7 @@
 
 # KindleManager
 
-KindleManager is a simple, fast, and easy way to sync your library. Using modern technology, it is fast and easy to use.
+KindleManager is a simple, fast, and easy way to sync your library. Using modern technology, it is fast and easy to use. Download it on the [Releases](https://github.com/sawyersteven/KindleManager/releases) page.
 
 ![MainWindow](https://raw.githubusercontent.com/sawyersteven/KindleManager/master/images/MainWindow.PNG)
 
