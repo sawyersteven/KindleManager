@@ -49,7 +49,7 @@ namespace Formats.Mobi.Headers
 
         public void FillDefault()
         {
-            uint timestamp = (uint)Utils.Metadata.TimeStamp();
+            uint timestamp = Utils.Metadata.TimeStamp();
             title = "";
             attributes = 0;
             version = 1;

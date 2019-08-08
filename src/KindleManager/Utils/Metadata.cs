@@ -4,11 +4,12 @@ using System.Globalization;
 
 namespace Utils
 {
-    static class Metadata
+    public static class Metadata
     {
         private static readonly Random rndm = new Random();
         private static readonly CultureInfo culture = new CultureInfo("en-US");
         private static readonly string[] dateFormats = new string[] { "yyyy", "yyyy-MM", "yyyy-MM-dd", "M/d/yyyy" };
+        private static readonly DateTime mobiEpoch = new DateTime(1904, 1, 1);
 
         /// <summary>
         /// Generates random number with default length of 3 digits
@@ -22,19 +23,19 @@ namespace Utils
         /// <summary>
         /// Get current timestamp as seconds from Jan 1, 1904, MOBI standard epoch time
         /// </summary>
-        public static int TimeStamp()
+        public static uint TimeStamp()
         {
-            TimeSpan t = DateTime.UtcNow - new DateTime(1904, 1, 1);
-            return (int)t.TotalSeconds;
+            TimeSpan t = DateTime.UtcNow.Subtract(mobiEpoch);
+            return (uint)t.TotalSeconds;
         }
 
         /// <summary>
-        /// Get timestamp as seconds from date
+        /// Get timestamp as seconds from Mobi epoch (1904, 1, 1) to date
         /// </summary>
-        public static int TimeStamp(int year, int month, int day)
+        public static uint TimeStamp(int year, int month, int day)
         {
-            TimeSpan t = new DateTime(year, month, day) - new DateTime(1970, 1, 1);
-            return (int)t.TotalSeconds;
+            TimeSpan t = new DateTime(year, month, day) - new DateTime(1904, 1, 1);
+            return (uint)t.TotalSeconds;
         }
 
         /// <summary>
