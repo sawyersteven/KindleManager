@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Utils
 {
-    static class Mobi
+    public static class Mobi
     {
         private static readonly CultureInfo culture = new CultureInfo("en-US");
 

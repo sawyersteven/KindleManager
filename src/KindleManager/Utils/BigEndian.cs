@@ -6,7 +6,7 @@ namespace Utils
     /// <summary>
     /// BitConverter-like methods that *always* use big-endidian bytes
     /// </summary>
-    static class BigEndian
+    public static class BigEndian
     {
         private static readonly bool reverseBytes = BitConverter.IsLittleEndian;
 

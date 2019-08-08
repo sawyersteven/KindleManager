@@ -3,7 +3,7 @@ using System;
 
 namespace Utils
 {
-    class Base32Int
+    public class Base32Int
     {
         /// <summary>
         /// Converts base32 string into int

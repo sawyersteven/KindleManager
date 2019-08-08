@@ -3,7 +3,7 @@ using System;
 
 namespace Utils.Decompressors
 {
-    class PalmDoc : IDecompressor
+    public class PalmDoc : IDecompressor
     {
         private readonly uint flagTrailingEntries;
         private readonly bool flagMultiByte;
