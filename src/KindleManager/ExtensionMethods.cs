@@ -164,10 +164,10 @@ namespace ExtensionMethods
 
     public static class ListExtensions
     {
-        public static int TotalLength(this List<byte[]> data)
+        public static int TotalLength<T>(this List<T[]> data)
         {
             int l = 0;
-            foreach (byte[] b in data)
+            foreach (T[] b in data)
             {
                 l += b.Length;
             }
@@ -217,7 +217,6 @@ namespace ExtensionMethods
         public static v Get<k, v>(this IDictionary<k, v> dict, k key)
         {
             return dict.TryGetValue(key, out v val) ? val : default(v);
-
         }
     }
 

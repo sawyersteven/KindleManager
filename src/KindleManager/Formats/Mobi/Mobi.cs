@@ -445,7 +445,7 @@ namespace Formats.Mobi
             switch (MobiHeader.textEncoding)
             {
                 case 1252:
-                    text = bytes.ToArray().Decode("CP1252");
+                    text = bytes.ToArray().Decode("Windows-1252");
                     break;
                 case 65001:
                     text = bytes.ToArray().Decode();
