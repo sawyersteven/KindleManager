@@ -1,21 +1,13 @@
-﻿using ExtensionMethods;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Utils
 {
-    static class Files
+    public static class Files
     {
-
-        static char[] InvalidFileChars;
-        static char[] InvalidDirChars;
-
-        static Files()
-        {
-            InvalidFileChars = Path.GetInvalidFileNameChars();
-            InvalidDirChars = Path.GetInvalidPathChars().Append('?');
-        }
+        private static readonly string InvalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", Regex.Escape(new string(Path.GetInvalidFileNameChars())));
 
         /// <summary>
         /// Creates string[] of absolute paths to all files and folders in dir
@@ -46,23 +38,18 @@ namespace Utils
         /// </summary>
         public static string MakeFilesystemSafe(string path)
         {
-            path = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar); ;
+            string[] parts = path.Split(Path.DirectorySeparatorChar);
 
-            string drive = Path.GetPathRoot(path);
-            char[] pchars = string.Join(";", path.Split(':')).ToCharArray();
-            for (int i = 0; i < drive.Length; i++)
+            for (int i = 1; i < parts.Length; i++)
             {
-                pchars[i] = drive[i];
+                parts[i] = Regex.Replace(parts[i], InvalidRegStr, "_");
+                while (parts[i].Contains("__"))
+                {
+                    parts[i] = parts[i].Replace("__", "_");
+                }
             }
-            path = pchars.Decode();
 
-            string file = path.Split(Path.DirectorySeparatorChar).Last();
-            file = string.Join("", file.Split(InvalidFileChars));
-
-            string dir = Path.GetDirectoryName(path).Substring(drive.Length);
-
-            dir = string.Join("", dir.Split(InvalidDirChars));
-            return Path.GetFullPath(Path.Combine(drive, dir, file));
+            return string.Join(Path.DirectorySeparatorChar.ToString(), parts);
         }
 
         /// <summary>
@@ -86,7 +73,7 @@ namespace Utils
                     start = Path.GetFullPath(Path.Combine(start, ".."));
                 }
             }
-            catch (Exception _) { }
+            catch (Exception) { }
         }
 
         /// <summary>
