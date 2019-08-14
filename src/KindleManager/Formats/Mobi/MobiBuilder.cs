@@ -90,7 +90,7 @@ namespace Formats.Mobi
             PDB.recordCount = (ushort)records.Count;
             PDB.records = CalcRecordOffsets();
 
-            MobiHeader.fullTitleOffset = (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length + 0x10;
+            MobiHeader.fullTitleOffset = 0x10 + (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length;
 
             using (FileStream file = new FileStream(OutputPath, FileMode.CreateNew))
             using (BinaryWriter writer = new BinaryWriter(file))
@@ -103,7 +103,7 @@ namespace Formats.Mobi
                 EXTH.offset = (uint)writer.BaseStream.Position;
                 EXTH.Write(writer);
                 MobiHeader.WriteTitle(writer);
-                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length + 0x10, SeekOrigin.Current);
+                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length, SeekOrigin.Current);
                 foreach (byte[] record in records)
                 {
                     writer.Write(record);
