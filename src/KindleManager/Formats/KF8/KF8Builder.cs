@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using EXTHRecordID = Formats.Mobi.Headers.EXTHKey;
 
-namespace Formats.Mobi
+namespace Formats.KF8
 {
     /// <summary>
     /// As I ranted about in the parsing methods, the Mobi format is horrifying.
@@ -20,10 +20,10 @@ namespace Formats.Mobi
         private readonly string OutputPath;
         (string, int)[] Chapters; // (title, byteoffset in encoded html)
 
-        private readonly Headers.PDBHeader PDB = new Headers.PDBHeader();
-        private readonly Headers.PalmDOCHeader PDH = new Headers.PalmDOCHeader();
-        private readonly Headers.MobiHeader MobiHeader = new Headers.MobiHeader(Headers.MobiHeaderType.Mobi6);
-        private readonly Headers.EXTHHeader EXTH = new Headers.EXTHHeader();
+        private readonly Mobi.Headers.PDBHeader PDB = new Mobi.Headers.PDBHeader();
+        private readonly Mobi.Headers.PalmDOCHeader PDH = new Mobi.Headers.PalmDOCHeader();
+        private readonly Mobi.Headers.MobiHeader MobiHeader = new Mobi.Headers.MobiHeader(Mobi.Headers.MobiHeaderType.Mobi8);
+        private readonly Mobi.Headers.EXTHHeader EXTH = new Mobi.Headers.EXTHHeader();
 
         private readonly List<ushort> idxtOffsets = new List<ushort>();
 
@@ -47,14 +47,11 @@ namespace Formats.Mobi
 
         public BookBase Convert()
         {
-            byte[] textBytes;
-            (textBytes, Chapters) = ProcessHtml(Donor.TextContent());
-
             GenerateLogicalTOC();
 
-            byte[][] records = MakeRecords(textBytes);
-
             FillEXTHHeader();
+
+            byte[][] records = MakeRecords();
 
             MobiHeader.FillDefault();
             MobiHeader.firstNonTextRecord = firstNonTextRecord;
@@ -74,7 +71,7 @@ namespace Formats.Mobi
             PDB.recordCount = (ushort)records.Length;
             PDB.records = CalcRecordOffsets(records);
 
-            MobiHeader.fullTitleOffset = 0x10 + (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length;
+            MobiHeader.fullTitleOffset = (uint)PDB.TotalLength + MobiHeader.length + (uint)EXTH.length + 0x10;
 
             using (FileStream file = new FileStream(OutputPath, FileMode.CreateNew))
             using (BinaryWriter writer = new BinaryWriter(file))
@@ -87,7 +84,7 @@ namespace Formats.Mobi
                 EXTH.offset = (uint)writer.BaseStream.Position;
                 EXTH.Write(writer);
                 MobiHeader.WriteTitle(writer);
-                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length, SeekOrigin.Current);
+                writer.BaseStream.Seek(postHeaderPadding - Donor.Title.Length + 0x10, SeekOrigin.Current);
                 foreach (byte[] record in records)
                 {
                     writer.Write(record);
@@ -102,10 +99,12 @@ namespace Formats.Mobi
             }
         }
 
-        private byte[][] MakeRecords(byte[] textBytes)
+        private byte[][] MakeRecords()
         {
             List<byte[]> records = new List<byte[]>();
 
+            byte[] textBytes;
+            (textBytes, Chapters) = ProcessHtml(Donor.TextContent());
             textLength = (uint)textBytes.Length;
 
             textRecordCount = 0;
@@ -291,7 +290,7 @@ namespace Formats.Mobi
 
                 int chapterLength = Chapters[i + 1].Item2 - chapterOffset;
 
-                idxtOffsets.Add((ushort)(Records.INDX.indxLength + logicalTOCEntries.TotalLength()));
+                idxtOffsets.Add((ushort)(Mobi.Records.INDX.indxLength + logicalTOCEntries.TotalLength()));
 
                 byte[] cncxId = i.ToString("D3").Encode();
                 byte[] vliOffset = Utils.Mobi.EncVarLengthInt((uint)chapterOffset);
@@ -372,7 +371,7 @@ namespace Formats.Mobi
             padding = (Rec.Length + 2) % 4;
 
             // Make indx
-            Records.INDX indx = new Records.INDX();
+            Mobi.Records.INDX indx = new Mobi.Records.INDX();
             indx.type = 2;                          // inflection
             indx.recordCount = 1;                   // num of indx data records
             indx.recordEntryCount = (uint)Chapters.Length;
@@ -398,7 +397,7 @@ namespace Formats.Mobi
         {
             List<byte> record = new List<byte>();
 
-            Records.INDX indx = new Records.INDX();
+            Mobi.Records.INDX indx = new Mobi.Records.INDX();
             indx.type = 0;                              // normal
             indx.unused2 = new byte[] { 0, 0, 0, 1 };   // this should be one with type=0 because reasons
             indx.encoding = 0xFFFFFFFF;

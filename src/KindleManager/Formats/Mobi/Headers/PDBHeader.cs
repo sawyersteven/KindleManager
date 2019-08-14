@@ -118,6 +118,21 @@ namespace Formats.Mobi.Headers
             }
         }
 
+        public void DumpRecords(BinaryReader reader, string directory)
+        {
+            for (int i = 0; i < records.Length; i++)
+            {
+                uint start = records[i];
+                uint end = i == records.Length - 1 ? records[i + 1] : (uint)reader.BaseStream.Length;
+
+                uint len = end - start;
+                reader.BaseStream.Seek(start, SeekOrigin.Begin);
+                byte[] rec = reader.ReadBytes((int)len);
+
+                File.WriteAllBytes(Path.Combine(directory, $"{i.ToString("D4")}.record"), rec);
+            }
+        }
+
         public byte[] Dump()
         {
             List<byte> output = new List<byte>();

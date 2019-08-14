@@ -122,6 +122,8 @@
       <DependentUpon>MetadataEditor.xaml</DependentUpon>
     </Compile>
     <Compile Include="Formats\Epub\Epub.cs" />
+    <Compile Include="Formats\KF8\KF8.cs" />
+    <Compile Include="Formats\KF8\KF8Builder.cs" />
     <Compile Include="Formats\Mobi\Headers\EXTHHeader.cs" />
     <Compile Include="Formats\Mobi\Records\INDX.cs" />
     <Compile Include="Formats\Mobi\MobiBuilder.cs" />

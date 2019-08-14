@@ -101,7 +101,7 @@ namespace Formats.Mobi
     {
         public Headers.PDBHeader PDBHeader = new Headers.PDBHeader();
         public Headers.PalmDOCHeader PalmDOCHeader = new Headers.PalmDOCHeader();
-        public Headers.MobiHeader MobiHeader = new Headers.MobiHeader();
+        public Headers.MobiHeader MobiHeader = new Headers.MobiHeader(Headers.MobiHeaderType.Mobi6);
         public Headers.EXTHHeader EXTHHeader = new Headers.EXTHHeader();
 
         public uint contentOffset;
