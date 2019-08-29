@@ -1,5 +1,5 @@
 ﻿using ExtensionMethods;
-using System;
+using System.Collections.Generic;
 
 namespace Utils.Decompressors
 {
@@ -19,52 +19,60 @@ namespace Utils.Decompressors
         /// </summary>
         public byte[] Decompress(byte[] buffer)
         {
-            int compressedLen = CalcCompressedLen(buffer);
-
-            byte[] output = new byte[DecompressedLength(buffer, compressedLen)];
-            int i = 0;
-            int j = 0;
-            while (i < compressedLen)
+            List<byte> output = new List<byte>();
+            int pos = 0;
+            buffer = TrimTrailingEntries(buffer);
+            while (pos < buffer.Length)
             {
-                int c = buffer[i++];
-
-                if (c >= 0xc0)
+                byte b = buffer[pos];
+                pos++;
+                if (b >= 1 && b <= 8)
                 {
-                    output[j++] = (byte)' ';
-                    output[j++] = (byte)(c & 0x7f);
+                    output.AddRange(buffer.SubArray(pos, b));
+                    pos += b;
                 }
-                else if (c >= 0x80)
+                else if (b < 128)
                 {
-                    c = (c << 8) + buffer[i++];
-                    int windowLen = (c & 0x0007) + 3;
-                    int windowDist = (c >> 3) & 0x07FF;
-                    int windowCopyFrom = j - windowDist;
-
-                    windowLen = Math.Min(windowLen, output.Length - j);
-
-                    while (windowLen-- > 0)
-                    {
-                        output[j++] = output[windowCopyFrom++];
-                    }
+                    output.Add(b);
                 }
-                else if (c >= 0x09)
+                else if (b >= 192)
                 {
-                    output[j++] = (byte)c;
-                }
-                else if (c >= 0x01)
-                {
-                    c = Math.Min(c, output.Length - j);
-                    while (c-- > 0)
-                    {
-                        output[j++] = buffer[i++];
-                    }
+                    output.Add((byte)' ');
+                    output.Add((byte)(b ^ 128));
                 }
                 else
                 {
-                    output[j++] = (byte)c;
+                    if (pos < buffer.Length)
+                    {
+                        int key = (b << 8) | buffer[pos];
+                        pos++;
+
+                        int start = (key >> 3) & 0x7FF;
+                        int len = (key & 7) + 3;
+
+                        if (start > len)
+                        {
+                            output.AddRange(output.GetRange(output.Count - start, len));
+                        }
+                        else
+                        {
+                            for (int i = 0; i < len; i++)
+                            {
+                                if (start == 1)
+                                {
+                                    output.Add(output[output.Count - 1]);
+                                }
+                                else
+                                {
+                                    output.Add(output[output.Count - start]);
+                                }
+                            }
+                        }
+                    }
                 }
+
             }
-            return output;
+            return output.ToArray();
         }
 
         /// <summary>
@@ -72,55 +80,29 @@ namespace Utils.Decompressors
         ///     extra record bytes from end of text record
         /// </summary>
         /// Crawls backward through buffer to find length of all extra records
-        private int CalcCompressedLen(byte[] record)
+        private byte[] TrimTrailingEntries(byte[] record)
         {
-            int pos = record.Length;
             for (int _ = 0; _ < flagTrailingEntries; _++)
             {
-                pos -= Mobi.VarLengthInt(record.SubArray(pos - 4, 0x4));
+                record = record.SubArray(0, record.Length - TrailingEntrySize(record));
             }
             if (flagMultiByte)
             {
-                pos -= (record[pos] & 0x3) + 1;
+                int len = (record[record.Length - 1] & 0x3) + 1;
+                record = record.SubArray(0, record.Length - len);
             }
-            return pos;
+            return record;
         }
 
-        /// <summary>
-        /// Gets length of byte array after decompression
-        /// </summary>
-        private static int DecompressedLength(byte[] buffer, int compressedLen)
+        private int TrailingEntrySize(byte[] buffer)
         {
-            int i = 0;
-            int len = 0;
-
-            while (i < compressedLen)
+            int s = 0;
+            foreach (byte b in buffer.SubArray(buffer.Length - 4, 4))
             {
-                int c = buffer[i++] & 0x00ff;
-                if (c >= 0x00c0)
-                {
-                    len += 2;
-                }
-                else if (c >= 0x0080)
-                {
-                    c = (c << 8) | (buffer[i++] & 0x00FF);
-                    len += 3 + (c & 0x0007);
-                }
-                else if (c >= 0x0009)
-                {
-                    len++;
-                }
-                else if (c >= 0x0001)
-                {
-                    len += c;
-                    i += c;
-                }
-                else
-                {
-                    len++;
-                }
+                if ((b & 0x80) != 0) s = 0;
+                s = (s << 7) | (b & 0x7f);
             }
-            return len;
+            return s;
         }
     }
 }
