@@ -9,34 +9,39 @@ namespace Utils
         private static readonly CultureInfo culture = new CultureInfo("en-US");
 
         /// <summary>
-        /// Parse backward-encoded Mobipocket variable-width int
+        /// Parse forward-encoded Mobipocket variable-width int
         /// Retuns int with optional out param for number of bytes used to create int
         /// 
         /// https://wiki.mobileread.com/wiki/MOBI#Variable-width_integers
         /// </summary>
         /// <param name="buffer"> At least four bytes read from end of text record</param>
         /// <returns></returns>
-        public static int VarLengthInt(byte[] buffer, out int c)
+        public static uint DecodeVWI(byte[] src, bool forward, out int i)
         {
-            int varint = 0;
-            c = 0;
-            byte b;
-            for (int i = 0; i < 4; i++)
+            uint val = 0;
+            if (!forward) Array.Reverse(src);
+
+            List<byte> usable = new List<byte>();
+            foreach (byte b in src)
             {
-                b = buffer[i];
-                c++;
-                varint = (varint << 7) | (b & 0x7f);
-                if ((b & 0x80) > 0)
-                {
-                    break;
-                }
+                usable.Add((byte)(b & 0x7F));
+                if ((b & 0x80) != 0) break;
             }
-            return varint;
+
+            if (!forward) usable.Reverse();
+
+            foreach (byte b in usable)
+            {
+                val <<= 7;
+                val |= b;
+            }
+            i = usable.Count;
+            return val;
         }
 
-        public static int VarLengthInt(byte[] buffer)
+        public static uint DecodeVWI(byte[] buffer)
         {
-            return VarLengthInt(buffer, out int _);
+            return DecodeVWI(buffer, true, out int _);
         }
 
         /// <summary>
@@ -44,18 +49,29 @@ namespace Utils
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static byte[] EncVarLengthInt(uint val)
+        public static byte[] EncodeVWI(uint value, bool forward)
         {
             List<byte> output = new List<byte>();
 
-            while (output.Count < 4)
+            while (true)
             {
-                output.Add((byte)(val & 0x7f));
-                val >>= 7;
-                if (val == 0) break;
+                uint b = value & 0x7F;
+                value >>= 7;
+                output.Add((byte)b);
+                if (value == 0) break;
             }
-            output[0] |= 0x80;
-            output.Reverse();
+
+            if (forward)
+            {
+                output[0] |= 0x80;
+                output.Reverse();
+            }
+            else
+            {
+                output.Reverse();
+                output[0] |= 0x80;
+            }
+
             return output.ToArray();
         }
 
