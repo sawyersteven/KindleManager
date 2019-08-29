@@ -205,18 +205,33 @@ namespace UnitTests.UtilsTests
     public class Test_Mobi
     {
         [TestMethod]
-        public void Test_VarLengthInt()
+        public void Test_DecodeVWI_Reverse()
         {
-            int vli = Mobi.VarLengthInt(new byte[] { 0x04, 0x22, 0x91 }, out int i);
-            Assert.AreEqual(vli, 69905);
-            Assert.AreEqual(i, 3);
+            uint vli = Mobi.DecodeVWI(new byte[] { 0x99, 0x84, 0x22, 0x11 }, false, out int i);
+            Assert.AreEqual((uint)69905, vli);
+            Assert.AreEqual(3, i);
         }
 
         [TestMethod]
-        public void Test_EncVarLength()
+        public void Test_DecodeVWI_Forward()
         {
-            byte[] vli = Mobi.EncVarLengthInt(69905);
-            CollectionAssert.AreEqual(vli, new byte[] { 0x04, 0x22, 0x91 });
+            uint vli = Mobi.DecodeVWI(new byte[] { 0x99, 0x84, 0x22, 0x11 }, true, out int i);
+            Assert.AreEqual((uint)25, vli);
+            Assert.AreEqual(1, i);
+        }
+
+        [TestMethod]
+        public void Test_EncodeVWI_Reverse()
+        {
+            byte[] vli = Mobi.EncodeVWI(69905, false);
+            CollectionAssert.AreEqual(vli, new byte[] { 0x84, 0x22, 0x11 });
+        }
+
+        [TestMethod]
+        public void Test_EncodeVWI_Forward()
+        {
+            byte[] vli = Mobi.EncodeVWI(69905, true);
+            CollectionAssert.AreEqual(vli, new byte[] { 0x4, 0x22, 0x91 });
         }
 
         [TestMethod]
@@ -230,7 +245,6 @@ namespace UnitTests.UtilsTests
         public void Test_FormatDate()
         {
             Assert.AreEqual(Mobi.FormatDate("12/31/1999"), "1999-12-31");
-
         }
     }
 
