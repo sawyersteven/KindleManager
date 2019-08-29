@@ -1,5 +1,6 @@
 ﻿using ExtensionMethods;
 using HtmlAgilityPack;
+using NCss;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,8 +10,7 @@ using EXTHRecordID = Formats.Mobi.Headers.EXTHKey;
 namespace Formats.Mobi
 {
     /// <summary>
-    /// As I ranted about in the parsing methods, the Mobi format is horrifying.
-    /// Forgive my (hopefully useful) abundance of comments.
+    /// Mobi6 builder class
     /// </summary>
     public class Builder
     {
@@ -179,99 +179,134 @@ namespace Formats.Mobi
         #endregion
 
         #region HtmlProcessing
-        private (byte[], (string, int)[]) ProcessHtml(string html)
+        /// <summary>
+        /// Returns single html doc containing all chapters and toc data including
+        /// an EOF entry pointing to the end of the readable contents.
+        /// Changes anchors to mobi-style filepos links
+        /// </summary>
+        /// <param name="chapters"></param>
+        /// <returns></returns>
+        private (byte[], (string, int)[]) ProcessHtml(Tuple<string, HtmlDocument>[] chapters)
         {
-            HtmlDocument doc = new HtmlDocument();
-            try { doc.LoadHtml(html); }
-            catch { throw new Exception("Unable to load text content as html"); }
+            FixLinks(chapters);
+            ApplyStyleToNodes(Donor.StyleSheet().Decode(), chapters);
 
-            StripStyle(doc);
-            FixImageRecIndexes(doc);
+            HtmlDocument combinedText = new HtmlDocument();
+            combinedText.LoadHtml(Resources.HtmlTemplate);
 
-            (string, int)[] tocData = ParseToc(doc);
+            List<ValueTuple<string, int>> tocData = new List<ValueTuple<string, int>>();
+            int tally = combinedText.DocumentNode.SelectSingleNode("//body").BytePosition();
+            foreach ((string title, HtmlDocument chapter) in chapters)
+            {
+                tocData.Add((title, tally));
+                string addedHtml = chapter.DocumentNode.SelectSingleNode("//body").InnerHtml;
+                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml += addedHtml;
 
-            string decodedText = doc.DocumentNode.OuterHtml;
+                tally += addedHtml.Encode().Length;
+            }
+            tocData.Add(("EOF", tally));
 
-            byte[] textBytes = decodedText.Encode();
+            ResolveFilePos(combinedText);
 
-            return (textBytes, tocData);
+            return (combinedText.DocumentNode.OuterHtml.Encode(), tocData.ToArray());
+        }
+
+        private void ApplyStyleToNodes(string stylesheet, Tuple<string, HtmlDocument>[] chapters)
+        {
+            Stylesheet cssSheet = new CssParser().ParseSheet(stylesheet);
+
+            List<string> possibleSelectors = new List<string>();
+            foreach ((string name, HtmlDocument doc) in chapters)
+            {
+                foreach (HtmlNode node in doc.DocumentNode.Descendants())
+                {
+                    if (node.NodeType != HtmlNodeType.Element) continue;
+
+                    possibleSelectors.Clear();
+                    possibleSelectors.Add(node.Name);
+                    if (node.Id != string.Empty)
+                    {
+                        possibleSelectors.Add($"{node.Name}#{node.Id}");
+                        possibleSelectors.Add(node.Id);
+                    }
+                    foreach (string cls in node.GetClasses())
+                    {
+                        possibleSelectors.Add($"{node.Name}.{cls}");
+                        possibleSelectors.Add($".{cls}");
+                    }
+
+                    ClassRule combinedRules = new ClassRule();
+                    foreach (Rule r in cssSheet.Rules)
+                    {
+                        if (!(r is ClassRule rule)) continue;
+                        if (rule.Selector is SelectorList selList && selList.Selectors.Any(x => possibleSelectors.Contains(x.OriginalToken)))
+                        {
+                            combinedRules.Properties.AddRange(rule.Properties);
+                        }
+                        else if (possibleSelectors.Contains(rule.Selector.ToString()))
+                        {
+                            combinedRules.Properties.AddRange(rule.Properties);
+                        }
+                    }
+
+                    foreach (Property prop in combinedRules.Properties)
+                    {
+                        node.SetAttributeValue(prop.Name, prop.Values[0].OriginalToken);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets filepos on anchors to correct value
+        /// </summary>
+        /// <param name="doc"></param>
+        private void ResolveFilePos(HtmlDocument doc)
+        {
+            HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
+            if (anchors != null)
+            {
+                foreach (HtmlNode anchor in anchors)
+                {
+                    string href = anchor.GetAttributeValue("href", null);
+                    if (href == null) continue;
+                    HtmlNode target = doc.DocumentNode.SelectSingleNode($"//*[@id='{href}']");
+                    if (target == null) continue;
+                    anchor.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
+                }
+            }
         }
 
         /// <summary>
         /// Changes img src to recindex
+        /// Changes anchors to mobi-style filepos links with all zeros ie filepos="0000000000"
         /// </summary>
-        private void FixImageRecIndexes(HtmlDocument html)
+        private void FixLinks(Tuple<string, HtmlDocument>[] chapters)
         {
-            HtmlNodeCollection imgs = html.DocumentNode.SelectNodes("//img");
-            if (imgs == null) return;
-            foreach (HtmlNode img in imgs)
+            foreach ((string chname, HtmlDocument doc) in chapters)
             {
-                string src = img.Attributes["src"].Value;
-                if (src != null) img.SetAttributeValue("recindex", src);
-            }
-        }
-
-        /// <summary>
-        /// Changes a.href to a.filepos and generates toc chapter names and offsets.
-        /// </summary>
-        /// <returns>
-        /// (string, int) of chapter title, byte offset in html
-        /// </returns>
-        private (string, int)[] ParseToc(HtmlDocument html)
-        {
-            // Give all anchors filepos property then reload html to get correct streampositions
-            HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
-            if (anchors != null)
-            {
-                foreach (HtmlNode a in anchors)
+                HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//img");
+                if (nodes != null)
                 {
-                    string href = a.GetAttributeValue("href", null);
-                    if (href != null && href[0] == '#')
+                    foreach (HtmlNode img in nodes)
                     {
-                        a.SetAttributeValue("filepos", 0.ToString("D10"));
+                        string src = img.Attributes["src"].Value;
+                        if (src != null) img.SetAttributeValue("recindex", Path.GetFileNameWithoutExtension(src));
+                    }
+                }
+                nodes = doc.DocumentNode.SelectNodes("//a");
+                if (nodes != null)
+                {
+                    foreach (HtmlNode a in nodes)
+                    {
+                        if (a.Attributes["href"] != null)
+                        {
+                            a.SetAttributeValue("filepos", "0000000000");
+                        }
                     }
                 }
             }
-            html.LoadHtml(html.DocumentNode.OuterHtml);
-
-            // Get all anchors again and match them to a targetnode
-            anchors = html.DocumentNode.SelectNodes("//a");
-            if (anchors != null)
-            {
-                foreach (HtmlNode a in anchors)
-                {
-                    HtmlAttribute href = a.Attributes["href"];
-                    if (href == null) continue;
-                    HtmlNode target = html.DocumentNode.SelectSingleNode($"//*[@id='{href.Value.Substring(1)}']");
-                    if (target == null) continue;
-                    a.SetAttributeValue("filepos", target.BytePosition().ToString("D10"));
-                }
-            }
-
-            List<(string, int)> tocData = new List<(string, int)>();
-            HtmlNode[] tocNodes = html.DocumentNode.SelectNodes("//*").Where(x => x.Attributes["toclabel"] != null).ToArray();
-            foreach (HtmlNode n in tocNodes)
-            {
-                tocData.Add((n.Attributes["toclabel"].Value, n.BytePosition()));
-            }
-            if (tocData.Count == 0) // if no chapters in book create one at start
-            {
-                tocData.Add(("Start", 0));
-            }
-            tocData.Add(("EOF", html.DocumentNode.OuterHtml.Encode().Length));
-            return tocData.ToArray();
         }
-
-        private void StripStyle(HtmlDocument html)
-        {
-            HtmlNode style = html.DocumentNode.SelectSingleNode("//html/head/style");
-            if (style != null) style.Remove();
-            foreach (HtmlNode child in html.DocumentNode.ChildNodes)
-            {
-                child.Attributes.Remove("class");
-            }
-        }
-
         #endregion
 
         #region INDX table/metadata
@@ -294,10 +329,10 @@ namespace Formats.Mobi
                 idxtOffsets.Add((ushort)(Records.INDX.indxLength + logicalTOCEntries.TotalLength()));
 
                 byte[] cncxId = i.ToString("D3").Encode();
-                byte[] vliOffset = Utils.Mobi.EncVarLengthInt((uint)chapterOffset);
-                byte[] vliLen = Utils.Mobi.EncVarLengthInt((uint)chapterLength);
-                byte[] vliNameOffset = Utils.Mobi.EncVarLengthInt((uint)logicalTOCLabels.Count);
-                byte[] vliNameLen = Utils.Mobi.EncVarLengthInt((uint)chapterName.Encode().Length);
+                byte[] vliOffset = Utils.Mobi.EncodeVWI((uint)chapterOffset, true);
+                byte[] vliLen = Utils.Mobi.EncodeVWI((uint)chapterLength, true);
+                byte[] vliNameOffset = Utils.Mobi.EncodeVWI((uint)logicalTOCLabels.Count, true);
+                byte[] vliNameLen = Utils.Mobi.EncodeVWI((uint)chapterName.Encode().Length, true);
 
                 tocEntry.Add((byte)cncxId.Length);    // id length
                 tocEntry.AddRange(cncxId);            // id
@@ -305,7 +340,7 @@ namespace Formats.Mobi
                 tocEntry.AddRange(vliOffset);         // encoded html position
                 tocEntry.AddRange(vliLen);            // length of encoded chapter
                 tocEntry.AddRange(vliNameOffset);     // offset of chapter name in nametable
-                tocEntry.AddRange(Utils.Mobi.EncVarLengthInt(0)); // Depth -- always 0.
+                tocEntry.AddRange(Utils.Mobi.EncodeVWI(0, true)); // Depth -- always 0.
 
                 logicalTOCEntries.Add(tocEntry.ToArray());
 

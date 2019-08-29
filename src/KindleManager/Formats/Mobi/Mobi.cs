@@ -3,6 +3,7 @@ using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using EXTHKey = Formats.Mobi.Headers.EXTHKey;
 
 namespace Formats.Mobi
@@ -67,10 +68,7 @@ namespace Formats.Mobi
         all of the headers and is followed by a rather large amount of
         zero-padding.
 
-        This header not 0xC8 bytes long, but we have to read those bytes frist
-        to find out how long the whole thing is. The field headerLength is
-        a lie and also not the actual length of the whole header. But if the
-        headerLength is 0xE4 or 0xE8 we will find data about the trailing
+        If the headerLength is > 0xE4 we will find data about the trailing
         bytes at the end of each record mentioned above. These flags are found
         in a ushort at this header's beginning + 0xf2 bytes.
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -6,7 +7,7 @@ namespace Formats
 {
     public abstract class BookBase : ReactiveUI.ReactiveObject
     {
-        #region IBook impl
+        #region override-able props
         public virtual string FilePath { get; set; } = "";
         public virtual string Title { get; set; } = "";
         public virtual string Language { get; set; } = "";
@@ -41,7 +42,16 @@ namespace Formats
         }
         public virtual string DateAdded { get; set; } = "";
 
-        public abstract string TextContent();
+        /// <summary>
+        /// Build list of <chaptername, text> where text is a complete html document
+        /// with <html><head></head><body></body></html> structure
+        /// 
+        /// All anchors should point toward a unique ID, not to a document#id
+        /// All img tags should have their source set to "12345.jpg" where 12345 is
+        /// an image in Images() starting from 1.
+        /// </summary>
+        /// <returns></returns>
+        public abstract Tuple<string, HtmlDocument>[] TextContent();
         public abstract byte[][] Images();
         public abstract void WriteMetadata();
 
@@ -104,6 +114,10 @@ namespace Formats
             WriteMetadata();
         }
 
+        /// <summary>
+        /// Generates stylesheet in un-encoded byte array
+        /// </summary>
+        public abstract byte[] StyleSheet();
 
         public Dictionary<string, string> Props()
         {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Xml;
 
 namespace Formats.Epub
@@ -72,11 +73,9 @@ namespace Formats.Epub
         private readonly string[] ImageNames;
 
         #region IBook overrides
-        public override string TextContent()
+        public override Tuple<string, HtmlDocument>[] TextContent()
         {
-            // todo add option to remove nodes with no innerhtml and style?
-            HtmlDocument combinedText = new HtmlDocument();
-            combinedText.LoadHtml(Resources.HtmlTemplate);
+            Tuple<string, string, HtmlDocument>[] chapters;
 
             XmlDocument tocXml = new XmlDocument();
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(tocXml.NameTable);
@@ -84,37 +83,16 @@ namespace Formats.Epub
 
             using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
             {
-                ZipArchiveEntry toc = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".ncx"));
-                if (toc == null) throw new Exception("TOC file not found, epub may be corrupt");
-                using (Stream s = toc.Open()) { tocXml.Load(s); }
+                ZipArchiveEntry xmldoc = zip.Entries.FirstOrDefault(x => x.Name == "toc.ncx");
+                if (xmldoc == null) throw new Exception("Could not find toc.ncx, epub may be corrupt.");
+                using (Stream s = xmldoc.Open()) { tocXml.Load(s); }
 
-                string[] orderedDocumentNames = OrderedDocumentNames(zip);
-
-                Dictionary<string, HtmlDocument> documents = LoadDocuments(zip, orderedDocumentNames);
-
-                FixLinks(NavPoints(tocXml, nsmgr), documents);
-
-                string[] docTexts = new string[orderedDocumentNames.Length];
-                for (int i = 0; i < orderedDocumentNames.Length; i++)
-                {
-                    docTexts[i] = documents[orderedDocumentNames[i]].DocumentNode.InnerHtml;
-                }
-
-                combinedText.DocumentNode.SelectSingleNode("//body").InnerHtml = MergeDocuments(orderedDocumentNames, documents);
-
-                ZipArchiveEntry css = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".css"));
-                if (css != null)
-                {
-                    string stylesheet;
-                    using (Stream s = css.Open())
-                    using (StreamReader reader = new StreamReader(s))
-                    {
-                        stylesheet = reader.ReadToEnd();
-                    }
-                    combinedText.DocumentNode.SelectSingleNode("//head/style").InnerHtml += stylesheet;
-                }
+                ValueTuple<string, string>[] orderedDocumentNames = OrderedDocumentNames(zip);
+                // <chapter name, docname, contents>
+                chapters = LoadDocuments(zip, orderedDocumentNames);
             }
-            return SerializeImgLinks(combinedText);
+
+            return FixLinks(NavPoints(tocXml, nsmgr), chapters);
         }
 
         #endregion
@@ -126,6 +104,7 @@ namespace Formats.Epub
         /// </summary>
         private (string, string)[] NavPoints(XmlDocument tocXml, XmlNamespaceManager nsmgr)
         {
+
             // Tuple of playOrder, src document, label
             List<(int, string, string)> navPoints = new List<(int, string, string)>();
 
@@ -157,19 +136,31 @@ namespace Formats.Epub
         }
 
         /// <summary>
-        /// Makes list of document names in order of OPF's spine
+        /// Makes list of <chapter name, chapter document>
+        /// If name is null it is a separate document that belongs to the previous named chapter
         /// </summary>
-        private string[] OrderedDocumentNames(ZipArchive zip)
+        private ValueTuple<string, string>[] OrderedDocumentNames(ZipArchive zip)
         {
             XmlDocument opfXml = new XmlDocument();
+            XmlDocument ncxXml = new XmlDocument();
+
             ZipArchiveEntry opf = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".opf"));
             if (opf == null) throw new Exception("OPF file not found, epub may be corrupt");
             using (Stream s = opf.Open()) { opfXml.Load(s); }
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(opfXml.NameTable);
-            nsmgr.AddNamespace("rt", opfXml.DocumentElement.NamespaceURI);
 
-            List<string> docNames = new List<string>();
-            foreach (XmlNode itemref in opfXml.SelectNodes("//rt:spine/rt:itemref", nsmgr))
+            ZipArchiveEntry ncx = zip.Entries.FirstOrDefault(x => x.Name.EndsWith(".ncx"));
+            if (ncx == null) throw new Exception("NCX file not found, epub may be corrupt");
+            using (Stream s = ncx.Open()) { ncxXml.Load(s); }
+
+            XmlNamespaceManager opfNsmgr = new XmlNamespaceManager(opfXml.NameTable);
+            opfNsmgr.AddNamespace("rt", opfXml.DocumentElement.NamespaceURI);
+
+            XmlNamespaceManager ncxNsmgr = new XmlNamespaceManager(ncxXml.NameTable);
+            ncxNsmgr.AddNamespace("rt", ncxXml.DocumentElement.NamespaceURI);
+
+            List<ValueTuple<string, string>> docNames = new List<ValueTuple<string, string>>();
+            XmlNodeList itemRefs = opfXml.SelectNodes("//rt:spine/rt:itemref", opfNsmgr);
+            foreach (XmlNode itemref in itemRefs)
             {
                 XmlAttribute idref = itemref.Attributes["idref"];
                 if (idref == null)
@@ -177,7 +168,7 @@ namespace Formats.Epub
                     Console.WriteLine("Itemref entry does not have 'idref' attribute, html parsing may be incorrect");
                     continue;
                 }
-                XmlNode item = opfXml.SelectSingleNode($"//rt:manifest/rt:item[@id='{idref.Value}']", nsmgr);
+                XmlNode item = opfXml.SelectSingleNode($"//rt:manifest/rt:item[@id='{idref.Value}']", opfNsmgr);
                 if (item == null)
                 {
                     Console.WriteLine("Itemref points to an item that does not exist, html parsing may be incorrect");
@@ -190,45 +181,61 @@ namespace Formats.Epub
                     Console.WriteLine($"Item entry {itemid} does not have 'href' attribute, html parsing may be incorrect");
                     continue;
                 }
-                docNames.Add(href.Value);
+
+                string targetId = href.Value;
+
+                string name = null;
+                var node = ncxXml.SelectSingleNode($"//rt:ncx/rt:navMap/*/rt:content[@src='{targetId}']", ncxNsmgr);
+                if (node != null)
+                {
+                    var navPoint = node.ParentNode;
+                    var label = navPoint.SelectSingleNode("rt:navLabel", ncxNsmgr);
+                    name = label?.InnerText;
+                }
+
+                docNames.Add(new ValueTuple<string, string>(name, Path.GetFileName(targetId)));
             }
             return docNames.ToArray();
         }
 
         /// <summary>
-        /// Reads documents' contents as string into dict {filename: contents}
+        /// Reads documents' into reference tuple of <chapter, document, contents>
         /// </summary>
-        private Dictionary<string, HtmlDocument> LoadDocuments(ZipArchive zip, string[] docNames)
+        private Tuple<string, string, HtmlDocument>[] LoadDocuments(ZipArchive zip, ValueTuple<string, string>[] docNames)
         {
-            Dictionary<string, HtmlDocument> documents = new Dictionary<string, HtmlDocument>();
-            foreach (string docname in docNames)
+            List<Tuple<string, string, HtmlDocument>> documents = new List<Tuple<string, string, HtmlDocument>>();
+            foreach ((string name, string document) in docNames)
             {
-                if (documents.ContainsKey(docname)) continue;
+                if (documents.Any(x => x.Item2 == document)) continue;
 
-                ZipArchiveEntry html = zip.Entries.FirstOrDefault(x => x.FullName.EndsWith(docname));
-                if (html == null) throw new FileFormatException($"Content file {docname} could not be found.");
+                ZipArchiveEntry html = zip.Entries.FirstOrDefault(x => x.FullName.EndsWith(document));
+                if (html == null) throw new FileFormatException($"Content file {document} could not be found.");
 
                 HtmlDocument doc = new HtmlDocument();
-                using (Stream s = html.Open()) { doc.Load(s, System.Text.Encoding.UTF8); }
-                documents.Add(docname, doc);
-            }
+                using (Stream s = html.Open())
+                {
+                    doc.LoadHtml(new StreamReader(s).ReadToEnd());
+                }
 
-            return documents;
-        }
+                if (name == null)
+                {
+                    if (documents.Count == 0)
+                    {
+                        documents.Add(new Tuple<string, string, HtmlDocument>("Begin Reading", document, doc));
+                    }
+                    else
+                    {
+                        string contents = doc.DocumentNode.SelectSingleNode("//body").InnerHtml;
+                        documents.Last().Item3.DocumentNode.SelectSingleNode("//body").InnerHtml += contents;
 
-        /// <summary>
-        /// Combines documents' <body> contents into one document
-        /// </summary>
-        private static string MergeDocuments(string[] orderedDocumentNames, Dictionary<string, HtmlDocument> documents)
-        {
-            string[] docTexts = new string[orderedDocumentNames.Length];
-            for (int i = 0; i < orderedDocumentNames.Length; i++)
-            {
-                HtmlNode body = documents[orderedDocumentNames[i]].DocumentNode.SelectSingleNode("//html/body");
-                if (body == null) continue;
-                docTexts[i] = body.InnerHtml;
+                    }
+                }
+                else
+                {
+                    documents.Add(new Tuple<string, string, HtmlDocument>(name, document, doc));
+                }
             }
-            return string.Join("<mbp:pagebreak/>", docTexts);
+            return documents.ToArray();
         }
 
         /// <summary>
@@ -239,17 +246,17 @@ namespace Formats.Epub
         /// All anchor nodes are collected from every document in the book. Then the document that anchor
         ///     refers to has the id replaced with a number that is then incremented.
         /// 
+        /// Changes image links to sequential numbers based on Images() output;
         /// </summary>
-        /// <param name="navPoints">(srcdoc#id, label) in order of toc.ncx's playorder</param>
-        /// <param name="documents">Dict<string docname, HtmlDocument contents> of all html docs pointed to in toc.ncx</param>
-        /// <returns></returns>
-        private void FixLinks((string, string)[] navPoints, Dictionary<string, HtmlDocument> documents)
+        private Tuple<string, HtmlDocument>[] FixLinks((string, string)[] navPoints, Tuple<string, string, HtmlDocument>[] documents)
         {
+            List<Tuple<string, HtmlDocument>> output = new List<Tuple<string, HtmlDocument>>();
+
             char[] split = new char[] { '#' };
             string[] parts;
 
             List<HtmlNode> bookAnchors = new List<HtmlNode>();
-            foreach (HtmlDocument doc in documents.Values)
+            foreach ((string chname, string docname, HtmlDocument doc) in documents)
             {
                 HtmlNodeCollection anchors = doc.DocumentNode.SelectNodes("//a");
                 if (anchors != null)
@@ -258,72 +265,70 @@ namespace Formats.Epub
                 }
             }
 
-            int counter = 1;
+            Dictionary<string, string> imageSubs = new Dictionary<string, string>();
+            int targetIdCounter = 1;
             foreach ((string url, string label) in navPoints)
             {
-                string newId = counter.ToString("D10");
+                string newId = targetIdCounter.ToString("D10");
                 string targetOldId = null;
 
                 HtmlNode target;
-
                 parts = url.Split(split, 2);
-                HtmlDocument doc = documents[parts[0]];
+
+                var m = documents.FirstOrDefault(x => x.Item2 == Path.GetFileName(parts[0]));
+                if (m == null) continue;
+
+                (string chname, string docname, HtmlDocument doc) = m;
+
                 if (parts.Length == 1) // url points to document root, use first child node
                 {
                     target = doc.DocumentNode.SelectSingleNode("//html/body/*");
+                    target.SetAttributeValue("id", parts[0]);
                 }
                 else
                 {
                     target = doc.DocumentNode.SelectSingleNode($"//*[@id='{parts[1]}']");
                 }
 
-                target.SetAttributeValue("toclabel", label);
-
                 HtmlAttribute id = target.Attributes["id"];
                 if (id != null)
                 {
                     targetOldId = id.Value;
                 }
+                if (targetOldId == null) continue;
 
                 target.SetAttributeValue("id", newId);
-                counter++;
-
-                if (targetOldId == null) continue;
+                targetIdCounter++;
 
                 foreach (HtmlNode a in bookAnchors)
                 {
-                    string href = a.Attributes["href"].Value;
-                    parts = href.Split(split, 2);
-
-                    if (parts.Length == 1) continue;
-
-                    if (parts[1] == targetOldId) a.SetAttributeValue("href", "#" + newId);
-
+                    string href = a.GetAttributeValue("href", null);
+                    string wantedId = href.Split(split, 2).Last();
+                    if (wantedId == targetOldId) a.SetAttributeValue("href", "#" + newId);
                 }
-            }
-        }
 
-        private string SerializeImgLinks(HtmlDocument html)
-        {
-            Dictionary<string, string> imageSubs = new Dictionary<string, string>();
-            for (int i = 0; i < ImageNames.Length; i++)
-            {
-                imageSubs.Add(ImageNames[i], $"{(i + 1).ToString("D5")}.jpg");
-            }
-
-            HtmlNodeCollection imgNodes = html.DocumentNode.SelectNodes("//img");
-            if (imgNodes != null)
-            {
-                foreach (HtmlNode img in imgNodes)
+                for (int i = 0; i < ImageNames.Length; i++)
                 {
-                    if (imageSubs.TryGetValue(img.Attributes["src"].Value, out string newSource))
+                    if (imageSubs.TryGetValue(ImageNames[i], out string _)) continue;
+                    string k = Path.GetFileName(ImageNames[i]);
+                    if (imageSubs.ContainsKey(k)) continue;
+                    imageSubs.Add(k, $"{(i + 1).ToString("D5")}.jpg");
+                }
+
+                HtmlNodeCollection imgNodes = doc.DocumentNode.SelectNodes("//img");
+                if (imgNodes != null)
+                {
+                    foreach (HtmlNode img in imgNodes)
                     {
-                        img.SetAttributeValue("src", newSource);
+                        if (imageSubs.TryGetValue(Path.GetFileName(img.Attributes["src"].Value), out string newSource))
+                        {
+                            img.SetAttributeValue("src", newSource);
+                        }
                     }
                 }
             }
 
-            return html.DocumentNode.OuterHtml;
+            return documents.Select(x => new Tuple<string, HtmlDocument>(x.Item1, x.Item3)).ToArray();
         }
 
         public override byte[][] Images()
@@ -343,6 +348,27 @@ namespace Formats.Epub
                 }
             }
             return images;
+        }
+
+        public override byte[] StyleSheet()
+        {
+            StringBuilder stylesheet;
+            using (var zip = ZipFile.Open(FilePath, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry[] sheets = zip.Entries.Where(x => x.Name.EndsWith(".css")).ToArray();
+
+                stylesheet = new StringBuilder(sheets.Length);
+
+                foreach (ZipArchiveEntry css in sheets)
+                {
+                    using (Stream s = css.Open())
+                    using (StreamReader reader = new StreamReader(s))
+                    {
+                        stylesheet.Append(reader.ReadToEnd());
+                    }
+                }
+            }
+            return stylesheet.ToString().Encode();
         }
 
         public override void WriteMetadata()
