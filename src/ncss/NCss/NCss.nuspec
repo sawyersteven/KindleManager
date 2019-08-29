@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>oguimbal</authors>
+    <owners>oguimbal</owners>
+    <projectUrl>https://github.com/oguimbal/ncss</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <tags>CSS NCss Parser Style Linq Stylesheet</tags>
+  </metadata>
+	<files>
+		<file src="bin\Release\net40\NCss.dll" target="lib\net40\NCss.dll" />
+		<file src="bin\Release\net40\NCss.pdb" target="lib\net40\NCss.pdb" />
+		<file src="bin\Release\net40\NCss.xml" target="lib\net40\NCss.xml" />
+	</files>
+</package>

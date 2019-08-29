@@ -7,20 +7,40 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KindleManager", "KindleMana
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{30A19069-DD61-4E13-96F1-65E68D42DF0C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCss", "..\..\ncss\NCss\NCss.csproj", "{480C8071-E10A-4FFE-B98C-5B52ED15E724}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Release 4.0|Any CPU = Release 4.0|Any CPU
+		Release 4.5|Any CPU = Release 4.5|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release 4.0|Any CPU.ActiveCfg = Release|Any CPU
+		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release 4.0|Any CPU.Build.0 = Release|Any CPU
+		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release 4.5|Any CPU.ActiveCfg = Release|Any CPU
+		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release 4.5|Any CPU.Build.0 = Release|Any CPU
 		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A35AEF4E-0CB7-473C-A5EE-F35AE3073286}.Release|Any CPU.Build.0 = Release|Any CPU
 		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release 4.0|Any CPU.ActiveCfg = Release|Any CPU
+		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release 4.0|Any CPU.Build.0 = Release|Any CPU
+		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release 4.5|Any CPU.ActiveCfg = Release|Any CPU
+		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release 4.5|Any CPU.Build.0 = Release|Any CPU
 		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30A19069-DD61-4E13-96F1-65E68D42DF0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release 4.0|Any CPU.ActiveCfg = Release 4.0|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release 4.0|Any CPU.Build.0 = Release 4.0|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release 4.5|Any CPU.ActiveCfg = Release 4.5|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release 4.5|Any CPU.Build.0 = Release 4.5|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release|Any CPU.ActiveCfg = Release 4.5|Any CPU
+		{480C8071-E10A-4FFE-B98C-5B52ED15E724}.Release|Any CPU.Build.0 = Release 4.5|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
