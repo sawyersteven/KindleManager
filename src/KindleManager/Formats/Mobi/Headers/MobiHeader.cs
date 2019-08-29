@@ -124,6 +124,14 @@ namespace Formats.Mobi.Headers
         public MobiHeader(MobiHeaderType type)
         {
             MobiType = type;
+            switch (MobiType)
+            {
+                case MobiHeaderType.Mobi6:
+                    this.length = 232;
+                    break;
+                case MobiHeaderType.Mobi8:
+                    throw new NotImplementedException();
+            }
         }
 
         /// <summary>
@@ -132,7 +140,7 @@ namespace Formats.Mobi.Headers
         public void FillDefault()
         {
             identifier = "MOBI".Encode();
-            length = 268;
+
             mobiType = 2;
             textEncoding = 65001;
 
@@ -312,13 +320,17 @@ namespace Formats.Mobi.Headers
             extraDataFlags = Utils.BigEndian.ToUInt32(buffer, 0xE0);
 
             ncxIndxRecord = Utils.BigEndian.ToUInt32(buffer, 0xE4);
-            unknown6 = Utils.BigEndian.ToUInt32(buffer, 0xE8);
-            unknown7 = Utils.BigEndian.ToUInt32(buffer, 0xEC);
-            datpOffset = Utils.BigEndian.ToUInt32(buffer, 0xD0);
 
-            if (MobiType == MobiHeaderType.Mobi8)
+            if (length > 0xe8)
             {
-                guideIndex = Utils.BigEndian.ToUInt32(buffer, 0xD4);
+                unknown6 = Utils.BigEndian.ToUInt32(buffer, 0xE8);
+                unknown7 = Utils.BigEndian.ToUInt32(buffer, 0xEC);
+                datpOffset = Utils.BigEndian.ToUInt32(buffer, 0xD0);
+
+                if (MobiType == MobiHeaderType.Mobi8)
+                {
+                    guideIndex = Utils.BigEndian.ToUInt32(buffer, 0xD4);
+                }
             }
 
             hasDRM = drmOffset != 0xFFFFFFFF;
@@ -437,12 +449,12 @@ namespace Formats.Mobi.Headers
             output.AddRange(Utils.BigEndian.GetBytes(extraDataFlags));
 
             output.AddRange(Utils.BigEndian.GetBytes(ncxIndxRecord));
-            output.AddRange(Utils.BigEndian.GetBytes(unknown6));
-            output.AddRange(Utils.BigEndian.GetBytes(unknown7));
-            output.AddRange(Utils.BigEndian.GetBytes(datpOffset));
 
             if (MobiType == MobiHeaderType.Mobi8)
             {
+                output.AddRange(Utils.BigEndian.GetBytes(unknown6));
+                output.AddRange(Utils.BigEndian.GetBytes(unknown7));
+                output.AddRange(Utils.BigEndian.GetBytes(datpOffset));
                 output.AddRange(Utils.BigEndian.GetBytes(guideIndex));
             }
 
