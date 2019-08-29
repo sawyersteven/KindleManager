@@ -226,7 +226,7 @@ namespace KindleManager
             [Reactive] public override string DateAdded { get; set; } = "";
 
             #region methods
-            public override Tuple<string, string>[] TextContent() => new Tuple<string, string>[0];
+            public override Tuple<string, HtmlAgilityPack.HtmlDocument>[] TextContent() => new Tuple<string, HtmlAgilityPack.HtmlDocument>[0];
             public override byte[][] Images() => new byte[0][];
             public override void WriteMetadata() { }
             public override byte[] StyleSheet() => new byte[0];

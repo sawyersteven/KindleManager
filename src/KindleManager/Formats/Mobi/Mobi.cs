@@ -165,97 +165,80 @@ namespace Formats.Mobi
         }
 
         /// <summary>
-        /// Fixes image sources and anchor tags using "filepos" in html
+        ///
+        /// Similar to FixLinks6 except...
         /// 
-        /// Because everything in a mobi has to be much more complex than neccesary I'll explain this...
-        /// 
-        /// There seems to be two different types of internal links in the book document
-        /// If the mobi version is < 8, anchor tags have a filepos attribute like this:
-        ///     <a filepos=000012345>Chapter one</a>
-        ///     filepos indicates the offset in *bytes* from the start of the document.
-        ///     This offset doesn't always point to the start of a tag so we will
-        ///         have to find the closest appropriate html element to this offset.
         /// For version 8+ the anchor tags look like this:
         ///     <a href="kindle:pos:fid:00A1:off:000123C">Chapter one</a>
         ///     Two numbers, fid and off, are base-32 integers. fid indicates the text
         ///         record in which to start counting, and off indicates how many bytes
         ///         to count from the start of this record.
         /// 
-        /// The filepos indicates a position in the un-decoded bytes that is somewhere near the actual target for the link
-        /// Because of this, the html has to be decoded (ie to utf-8) and parsed for anchors' filepos values.
-        /// Then we go back to the un-decoded bytes and insert a new node with the target id to make things easier.
+        /// </summary>
+        private string FixLinks8()
+        {
+            throw new NotImplementedException();
+
+            //{   /* For mobi version 8 or greater the filepos is stored in the
+            //    href attribute as `kindle:pos:fid:0123:off:0123456789` where
+            //    0123 indicates the text record containing the target and
+            //    0123456789 indicates the offset inside this record.
+            //    The total offset is calculated for filePositions.
+            //    */
+            //    anchors = doc.DocumentNode.SelectNodes("//a");
+            //    if (anchors != null)
+            //    {
+            //        foreach (HtmlNode a in anchors)
+            //        {
+            //            int ol = a.OuterHtml.Length;
+            //            string href = a.GetAttributeValue("href", "");
+            //            if (href == "") continue;
+            //            string[] parts = href.Split(':');
+            //            if (parts.Length != 6) continue;
+
+            //            if (!Utils.Base32Int.TryParse(parts[3], out int textRec)) continue;
+            //            if (!Utils.Base32Int.TryParse(parts[3], out int offs)) continue;
+
+            //            int filePos = 0;
+            //            if (textRec == 1)
+            //            {
+            //                filePos = offs;
+            //            }
+            //            else
+            //            {
+            //                for (uint i = 0; i < textRec - 1; i++)
+            //                {
+            //                    filePos += textRecordLengths[i];
+            //                }
+            //                filePos += offs;
+            //            }
+            //            a.SetAttributeValue("href", filePos.ToString($"D10").PadRight(href.Length));
+            //            filePositions.Add(filePos);
+            //        }
+            //    }
+            //}
+        }
+
+        /// <summary>
+        /// Fixes image sources and anchor tags using "filepos" in html
         /// 
-        /// Images are easier. An image will have a recindex=123456 attribute instead of src. This points to the image
+        /// Because everything in a mobi has to be much more complex than neccesary I'll explain this...
+        ///       
+        /// The filepos indicates a position in the un-decoded bytes that is somewhere near the opening '<' of the
+        /// target node for the link.
+        /// Because of this, the html has to be decoded (ie to utf-8) and parsed for anchors' filepos values.
+        /// Then back to bytes to find where the target node is.
+        /// Then back to the decoded string to manipulate it.
+        /// 
+        /// Images are easier. An image will have a recindex=00003 attribute instead of src. This points to the image
         /// record in PDBHeader starting with firstImageRecord as 1.
         /// 
         /// </summary>
-        private string FixLinks(string html)
+        private string FixLinks6(HtmlDocument doc)
         {
-            //string targetNode = "<a id=\"filepos{0}\"/>";
-            HtmlDocument doc = new HtmlDocument();
             HtmlNodeCollection anchors;
             List<int> filePositions = new List<int>();
             int bytesAdded = 0;
-
-            byte[] htmlBytes = html.Encode();
-            doc.LoadHtml(html);
-
-            // Find all anchors and get/set their filepos attribute
-            if (MobiHeader.minVersion < 8)
-            {
-                anchors = doc.DocumentNode.SelectNodes("//a");
-                if (anchors != null)
-                {
-                    foreach (HtmlNode a in anchors)
-                    {
-                        string filePos = a.GetAttributeValue("filepos", string.Empty);
-                        if (int.TryParse(filePos, out int i))
-                        {
-                            filePositions.Add(i);
-                        }
-                    }
-                }
-            }
-            else
-            {   /* For mobi version 8 or greater the filepos is stored in the
-                href attribute as `kindle:pos:fid:0123:off:0123456789` where
-                0123 indicates the text record containing the target and
-                0123456789 indicates the offset inside this record.
-                The total offset is calculated for filePositions.
-                */
-                anchors = doc.DocumentNode.SelectNodes("//a");
-                if (anchors != null)
-                {
-                    foreach (HtmlNode a in anchors)
-                    {
-                        int ol = a.OuterHtml.Length;
-                        string href = a.GetAttributeValue("href", "");
-                        if (href == "") continue;
-                        string[] parts = href.Split(':');
-                        if (parts.Length != 6) continue;
-
-                        if (!Utils.Base32Int.TryParse(parts[3], out int textRec)) continue;
-                        if (!Utils.Base32Int.TryParse(parts[3], out int offs)) continue;
-
-                        int filePos = 0;
-                        if (textRec == 1)
-                        {
-                            filePos = offs;
-                        }
-                        else
-                        {
-                            for (uint i = 0; i < textRec - 1; i++)
-                            {
-                                filePos += textRecordLengths[i];
-                            }
-                            filePos += offs;
-                        }
-                        a.SetAttributeValue("href", filePos.ToString($"D10").PadRight(href.Length));
-                        filePositions.Add(filePos);
-                    }
-                    htmlBytes = doc.DocumentNode.OuterHtml.Encode();
-                }
-            }
 
             filePositions.Sort();
 
@@ -292,23 +275,9 @@ namespace Formats.Mobi
             {
                 foreach (HtmlNode a in anchors)
                 {
-                    string filePos;
-                    if (MobiHeader.minVersion < 8)
-                    {
-                        filePos = a.GetAttributeValue("filepos", null);
-                        if (filePos == null) continue;
-                    }
-                    else
-                    {
-                        /* For mobi version 8 or greater the filepos is stored
-                         * as the href padded right to the same length as the
-                         * original href value. So here we have to trim it to
-                         * the last 10 chars
-                         */
-                        string href = a.GetAttributeValue("href", null);
-                        if (href == null) continue;
-                        filePos = href.Substring(0, 10);
-                    }
+                    string filePos = a.GetAttributeValue("filepos", null);
+                    if (filePos == null) continue;
+
                     if (!int.TryParse(filePos, out int _)) continue;
 
                     a.SetAttributeValue("filepos", filePos); // for mobi 8+
@@ -394,14 +363,13 @@ namespace Formats.Mobi
         }
 
         /// <summary>
-        /// Returns mobi-html from book as string with changes made to 
-        ///     work as a standard epub html doc.
+        /// Builds list of <str chaptername, str textcontent> from book
         /// </summary>
         /// <returns></returns>
-        public override string TextContent()
+        public override Tuple<string, HtmlDocument>[] TextContent()
         {
             Utils.Decompressors.IDecompressor Decompressor = null;
-            List<byte> bytes = new List<byte>();
+            List<byte[]> decompressedRecords = new List<byte[]>();
 
             using (BinaryReader reader = new BinaryReader(new FileStream(this.FilePath, FileMode.Open)))
             {
@@ -410,7 +378,7 @@ namespace Formats.Mobi
                     case 1: // None
                         Decompressor = new Utils.Decompressors.None();
                         break;
-                    case 2: // PalmDoc
+                    case 2: // PalmDoc  
                         Decompressor = new Utils.Decompressors.PalmDoc(MobiHeader.flagTrailingEntries, MobiHeader.flagMultiByte);
                         break;
                     case 17480: // HUFF/CDIC
@@ -421,7 +389,6 @@ namespace Formats.Mobi
                             var current = MobiHeader.huffRecordNum + i;
                             reader.BaseStream.Seek(PDBHeader.records[current], SeekOrigin.Begin);
                             huffRecords[i] = reader.ReadBytes((int)PDBHeader.RecordLength(current));
-
                         }
 
                         Decompressor = new Utils.Decompressors.HuffCdic(huffRecords);
@@ -435,23 +402,144 @@ namespace Formats.Mobi
                     reader.BaseStream.Seek(PDBHeader.records[i], SeekOrigin.Begin);
                     byte[] compressedText = reader.ReadBytes((int)(PDBHeader.records[i + 1] - PDBHeader.records[i]));
                     byte[] x = Decompressor.Decompress(compressedText);
-                    bytes.AddRange(x);
+                    decompressedRecords.Add(x);
                 }
             }
 
-            string text;
+            List<Tuple<string, HtmlDocument>> chapters = new List<Tuple<string, HtmlDocument>>();
+            if (MobiHeader.minVersion <= 6)
+            {
+                byte[] combined = new byte[decompressedRecords.TotalLength()];
+                int index = 0;
+                foreach (byte[] rec in decompressedRecords)
+                {
+                    rec.CopyTo(combined, index);
+                    index += rec.Length;
+                }
+                string text = Decode(combined);
+                (string, int)[] toc = BuildMobi6Toc(text);
+
+                HtmlDocument begin = new HtmlDocument();
+                begin.LoadHtml(Decode(combined.SubArray(0, toc[0].Item2)));
+                chapters.Add(new Tuple<string, HtmlDocument>("", begin));
+
+                HtmlDocument doc = new HtmlDocument();
+                for (int i = 0; i < toc.Length; i++)
+                {
+                    string name = toc[i].Item1;
+                    int start = toc[i].Item2;
+                    int end = (i == toc.Length - 1) ? combined.Length : toc[i + 1].Item2;
+
+                    string ch = Decode(combined.SubArray(start, end - start));
+
+                    if (i != 1)
+                    {
+                        ch = "<head><body>" + ch;
+                    }
+
+                    doc.LoadHtml(ch);
+                    HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//img");
+                    if (nodes != null)
+                    {
+                        foreach (HtmlNode img in nodes)
+                        {
+                            string recIndex = img.GetAttributeValue("recindex", string.Empty);
+                            if (recIndex == string.Empty) continue;
+                            img.SetAttributeValue("src", $"{recIndex}.jpg");
+                        }
+                    }
+
+                    nodes = doc.DocumentNode.SelectNodes(@"//*[name()='mbp:pagebreak']");
+                    if (nodes != null)
+                    {
+                        foreach (HtmlNode mbp in nodes)
+                        {
+                            mbp.Remove();
+                        }
+                    }
+
+                    chapters.Add(new Tuple<string, HtmlDocument>(name, doc));
+                }
+
+                foreach ((string _, HtmlDocument html) in chapters)
+                {
+                    FixLinks6(html);
+                }
+            }
+            else
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+
+            return chapters.ToArray();
+        }
+
+        /// <summary>
+        /// Gets chapter names 
+        /// </summary>
+        /// <returns>
+        /// (string, int) of chapter title, offset in html bytearray
+        /// </returns>
+        private ValueTuple<string, int>[] BuildMobi6Toc(string text)
+        {
+            List<ValueTuple<string, int>> tocData = new List<ValueTuple<string, int>>();
+
+            HtmlDocument html = new HtmlDocument();
+            html.LoadHtml(text);
+
+            HashSet<int> filePositions = new HashSet<int>();
+            HtmlNodeCollection anchors = html.DocumentNode.SelectNodes("//a");
+            if (anchors != null)
+            {
+                foreach (HtmlNode a in anchors)
+                {
+                    string filePos = a.GetAttributeValue("filepos", string.Empty);
+                    if (int.TryParse(filePos, out int i))
+                    {
+                        filePositions.Add(i);
+                    }
+                }
+            }
+
+            int ind = 0;
+            HtmlNodeCollection children = html.DocumentNode.SelectNodes("//*");
+            foreach (int pos in filePositions.OrderBy(x => x))
+            {
+                HtmlNode child = null;
+                for (; ind < children.Count; ind++)
+                {
+                    int bp = children[ind].BytePosition();
+                    if (bp > pos)
+                    {
+                        child = children[ind == 0 ? ind : ind - 1];
+                        break;
+                    }
+                }
+                if (child == null)
+                {
+                    ind = 0;
+                    continue;
+                }
+                else
+                {
+                    tocData.Add(new ValueTuple<string, int>(child.InnerText, pos));
+                }
+            }
+            return tocData.ToArray();
+        }
+
+        private string Decode(byte[] bytes)
+        {
             switch (MobiHeader.textEncoding)
             {
                 case 1252:
-                    text = bytes.ToArray().Decode("Windows-1252");
-                    break;
+                    return bytes.Decode("Windows-1252");
                 case 65001:
-                    text = bytes.ToArray().Decode();
-                    break;
+                    return bytes.Decode();
                 default:
                     throw new ArgumentException($"Invalid text encoding: {MobiHeader.textEncoding}");
             };
-            return FixLinks(text);
         }
 
         public override byte[][] Images()
@@ -472,6 +560,18 @@ namespace Formats.Mobi
             return images;
         }
 
+        public override byte[] StyleSheet()
+        {
+            if (MobiHeader.minVersion <= 6)
+            {
+                return new byte[0];
+            }
+            else
+            { //todo
+                throw new NotImplementedException();
+            }
+        }
+
         public override void WriteMetadata()
         {
             EXTHHeader.Set(EXTHKey.Contributor, "KindleManger [https://github.com/sawyersteven/KindleManager]".Encode());
@@ -488,7 +588,6 @@ namespace Formats.Mobi
                 headerDump.AddRange(MobiHeader.Dump());
 
                 headerDump.AddRange(exth);
-
 
                 uint totalHeaderLen = (uint)headerDump.Count + MobiHeader.fullTitleLength;
 
